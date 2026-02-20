@@ -1,0 +1,148 @@
+/* ==================== Sidebar & Shell ==================== */
+:root {
+    --sidebar: #2f5f72;
+    --sidebarText: rgba(255, 255, 255, 0.85);
+    --shellBg: #b9d3e3;
+    --pageBg: #eaf3f8;
+    --pill: #d7e7f2;
+}
+
+/* Shell layout */
+.app-shell {
+    background: var(--shellBg);
+    min-height: 100vh;
+}
+
+.app-shell__toggle {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+}
+
+.app-shell__sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 240px;
+    background: var(--sidebar);
+    z-index: 30;
+}
+
+.app-shell__main {
+    margin-left: 240px;
+    min-height: 100vh;
+    background: var(--pageBg);
+    position: relative;
+}
+
+.app-shell__overlay {
+    display: none;
+}
+
+/* Sidebar */
+.app-sidebar {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 14px;
+}
+
+.app-sidebar__profile {
+    text-align: center;
+    padding: 12px 8px 18px;
+}
+
+.app-sidebar__avatar {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.15);
+    border: 3px solid rgba(255, 255, 255, 0.25);
+}
+.app-sidebar__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.app-sidebar__name {
+    color: var(--sidebarText);
+    font-weight: 500;
+    font-size: 18px;
+}
+.app-sidebar__id {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.app-sidebar__nav {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.app-sidebar__link {
+    color: var(--sidebarText);
+    text-decoration: none;
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    width: 180px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+.app-sidebar__link.is-active {
+    background: var(--pill);
+    color: #244a5a;
+}
+
+.app-sidebar__footer {
+    margin-top: auto;
+    padding: 18px 8px 6px;
+}
+
+.app-sidebar__logout {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+/* Sidebar responsive */
+@media (max-width: 860px) {
+    .app-shell__sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 180ms ease;
+    }
+    .app-shell__main {
+        margin-left: 0;
+    }
+
+    .app-shell__toggle:checked ~ .app-shell__sidebar {
+        transform: translateX(0);
+    }
+
+    .app-shell__overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: 25;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+    }
+
+    .app-shell__toggle:checked ~ .app-shell__main .app-shell__overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}

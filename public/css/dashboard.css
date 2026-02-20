@@ -1,0 +1,402 @@
+/* -------------------- Base -------------------- */
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    height: 100%;
+}
+body {
+    margin: 0;
+    font-family:
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+:root {
+    --sidebar: #2f5f72;
+    --sidebarText: rgba(255, 255, 255, 0.85);
+    --shellBg: #b9d3e3;
+    --pageBg: #eaf3f8;
+    --card: #cfe3f0;
+    --cardInner: rgba(255, 255, 255, 0.25);
+    --stroke: rgba(23, 54, 70, 0.25);
+    --muted: rgba(0, 0, 0, 0.35);
+    --ink: #0b0f12;
+    --pill: #d7e7f2;
+    --danger: #ff5252;
+}
+body {
+    font-size: 14px;
+}
+
+/* -------------------- Shell layout -------------------- */
+.app-shell {
+    background: var(--shellBg);
+    min-height: 100vh;
+}
+
+.app-shell__toggle {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+}
+
+/* Desktop grid: sidebar + main */
+.app-shell__sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 240px;
+    background: var(--sidebar);
+    z-index: 30;
+}
+
+.app-shell__main {
+    margin-left: 240px;
+    min-height: 100vh;
+    background: var(--pageBg);
+    position: relative;
+}
+
+/* overlay (mobile) */
+.app-shell__overlay {
+    display: none;
+}
+
+/* -------------------- Dashboard content area -------------------- */
+.dashboard-content {
+    padding: 18px;
+}
+
+/* was .dash */
+.dashboard-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.15fr 1.6fr 0.9fr;
+    gap: 14px;
+}
+
+/* -------------------- Dashboard Cards -------------------- */
+/* was .card */
+.dashboard-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* was .card__header */
+.dashboard-card__header {
+    margin-bottom: 12px;
+}
+
+/* was .card__header--row */
+.dashboard-card__header--row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* was .card__title */
+.dashboard-card__title {
+    margin: 0;
+    font-weight: 500;
+    font-size: 22px;
+}
+
+/* was .card__muted */
+.dashboard-card__muted {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Views wide: was .card--views */
+.dashboard-card--views {
+    grid-column: 1 / -1;
+    padding: 18px 18px 20px;
+}
+
+/* -------------------- Dashboard Metrics (Views) -------------------- */
+/* was .views */
+.dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* was .metric */
+.dashboard-metric {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid var(--stroke);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+}
+
+/* was .metric__icon */
+.dashboard-metric__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #244a5a;
+}
+
+/* was .metric__text */
+.dashboard-metric__text {
+    display: grid;
+    gap: 2px;
+}
+
+/* was .metric__value */
+.dashboard-metric__value {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+/* was .metric__label */
+.dashboard-metric__label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* was .metric--danger */
+.dashboard-metric--danger {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 82, 82, 0.35);
+}
+
+/* was .metric__icon--danger */
+.dashboard-metric__icon--danger {
+    background: var(--danger);
+}
+
+/* -------------------- Dashboard Users -------------------- */
+/* was .users */
+.dashboard-users {
+    padding: 12px 8px 8px;
+}
+
+/* was .users__box */
+.dashboard-users__box {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    border: 2px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.12);
+    margin-bottom: 14px;
+}
+
+/* was .users__count */
+.dashboard-users__count {
+    font-size: 32px;
+    font-weight: 500;
+}
+
+/* was .users__sub */
+.dashboard-users__sub {
+    margin-top: -6px;
+    color: var(--muted);
+}
+
+/* -------------------- Dashboard Inventory -------------------- */
+/* was .inv */
+.dashboard-inv {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 18px;
+    align-items: center;
+}
+
+/* was .inv__chart */
+.dashboard-inv__chart {
+    width: 180px;
+    height: 180px;
+    border-radius: 999px;
+    margin-left: 6px;
+}
+
+/* was .inv__legend */
+.dashboard-inv__legend {
+    display: grid;
+    gap: 18px;
+}
+
+/* was .legend */
+.dashboard-legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* was .legend__swatch */
+.dashboard-legend__swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+/* was .legend__swatch--a/b/c */
+.dashboard-legend__swatch--a {
+    background: #5fe7ea;
+}
+.dashboard-legend__swatch--b {
+    background: #3fb6d6;
+}
+.dashboard-legend__swatch--c {
+    background: #2a7fb0;
+}
+
+/* was .legend__text */
+.dashboard-legend__text {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* -------------------- Dashboard Top Clients -------------------- */
+/* was .top */
+.dashboard-top {
+    margin: 0;
+    padding-left: 24px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+/* -------------------- Dashboard Expenses -------------------- */
+/* was .expenses__chart */
+.dashboard-expenses__chart {
+    height: 140px;
+    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    background:
+        linear-gradient(
+            to top,
+            rgba(95, 231, 234, 0.35),
+            rgba(95, 231, 234, 0)
+        ),
+        linear-gradient(
+            to top,
+            rgba(63, 182, 214, 0.45),
+            rgba(63, 182, 214, 0)
+        ),
+        linear-gradient(to top, rgba(42, 127, 176, 0.55), rgba(42, 127, 176, 0));
+}
+
+/* Expenses wide: was .card--expenses */
+.dashboard-card--expenses {
+    grid-column: 1 / 3;
+    min-height: 250px;
+}
+
+/* Make top clients occupy full height beside expenses like screenshot */
+/* was .card--top */
+.dashboard-card--top {
+    grid-row: 2 / 4;
+}
+
+/* -------------------- Responsiveness -------------------- */
+@media (max-width: 1100px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .dashboard-card--top {
+        grid-row: auto;
+        grid-column: 1 / -1;
+    }
+    .dashboard-card--expenses {
+        grid-column: 1 / -1;
+    }
+    .dashboard-metrics {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+    }
+    .dashboard-inv {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-inv__chart {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 860px) {
+    .app-shell__sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 180ms ease;
+    }
+    .app-shell__main {
+        margin-left: 0;
+    }
+
+    /* When checkbox checked -> show sidebar */
+    .app-shell__toggle:checked ~ .app-shell__sidebar {
+        transform: translateX(0);
+    }
+
+    .app-shell__overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: 25;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+    }
+    .app-shell__toggle:checked ~ .app-shell__main .app-shell__overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (max-width: 560px) {
+    .dashboard-content {
+        padding: 16px;
+    }
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-metrics {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-card__title {
+        font-size: 30px;
+    }
+    .dashboard-top {
+        font-size: 22px;
+    }
+}
+.dashboard-expenses-chart {
+    height: 170px; /* adjust to match your card */
+    width: 100%;
+}
+
+.dashboard-expenses-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+.clients-index__add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    color: rgba(0, 0, 0, 0.75);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+}

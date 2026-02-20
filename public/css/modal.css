@@ -1,0 +1,331 @@
+/* -------------------- Reusable Modal -------------------- */
+.app-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+}
+.app-modal.is-open {
+    display: block;
+}
+
+.app-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.app-modal__panel {
+    position: relative;
+    width: min(920px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    margin: 16px auto;
+    background: rgba(234, 243, 248, 0.98);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr;
+}
+
+.app-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.65);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.app-modal__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.78);
+}
+
+.app-modal__close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.app-modal__body {
+    padding: 14px 16px 16px;
+    overflow: auto;
+}
+
+/* Small screens */
+@media (max-width: 560px) {
+    .app-modal__panel {
+        width: calc(100vw - 20px);
+        margin: 10px auto;
+    }
+}
+/* Employees modal content (inside <x-modal/>) */
+.settings-employees__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.settings-employees__search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    width: min(520px, 100%);
+}
+.settings-employees__search input {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    width: 100%;
+    font-size: 14px;
+}
+
+.settings-employees__btn {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(47, 95, 114, 0.25);
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.75);
+}
+.settings-employees__btn--primary {
+    background: rgba(47, 95, 114, 0.14);
+}
+.btn--primary {
+}
+.settings-employees__table-wrap {
+    overflow: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.2);
+}
+.settings-employees__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 720px;
+}
+.settings-employees__table th,
+.settings-employees__table td {
+    padding: 12px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.7);
+    background: rgba(255, 255, 255, 0.06);
+    text-align: left;
+}
+.settings-employees__table thead th {
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.settings-employees__pill {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(47, 95, 114, 0.2);
+    background: rgba(95, 231, 234, 0.2);
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+}
+
+.settings-employees__actions-col {
+    white-space: nowrap;
+    width: 1%;
+}
+.settings-employees__icon-btn,
+.settings-employees__icon-btn--edit {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    margin-right: 8px;
+}
+.settings-employees__icon-btn--danger {
+    border-color: rgba(255, 82, 82, 0.35);
+}
+
+@media (max-width: 560px) {
+    .settings-employees__hide-sm {
+        display: none;
+    }
+}
+.invite-employee-form {
+    display: grid;
+    gap: 14px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field input,
+.form-field select,
+.pwd-reset__field input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.pwd-reset__field input {
+    margin: 10px;
+}
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-field input {
+    width: 100%;
+    padding-right: 42px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.6;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+/* -------------------- Ghost button -------------------- */
+.btn-ghost {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    background: rgba(255, 255, 255, 0.45);
+
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.65);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    cursor: pointer;
+    text-decoration: none;
+    user-select: none;
+
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease,
+        transform 80ms ease;
+}
+
+.btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.25);
+    color: rgba(0, 0, 0, 0.8);
+}
+
+.btn-ghost:active {
+    transform: translateY(1px);
+}
+
+.btn-ghost:disabled,
+.btn-ghost[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Size variants (optional) */
+.btn-ghost--sm {
+    height: 28px;
+    font-size: 12px;
+    padding: 0 10px;
+}
+
+.btn-ghost--lg {
+    height: 40px;
+    font-size: 14px;
+    padding: 0 18px;
+}
+.excel {
+    background-color: #217346;
+    color: white;
+}
+.pdf {
+    background-color: #d32f2f;
+    color: white;
+}
+.excel:hover {
+    background-color: #1a5e38;
+    color: white;
+}
+.pdf:hover {
+    color: white;
+    background-color: #b71c1c;
+}
+.emp-avatar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emp-avatar__preview {
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.15);
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    flex: 0 0 96px;
+}
+
+.emp-avatar__preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.emp-avatar__controls {
+    flex: 1;
+    min-width: 160px;
+}
+
+.emp-avatar__hint {
+    margin-top: 6px;
+    font-size: 12px;
+    opacity: 0.65;
+}

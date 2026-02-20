@@ -1,0 +1,88 @@
+/* ================= Confirm Modal ================= */
+
+.confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+}
+
+.confirm-modal.is-open {
+    display: block;
+}
+
+.confirm-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+.confirm-modal__box {
+    position: relative;
+    max-width: 420px;
+    margin: 12vh auto;
+    padding: 24px;
+
+    background: #fff;
+    border-radius: 14px;
+
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    animation: modalScaleIn 0.25s ease;
+}
+
+.confirm-modal__title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.confirm-modal__text {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: #444;
+}
+
+.confirm-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.confirm-modal__btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+}
+
+.confirm-modal__btn--cancel {
+    background: #f1f1f1;
+    color: #333;
+}
+
+.confirm-modal__btn--cancel:hover {
+    background: #e6e6e6;
+}
+
+.confirm-modal__btn--danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+.confirm-modal__btn--danger:hover {
+    background: #b91c1c;
+}
+
+@keyframes modalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

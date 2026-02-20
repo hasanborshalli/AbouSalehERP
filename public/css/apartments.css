@@ -1,0 +1,175 @@
+/* Page wrapper */
+.apartments {
+    width: 100%;
+}
+
+.apartments__grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 0.95fr;
+    gap: 14px;
+}
+
+/* Right column stack */
+.apartments__right {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 14px;
+}
+
+/* Card tweaks */
+.apartments__card {
+    border-radius: 18px;
+    padding: 18px;
+}
+
+.apartments__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.apartments__card-header--tight {
+    margin-bottom: 10px;
+}
+
+.apartments__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* Arrow button (like screenshot) */
+.apartments__arrow {
+    width: 52px;
+    height: 36px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(0, 0, 0, 0.45);
+    background: rgba(255, 255, 255, 0.2);
+    text-decoration: none;
+}
+
+.apartments__arrow--small {
+    width: 46px;
+    height: 34px;
+    border-width: 2px;
+}
+
+.apartments__arrow-icon {
+    width: 32px;
+    height: 32px;
+    display: block;
+    opacity: 0.85;
+}
+
+.apartments__arrow:hover .apartments__arrow-icon {
+    opacity: 0.65;
+}
+
+/* Body blocks */
+.apartments__body {
+    min-height: 140px;
+    display: grid;
+    align-content: start;
+    gap: 10px;
+}
+
+.apartments__body--existing {
+    min-height: 250px; /* bigger like screenshot */
+}
+
+.apartments__note {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.55);
+    line-height: 1.5;
+}
+
+.apartments__note--small {
+    font-size: 13px;
+}
+
+/* Stats area */
+.apartments__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.apartments__stat {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 14px 12px;
+    display: grid;
+    gap: 18px;
+    min-height: 100px;
+}
+
+.apartments__stat-title {
+    font-size: 16px;
+    color: rgba(0, 0, 0, 0.7);
+    font-weight: 500;
+}
+
+.apartments__stat-value {
+    font-size: 18px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.75);
+}
+/* Existing projects list */
+.apartments__projects {
+    display: grid;
+    gap: 14px;
+    margin-top: 6px;
+}
+
+.apartments__project {
+    display: block;
+    font-size: 15px;
+    color: rgba(0, 0, 0, 0.75);
+    text-decoration: none;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.apartments__project:hover {
+    color: rgba(0, 0, 0, 0.95);
+}
+
+/* -------------------- Responsive -------------------- */
+@media (max-width: 1100px) {
+    .apartments__grid {
+        grid-template-columns: 1fr;
+    }
+    .apartments__body--existing {
+        min-height: 220px;
+    }
+}
+
+@media (max-width: 560px) {
+    .apartments__card {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .apartments__title {
+        font-size: 16px;
+    }
+
+    .apartments__stats {
+        grid-template-columns: 1fr;
+    }
+
+    .apartments__arrow {
+        width: 46px;
+        height: 34px;
+    }
+}

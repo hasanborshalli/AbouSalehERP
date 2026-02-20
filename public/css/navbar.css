@@ -1,0 +1,166 @@
+/* ==================== Navbar ==================== */
+.app-navbar {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.6);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.app-navbar__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-navbar__logo {
+    width: 50px;
+}
+
+.app-navbar__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+.app-navbar__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-navbar__search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(520px, 52vw);
+    height: 36px;
+    font-size: 14px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 2px solid rgba(0, 0, 0, 0.1);
+}
+.app-navbar__search {
+    position: relative;
+}
+
+.app-navbar__search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    z-index: 60;
+    max-height: 320px;
+    overflow: auto;
+}
+
+.nav-search-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 14px;
+}
+
+.nav-search-item:hover,
+.nav-search-item.is-active {
+    background: rgba(47, 95, 114, 0.1);
+}
+
+.nav-search-kbd {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.app-navbar__search-icon {
+    opacity: 0.55;
+}
+.search-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.app-navbar__search input {
+    border: 0;
+    outline: 0;
+    width: 100%;
+    background: transparent;
+    font-size: 16px;
+}
+
+.app-navbar__mic,
+.app-navbar__bell {
+    border: 0;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.app-navbar__mic {
+    opacity: 0.6;
+}
+.app-navbar__bell {
+    opacity: 0.75;
+}
+
+/* Burger (mobile only) */
+.app-navbar__burger {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.app-navbar__burger img {
+    width: 20px;
+    height: 20px;
+}
+.app-navbar__burger:hover img {
+    opacity: 0.75;
+}
+
+/* Navbar responsive */
+@media (max-width: 860px) {
+    .app-navbar__burger {
+        display: inline-flex;
+    }
+    .app-navbar__title {
+        font-size: 13px;
+    }
+    .app-navbar__search {
+        width: min(420px, 46vw);
+    }
+}
+
+@media (max-width: 560px) {
+    .app-navbar {
+        padding: 14px;
+        height: auto;
+        gap: 10px;
+    }
+    .app-navbar__right {
+        gap: 10px;
+    }
+    .app-navbar__search {
+        width: 100%;
+        height: 30px;
+    }
+    .app-navbar__search img {
+        width: 18px;
+        height: 18px;
+    }
+}

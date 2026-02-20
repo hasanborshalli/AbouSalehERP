@@ -1,0 +1,263 @@
+/* ==================== Stock Control Page (page-specific) ==================== */
+
+.stock-control {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+/* Card spacing matches your design */
+.stock-control__card {
+    padding: 18px;
+}
+
+/* Header row */
+.stock-control__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.stock-control__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+/* Add item button */
+.stock-control__add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    color: rgba(0, 0, 0, 0.75);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* Scrolling area */
+.stock-control__table-wrap {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 12px;
+    height: 360px; /* controls the visible area like screenshot */
+    overflow: auto; /* vertical always, horizontal if needed */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Table */
+.stock-control__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    min-width: 760px; /* keeps structure; mobile will horizontal-scroll inside wrap */
+}
+.stock-control__thead {
+    background: rgba(255, 255, 255, 0.85);
+}
+.stock-control__thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.85);
+
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Rows */
+.stock-control__row {
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+}
+
+.stock-control__td {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.75);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.04);
+}
+
+/* First & last cell rounding per row */
+.stock-control__row td:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.stock-control__row td:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* Icon column */
+.stock-control__th--icon,
+.stock-control__td--icon {
+    width: 46px;
+}
+.stock-control__item-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: block;
+}
+.stock-control__td,
+.stock-control__th {
+    text-align: center;
+}
+/* Name column */
+.stock-control__th--name,
+.stock-control__td--name {
+    min-width: 240px;
+}
+
+/* Price column */
+.stock-control__th--price,
+.stock-control__td--price {
+    width: 90px;
+}
+
+/* Actions */
+.stock-control__th--actions,
+.stock-control__td--actions {
+    width: 170px;
+    white-space: nowrap;
+}
+
+.stock-control__icon-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    margin-left: 6px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.stock-control__icon-btn--edit {
+    border-color: rgba(63, 182, 214, 0.35);
+}
+
+.stock-control__icon-btn--delete {
+    border-color: rgba(255, 82, 82, 0.35);
+}
+
+/* Type pill */
+.stock-control__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(95, 231, 234, 0.25);
+    border: 1px solid rgba(23, 54, 70, 0.16);
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Scrollbar (optional, matches style) */
+.stock-control__table-wrap::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+.stock-control__table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+}
+.stock-control__table-wrap::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+/* ==================== Responsive ==================== */
+@media (max-width: 860px) {
+    .stock-control__table-wrap {
+        height: 340px;
+    }
+}
+
+@media (max-width: 560px) {
+    .stock-control__header {
+        align-items: flex-start;
+    }
+
+    .stock-control__title {
+        font-size: 18px;
+    }
+
+    .stock-control__add-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .stock-control__table-wrap {
+        padding: 10px;
+        height: 340px;
+    }
+
+    /* On mobile: allow horizontal scroll inside container */
+    .stock-control__table {
+        min-width: 760px;
+    }
+}
+/* Header: title + (search + add button) */
+.stock-control__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.stock-control__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Search input */
+.stock-control__search {
+    width: min(420px, 34vw);
+}
+
+.stock-control__search-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    outline: none;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.stock-control__search-input:focus {
+    border-color: rgba(42, 127, 176, 0.3);
+}
+
+/* Responsive: stack search + button */
+@media (max-width: 560px) {
+    .stock-control__header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .stock-control__header-actions {
+        width: 100%;
+    }
+
+    .stock-control__search {
+        width: 100%;
+    }
+}

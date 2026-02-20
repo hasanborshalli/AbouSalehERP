@@ -1,0 +1,172 @@
+/* ==================== Add Client Page ==================== */
+
+.add-client__card {
+    padding: 18px;
+}
+
+.add-client__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.add-client__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.78);
+}
+
+.add-client__back {
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.65);
+    font-weight: 600;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.add-client__form {
+    display: grid;
+    gap: 16px;
+}
+
+.add-client__section {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.add-client__section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.add-client__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.add-client__field {
+    display: grid;
+    gap: 8px;
+}
+
+.add-client__field--wide {
+    grid-column: 1 / -1;
+}
+
+.add-client__label {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.add-client__input,
+.add-client__select {
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.6);
+    outline: none;
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 14px;
+}
+
+.add-client__textarea {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.6);
+    outline: none;
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 14px;
+    resize: vertical;
+}
+
+.add-client__hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    margin-top: -2px;
+}
+
+.add-client__calc {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.add-client__calc-btn {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.add-client__summary {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.add-client__summary span {
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.add-client__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.add-client__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.55);
+    color: rgba(0, 0, 0, 0.7);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.add-client__btn--primary {
+    background: rgba(95, 231, 234, 0.22);
+    border-color: rgba(95, 231, 234, 0.55);
+}
+
+.add-client__btn--ghost {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 560px) {
+    .add-client__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .add-client__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

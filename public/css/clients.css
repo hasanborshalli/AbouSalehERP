@@ -1,0 +1,200 @@
+/* ==================== Clients Page ==================== */
+
+.clients__card {
+    padding: 18px;
+}
+
+/* Layout grid like screenshot */
+.clients__grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 0.7fr;
+    gap: 18px;
+    align-items: stretch;
+}
+
+/* Panels */
+.clients-panel {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 26px;
+    padding: 18px 18px 16px;
+    min-height: 420px;
+}
+
+.clients-panel__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.clients-panel__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.78);
+}
+
+/* Arrow button (pill) */
+.clients-panel__arrow {
+    width: 74px;
+    height: 44px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.55);
+    background: rgba(255, 255, 255, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.clients-panel__arrow--small {
+    width: 52px;
+    height: 38px;
+    border-width: 2px;
+}
+
+.clients-panel__arrow-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Text blocks */
+.clients-panel__body {
+    margin-top: 22px;
+    display: grid;
+    gap: 22px;
+}
+
+.clients-panel__big {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+    letter-spacing: -0.01em;
+}
+
+.clients-panel__note {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* Existing clients list */
+.clients-list {
+    margin-top: 18px;
+    display: grid;
+    gap: 18px;
+    padding-right: 10px;
+}
+
+.clients-list__row {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.clients-list__num {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.clients-list__line {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+/* Stats column */
+.clients-stats {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+}
+
+.clients-stat {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 26px;
+    padding: 18px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.clients-stat__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.clients-stat__value {
+    font-size: 28px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.clients-stat__value--money {
+    font-size: 18px;
+}
+.arrow-right {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+/* ==================== Responsive ==================== */
+@media (max-width: 1100px) {
+    .clients__grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .clients-stats {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+    }
+
+    .clients-panel {
+        min-height: 380px;
+    }
+}
+
+@media (max-width: 560px) {
+    .clients__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .clients-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .clients-panel {
+        border-radius: 22px;
+        min-height: auto;
+    }
+
+    .clients-stat {
+        border-radius: 22px;
+        min-height: auto;
+    }
+
+    .clients-panel__arrow {
+        width: 62px;
+        height: 40px;
+    }
+
+    .clients-panel__big {
+        font-size: 20px;
+    }
+}
+.clients-list__name {
+    font-size: 18px;
+    color: rgba(0, 0, 0, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -1,0 +1,263 @@
+/* ==================== Inventory Page ==================== */
+.inventory-content {
+    padding: 18px;
+}
+
+.inventory-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 14px;
+}
+
+/* Base card */
+.inventory-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.inventory-card__title {
+    margin: 0 0 12px;
+    font-weight: 500;
+    font-size: 22px;
+}
+
+/* Top cards */
+.inventory-card--control {
+    min-height: 210px;
+}
+
+.inventory-control {
+    height: calc(100% - 34px);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    position: relative;
+}
+
+.inventory-control__text {
+    text-align: center;
+    font-size: 26px;
+    line-height: 1.1;
+    color: rgba(0, 0, 0, 0.55);
+    font-weight: 500;
+}
+
+.inventory-control__go {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 30px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.25);
+}
+.inventory-control__go img {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+
+/* Chart card */
+.inventory-card--value {
+    min-height: 210px;
+}
+
+.inventory-chart {
+    height: 220px;
+    padding: 6px 6px 0;
+}
+.inventory-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+/* ==================== Inventory Table (clean rebuild) ==================== */
+
+.inventory-card--table {
+    grid-column: 1 / -1;
+}
+
+/* title row */
+.inventory-tablebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.inventory-tablebar__title {
+    margin: 0;
+    font-weight: 500;
+    font-size: 22px;
+}
+
+.inventory-tablebar__action {
+    width: 42px;
+    height: 30px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+}
+.inventory-tablebar__action img {
+    width: 32px;
+    height: 32px;
+    display: block;
+}
+
+/* ONE scroll container */
+.inv-table {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 12px;
+    height: 260px; /* table height like design */
+    overflow-y: auto; /* always vertical scroll */
+    overflow-x: hidden; /* desktop: no horizontal scroll */
+    -webkit-overflow-scrolling: touch;
+}
+td {
+    text-align: center;
+}
+/* table */
+.inv-table__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px; /* spacing between header & rows feel */
+}
+
+/* sticky header */
+.inv-table__head th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.85);
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 14px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+/* header separators like your design */
+.inv-table__head th + th {
+    border-left: 2px solid rgba(0, 0, 0, 0.12);
+}
+
+/* body rows */
+.inv-table__body td {
+    padding: 16px 14px;
+    font-size: 18px;
+    color: rgba(0, 0, 0, 0.7);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+/* number column style */
+.inv-table__body td:first-child {
+    width: 120px;
+    font-size: 20px;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+/* nicer scrollbars (optional) */
+.inv-table::-webkit-scrollbar {
+    width: 9px;
+}
+.inv-table::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+}
+.inv-table::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+}
+
+/* ==================== Mobile: allow horizontal scroll too ==================== */
+@media (max-width: 560px) {
+    .inv-table {
+        overflow-x: auto; /* mobile: allow horizontal */
+    }
+
+    /* force table min width so columns don't crush */
+    .inv-table__table {
+        min-width: 720px;
+    }
+
+    .inventory-tablebar__title {
+        font-size: 18px;
+    }
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+    .inventory-grid {
+        grid-template-columns: 1fr;
+    }
+    .inventory-chart {
+        height: 170px;
+    }
+}
+
+@media (max-width: 560px) {
+    .inventory-content {
+        padding: 16px;
+    }
+
+    .inventory-control__text {
+        font-size: 22px;
+    }
+
+    .inventory-table__header,
+    .inventory-table__row {
+        grid-template-columns: 90px repeat(4, 140px);
+    }
+    .inventory-table__body {
+        overflow: auto;
+    }
+}
+/* ===== Fix horizontal scroll on mobile (Inventory + generally) ===== */
+html,
+body {
+    overflow-x: hidden;
+}
+
+.app-shell,
+.app-shell__main,
+.app-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Grid children must be allowed to shrink (important!) */
+.inventory-grid {
+    width: 100%;
+    max-width: 1180px;
+}
+
+.inventory-card,
+.inventory-chart,
+.inventory-table,
+.inventory-table__header,
+.inventory-table__body {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Make canvas never exceed card width */
+.inventory-chart canvas {
+    max-width: 100% !important;
+}

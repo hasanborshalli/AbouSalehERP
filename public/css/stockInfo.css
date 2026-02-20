@@ -1,0 +1,210 @@
+/* ==================== Stock Info Page (page-specific) ==================== */
+
+.stock-info__card {
+    padding: 18px;
+}
+
+.stock-info__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.stock-info__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.stock-info__controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stock-info__filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stock-info__filter-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.stock-info__filter-select {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    outline: none;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+/* Table wrapper */
+.stock-info__table-wrap {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 14px;
+    padding: 12px;
+    overflow: auto; /* horizontal on small screens */
+    max-height: 520px; /* vertical scroll always available when content grows */
+}
+
+/* Table */
+.stock-info__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 10px 12px;
+    min-width: 860px; /* triggers horizontal scroll on mobile */
+}
+
+/* Header pills */
+.stock-info__thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.55);
+    text-align: left;
+    border: 0;
+    white-space: nowrap;
+}
+
+.stock-info__th--icon {
+    width: 56px;
+}
+.stock-info__th--name {
+    min-width: 280px;
+}
+.stock-info__th--price {
+    width: 120px;
+}
+
+/* Sortable headers */
+.stock-info__th--sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.stock-info__th--sortable:hover {
+    filter: brightness(0.98);
+}
+
+.stock-info__th--sortable.is-sorted {
+    box-shadow: inset 0 0 0 2px rgba(42, 127, 176, 0.25);
+}
+
+/* The arrow */
+.stock-info__sort-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* Body row as separate rounded strip */
+.stock-info__row td {
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 14px 14px;
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 14px;
+}
+
+.stock-info__row td:first-child {
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+}
+
+.stock-info__row td:last-child {
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.stock-info__item-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    object-fit: cover;
+    display: block;
+}
+
+/* Type pill */
+.stock-info__pill {
+    display: inline-flex;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(95, 231, 234, 0.25);
+    border: 1px solid rgba(95, 231, 234, 0.55);
+    color: rgba(0, 0, 0, 0.6);
+    font-weight: 600;
+    white-space: nowrap;
+}
+/* Search */
+.stock-info__search {
+    display: flex;
+    align-items: center;
+}
+
+.stock-info__search-input {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    outline: none;
+    font-size: 14px;
+    width: 220px;
+}
+.stock-control__add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    color: rgba(0, 0, 0, 0.75);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.stock-info__search-input::placeholder {
+    color: rgba(0, 0, 0, 0.45);
+}
+/* Responsive header layout */
+@media (max-width: 560px) {
+    .stock-info__header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stock-info__controls {
+        width: 100%;
+    }
+
+    .stock-info__filter {
+        width: 100%;
+    }
+
+    .stock-info__filter-select {
+        width: 100%;
+    }
+    .stock-info__search,
+    .stock-info__search-input {
+        width: 100%;
+    }
+}
