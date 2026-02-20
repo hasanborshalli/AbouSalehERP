@@ -10,3 +10,8 @@ Artisan::command('inspire', function () {
 Schedule::command('invoices:mark-late')
     ->everySixHours()
     ->withoutOverlapping();
+
+    Schedule::command('queue:work --stop-when-empty --sleep=3 --tries=3')
+    ->everyMinute()
+        ->withoutOverlapping()
+        ->runInBackground();
