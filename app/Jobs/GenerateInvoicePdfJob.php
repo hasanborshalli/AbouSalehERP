@@ -21,6 +21,8 @@ class GenerateInvoicePdfJob implements ShouldQueue
     {
         $invoice = Invoice::findOrFail($this->invoiceId);
         $contract = Contract::with(['client', 'project', 'apartment'])->findOrFail($invoice->contract_id);
+        $invoice->increment('revision');
+        $invoice->refresh();
             $generatedAt = now();
 
         $pdf = Pdf::loadView('pdfs.invoice', [
@@ -29,7 +31,7 @@ class GenerateInvoicePdfJob implements ShouldQueue
             'generatedAt' => $generatedAt,
         ])->setPaper('a4');
 
-        $path = "invoices/invoice-{$invoice->invoice_number}.pdf";
+            $path = "invoices/invoice-{$invoice->invoice_number}-R{$invoice->revision}.pdf";
         Storage::disk('public')->put($path, $pdf->output());
 
         $invoice->update(['pdf_path' => $path]);

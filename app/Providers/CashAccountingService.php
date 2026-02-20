@@ -45,7 +45,7 @@ class CashAccountingService
 
         // avoid double-posting
         $exists = LedgerEntry::where('source_type', 'invoice')
-            ->where('source_id', $invoice->id)
+            ->where('source_id', $invoice->invoice_number)
             ->exists();
 
         if ($exists) return;

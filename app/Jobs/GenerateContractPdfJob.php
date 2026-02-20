@@ -31,7 +31,8 @@ class GenerateContractPdfJob implements ShouldQueue
 {
     $contract = Contract::with(['client','project','apartment'])->findOrFail($this->contractId);
         $generatedAt = now();
-
+    $contract->increment('revision');
+    $contract->refresh();
     $pdf = Pdf::loadView('pdfs.contract', ['contract' => $contract,'generatedAt' => $generatedAt,])
         ->setPaper('a4')
         ->setOption('isRemoteEnabled', true); // ok temporarily
@@ -47,7 +48,7 @@ class GenerateContractPdfJob implements ShouldQueue
         throw new \RuntimeException('Contract output is not a valid PDF');
     }
 
-    $path = "contracts/contract-{$contract->id}.pdf";
+    $path = "contracts/contract-{$contract->id}-R{$contract->pdf_revision}.pdf";
     Storage::disk('public')->put($path, $bytes);
 
     $contract->update(['pdf_path' => $path]);

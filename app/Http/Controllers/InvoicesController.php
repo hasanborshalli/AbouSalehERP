@@ -25,7 +25,7 @@ class InvoicesController extends Controller
             'issue_date' => ['nullable','date'],
             'due_date'   => ['nullable','date','after_or_equal:issue_date'],
         ]);
-
+        
         $invoice->update([
             'issue_date' => $data['issue_date'] ?? $invoice->issue_date,
             'due_date'   => $data['due_date'] ?? $invoice->due_date,
