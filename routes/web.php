@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/login', action: [AuthController::class, 'login'])
         ->name('login.submit')->middleware('guest');
         
+    Route::get('/',[PagesController::class,'loginPage'])->middleware('guest');
 
     
 Route::middleware(['auth'])->group(function () {
