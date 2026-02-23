@@ -15,3 +15,5 @@ Schedule::command('invoices:mark-late')
     ->everyMinute()
         ->withoutOverlapping()
         ->runInBackground();
+        
+    Schedule::command('client:invoice-notifications')->dailyAt('00:05');

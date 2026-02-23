@@ -164,3 +164,141 @@
         height: 18px;
     }
 }
+.nav-bell__btn {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: 18px;
+    position: relative;
+}
+
+.nav-bell__badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: #b91c1c;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 2px 7px;
+}
+
+.nav-bell__menu {
+    position: absolute;
+    right: 0;
+    top: 36px;
+    width: 360px;
+    max-height: 420px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+    z-index: 9999;
+}
+
+.nav-bell__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.nav-bell__item {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.nav-bell__item.is-unread {
+    background: rgba(30, 58, 95, 0.06);
+}
+
+.nav-bell__title {
+    font-weight: 800;
+    font-size: 13px;
+}
+.nav-bell__msg {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 3px;
+}
+.nav-bell__meta {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-top: 6px;
+}
+
+.nav-bell__actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.nav-bell__mark {
+    background: transparent;
+    border: 0;
+    color: #1e3a5f;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+}
+
+.nav-bell__empty {
+    padding: 14px;
+    opacity: 0.75;
+}
+.nav-notif-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.nav-notif-btn--primary {
+    background: #1e3a5f;
+    color: #fff;
+}
+
+.nav-notif-btn--primary:hover {
+    background: #14283f;
+}
+
+.nav-notif-btn--ghost {
+    background: transparent;
+    border: 1px solid #1e3a5f;
+    color: #1e3a5f;
+}
+
+.nav-notif-btn--ghost:hover {
+    background: rgba(30, 58, 95, 0.08);
+}
+.notif-btn--soft {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1e3a5f;
+}
+.notif-btn--soft:hover {
+    background: rgba(255, 255, 255, 0.75);
+}
+.notif-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}

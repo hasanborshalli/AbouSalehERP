@@ -185,3 +185,21 @@
         }
     });
 })();
+document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("notifBellBtn");
+    const menu = document.getElementById("notifBellMenu");
+    if (!btn || !menu) return;
+
+    btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        menu.style.display = menu.style.display === "none" ? "block" : "none";
+    });
+
+    document.addEventListener("click", () => {
+        menu.style.display = "none";
+    });
+
+    menu.addEventListener("click", (e) => {
+        e.stopPropagation(); // keep it open when clicking inside
+    });
+});

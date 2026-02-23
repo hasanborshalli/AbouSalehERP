@@ -16,6 +16,7 @@
 
     {{-- client portal --}}
     <link rel="stylesheet" href="/css/clientPortal.css" />
+    <link rel="stylesheet" href="/css/clientNotifications.css" />
 
     @stack('styles')
 </head>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClientNotificationController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\ClientsController;
 use App\Http\Controllers\ContractProgressController;
@@ -166,7 +167,12 @@ Route::middleware(['role:client'])->prefix('client')->name('client.')->group(fun
     Route::post('/settings/profile', [ClientPortalController::class, 'updateProfile'])->name('settings.profile.update');
     Route::post('/settings/password', [ClientPortalController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/settings/avatar', [ClientPortalController::class, 'updateAvatar'])->name('settings.avatar.update');
-});
+
+    // Notifications
+    Route::get('/notifications', [ClientNotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications/{notification}/read', [ClientNotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [ClientNotificationController::class, 'markAllRead'])->name('notifications.readAll');
+    });
 
 Route::middleware([ 'role:owner,admin'])->group(function () {
     Route::get('/contracts/{contract}/progress', [ContractProgressController::class, 'index'])->name('contracts.progress.editor');

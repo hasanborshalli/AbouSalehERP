@@ -86,5 +86,13 @@ public function auditLogs()
 public function isOwner(): bool { return $this->role === 'owner'; }
 public function isAdmin(): bool { return $this->role === 'admin'; }
 public function isClient(): bool { return $this->role === 'client'; }
+public function notifications()
+{
+    return $this->hasMany(\App\Models\UserNotification::class)->latest();
+}
 
+public function unreadNotifications()
+{
+    return $this->hasMany(\App\Models\UserNotification::class)->whereNull('read_at')->latest();
+}
 }
