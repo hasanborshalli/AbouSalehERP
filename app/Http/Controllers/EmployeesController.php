@@ -67,6 +67,8 @@ class EmployeesController extends Controller
     }   
     public function deleteEmployee(User $user)
     {
+        abort_if($user->id === auth()->id(), 403);
+        abort_if($user->role === 'owner', 403);
         $audit=new AuditLog();
         $audit->user_id=auth()->id();
         $audit->event='Delete';
@@ -79,9 +81,7 @@ class EmployeesController extends Controller
         $projects=Project::where('manager_user_id',$user->id)->get();
         $users=User::where('created_by',$user->id)->get();
         $audits=AuditLog::where('user_id',$user->id)->get();
-         foreach($audits as $audt){
-            $audt->delete();
-        }
+
         foreach($contracts as $contract){
             $contract->created_by = auth()->id();
             $contract->save();
@@ -167,6 +167,7 @@ public function editPassword(Request $request)
 }
 public function editAvatar(Request $request)
     {
+        abort_unless( auth()->id() === $request['profile_id'],403);
         $fields = $request->validate([
             'profile_id' => 'required|exists:users,id',
             'profile_avatar' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],

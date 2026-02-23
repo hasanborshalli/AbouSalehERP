@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Contract;
 use App\Models\Invoice;
@@ -16,7 +17,14 @@ class ExportController extends Controller
     {
         // If you want owner only and you don't have middleware:
         // abort_unless(auth()->user()?->role === 'owner', 403);
-
+         $audit=new AuditLog();
+        $audit->user_id=auth()->id();
+        $audit->event='Export';
+        $audit->entity_type='Zip Archive';
+        $audit->details='Exporting zip archive failed';
+        $audit->save();
+        $audit->record='EXP-'.str_pad(auth()->id(), 5, '0', STR_PAD_LEFT).'-'.$audit->id;
+        $audit->save();
         $disk = Storage::disk('public');
 
         // Create temp zip in storage/app (NOT public)
@@ -46,7 +54,8 @@ class ExportController extends Controller
         $zip->addFromString('data/README.txt', "Export generated at: " . now()->toDateTimeString() . PHP_EOL);
 
         $zip->close();
-
+        $audit->details='Exporting zip archive succeeded';
+        $audit->save();
         // Download and delete afterwards
         return response()->download($tmpZipPath, $zipName, [
             'Content-Type' => 'application/zip',

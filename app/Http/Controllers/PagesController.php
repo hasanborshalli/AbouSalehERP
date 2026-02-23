@@ -230,7 +230,8 @@ $end   = Carbon::now()->endOfMonth();
     }
   public function invoicesPage(){
          $invoices = Invoice::with(['contract.client', 'contract.project', 'contract.apartment'])
-            ->latest('id')
+           
+            ->orderBy('issue_date','asc') 
             ->get();
 
         return view('invoicesManage', compact('invoices'));

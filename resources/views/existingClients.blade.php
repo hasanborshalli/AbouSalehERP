@@ -93,10 +93,8 @@
 
                                 <tbody id="clientsTbody" class="clients-index__tbody">
 
-
-                                    @foreach($clients as $client)
-                                    @php
-                                    $contract=$client->contract;
+                                    @foreach($clients as $client) @php $contract=$client->
+                                    contract;
                                     $user=$client->user;
                                     $paidInvoices = $contract
                                     ? $contract->invoices()
@@ -206,6 +204,7 @@
                                     Click “View” on any client to see details here.
                                 </div>
                             </div>
+                            <a href="{{ route('contracts.progress.editor', $contract->id) }}">Progress</a>
                         </aside>
                     </div>
                 </section>

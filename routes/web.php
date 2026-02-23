@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AccountingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\ContractProgressController;
 use App\Http\Controllers\EmployeesController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InventoryController;
@@ -134,5 +136,42 @@ Route::middleware('role:owner,admin')->group(function () {
 Route::patch('/expenses/{expense}/void', [AccountingController::class, 'voidExpense'])
     ->name('expenses.void');
         });
+});
+// ---------------------------
+// Client Portal Routes
+// ---------------------------
+Route::middleware(['role:client'])->prefix('client')->name('client.')->group(function () {
+    // Contracts (cards)
+    Route::get('/contracts', [ClientPortalController::class, 'contractsHome'])->name('contracts');
+    Route::get('/contracts/overview', [ClientPortalController::class, 'contractsOverview'])->name('contracts.overview');
+    Route::get('/contracts/manager', [ClientPortalController::class, 'contractsManager'])->name('contracts.manager');
+    Route::get('/contracts/documents', [ClientPortalController::class, 'contractsDocuments'])->name('contracts.documents');
+    Route::get('/contracts/progress', [ClientPortalController::class, 'contractsProgress'])->name('contracts.progress');
+    Route::get('/contracts/{contract}/pdf', [ClientPortalController::class, 'viewContractPdf'])->name('contracts.pdf.view');
+    Route::get('/contracts/{contract}/pdf/download', [ClientPortalController::class, 'downloadContractPdf'])->name('contracts.pdf.download');
+    
+    // Invoices (cards)
+    Route::get('/invoices', [ClientPortalController::class, 'invoicesHome'])->name('invoices');
+    Route::get('/invoices/list', [ClientPortalController::class, 'invoicesList'])->name('invoices.list');
+    Route::get('/invoices/receipts', [ClientPortalController::class, 'invoicesReceipts'])->name('invoices.receipts');
+    Route::get('/invoices/download-center', [ClientPortalController::class, 'invoicesDownloadCenter'])->name('invoices.download-center');
+    Route::post('/invoices/download-center/zip', [ClientPortalController::class, 'downloadUnpaidInvoicesZip'])->name('invoices.unpaid.zip');
+    Route::get('/invoices/payments', [ClientPortalController::class, 'invoicesPayments'])->name('invoices.payments');
+    Route::get('/invoices/{invoice}/pdf', [ClientPortalController::class, 'viewInvoicePdf'])->name('invoices.pdf.view');
+    Route::get('/invoices/{invoice}/pdf/download', [ClientPortalController::class, 'downloadInvoicePdf'])->name('invoices.pdf.download');
+    Route::get('/invoices/{invoice}/receipt/download', [ClientPortalController::class, 'downloadInvoiceReceipt'])->name('invoices.receipt.download');
+
+    // Settings
+    Route::get('/settings', [ClientPortalController::class, 'settingsHome'])->name('settings');
+    Route::post('/settings/profile', [ClientPortalController::class, 'updateProfile'])->name('settings.profile.update');
+    Route::post('/settings/password', [ClientPortalController::class, 'updatePassword'])->name('settings.password.update');
+    Route::post('/settings/avatar', [ClientPortalController::class, 'updateAvatar'])->name('settings.avatar.update');
+});
+
+Route::middleware([ 'role:owner,admin'])->group(function () {
+    Route::get('/contracts/{contract}/progress', [ContractProgressController::class, 'index'])->name('contracts.progress.editor');
+    Route::post('/contracts/{contract}/progress', [ContractProgressController::class, 'store'])->name('contracts.progress.store');
+    Route::post('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'update'])->name('contracts.progress.update');
+    Route::delete('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'destroy'])->name('contracts.progress.destroy');
 });
 });

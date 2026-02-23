@@ -186,7 +186,11 @@ ${
         // remove the "mark paid" button if now paid
         if (status === "paid") {
             const paidBtn = tr.querySelector(".invoices__icon-btn--paid");
-            if (paidBtn) paidBtn.remove();
+            const editBtn = tr.querySelector(".invoices__icon-btn--edit");
+            if (paidBtn) {
+                paidBtn.remove();
+                editBtn?.remove(); // no more editing dates once paid
+            }
         }
     }
 

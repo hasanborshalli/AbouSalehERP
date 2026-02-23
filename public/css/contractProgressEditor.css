@@ -1,0 +1,158 @@
+.cp-editor__card {
+    padding: 18px;
+}
+
+.cp-editor__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.cp-editor__title {
+    margin: 0;
+}
+
+.cp-editor__back {
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cp-editor__context {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 12px 0 18px 0;
+}
+
+.cp-editor__context-item {
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.cp-editor__label {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 6px;
+}
+
+.cp-editor__value {
+    font-weight: 700;
+}
+
+.cp-editor__section {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cp-editor__section-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.cp-editor__section-title {
+    margin: 0;
+}
+
+.cp-editor__hint {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.cp-editor__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cp-editor__field--wide {
+    grid-column: 1 / -1;
+}
+
+.cp-editor__input,
+.cp-editor__select,
+.cp-editor__textarea {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.85);
+    outline: none;
+}
+
+.cp-editor__textarea {
+    resize: vertical;
+}
+
+.cp-editor__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.cp-editor__btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cp-editor__btn--primary {
+    background: #1e3a5f;
+    color: #fff;
+}
+
+.cp-editor__btn--danger {
+    background: #b91c1c;
+    color: #fff;
+}
+
+.cp-steps {
+    display: grid;
+    gap: 12px;
+}
+
+.cp-steps__card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.45);
+    padding: 12px;
+}
+
+.cp-steps__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cp-steps__field--wide {
+    grid-column: 1 / -1;
+}
+
+.cp-steps__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.cp-steps__delete-form {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cp-editor__empty {
+    opacity: 0.8;
+    margin: 8px 0 0 0;
+}

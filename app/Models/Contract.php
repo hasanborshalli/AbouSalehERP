@@ -72,4 +72,8 @@ public function nextPendingInvoice()
         ->where('status', 'pending')
         ->orderBy('due_date','desc');
 }
+public function progressItems()
+{
+    return $this->hasMany(\App\Models\ContractProgressItem::class)->orderBy('sort_order');
+}
 }

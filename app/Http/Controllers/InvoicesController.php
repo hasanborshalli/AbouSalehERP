@@ -6,6 +6,7 @@ use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Services\CashAccountingService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class InvoicesController extends Controller
@@ -51,21 +52,16 @@ class InvoicesController extends Controller
         $data = $request->validate([
             'paid_at' => ['nullable','date'],
         ]);
-
-        // if you have a paid_at column, store it.
-        // if not, ignore it.
         $invoice->status = 'paid';
 
-        if ($invoice->isFillable('paid_at') && array_key_exists('paid_at', $data)) {
-            $invoice->paid_at = $data['paid_at'];
-        }
-
+    $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : now();
+    $invoice->paid_at=$paidAt;
         $invoice->save();
-        GenerateInvoicePdfJob::dispatchSync($invoice->id);
+        GenerateInvoicePdfJob::dispatch($invoice->id);
         $audit->details='Marking invoice ('.$invoice->invoice_number.') as paid succeeded';
         $audit->save();
         // Cash-basis: post revenue now
-    $acct->postInvoicePaid($invoice, now(), auth()->id());
+$acct->postInvoicePaid($invoice, $paidAt, auth()->id());
         return response()->json(['message' => 'Marked as paid']);
     }
 }

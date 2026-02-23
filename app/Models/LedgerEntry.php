@@ -20,7 +20,7 @@ class LedgerEntry extends Model
     protected $casts = [
         'posted_at' => 'datetime',
         'amount' => 'decimal:2',
-        'reverses_entry_id'
+        'reverses_entry_id' => 'integer'
     ];
 
     public function account()
