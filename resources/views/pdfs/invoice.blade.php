@@ -3,6 +3,10 @@
 
 <head>
     <meta charset="utf-8">
+    @php
+    $logoPath = public_path('img/abosaleh-logo.png');
+    $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    @endphp
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -12,6 +16,18 @@
         .header {
             display: flex;
             justify-content: space-between;
+        }
+
+        /* WATERMARK */
+        .watermark {
+            position: fixed;
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            opacity: 0.06;
+            /* adjust between 0.04 - 0.08 */
+            z-index: -1;
         }
 
         .title {
@@ -44,7 +60,9 @@
 </head>
 
 <body>
-
+    @if($logoB64)
+    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">
+    @endif
     {{-- Logo --}}
     <img src="{{ public_path('img/abosaleh-logo.png') }}" class="logo" alt="Company logo">
     <div class="header">

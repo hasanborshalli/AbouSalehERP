@@ -3,7 +3,10 @@
 
 <head>
     <meta charset="utf-8">
-
+    @php
+    $logoPath = public_path('img/abosaleh-logo.png');
+    $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    @endphp
     <style>
         @page {
             margin: 26px 22px 55px 22px;
@@ -15,6 +18,18 @@
             color: #111827;
             margin: 0;
             padding: 0;
+        }
+
+        /* WATERMARK */
+        .watermark {
+            position: fixed;
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            opacity: 0.06;
+            /* adjust between 0.04 - 0.08 */
+            z-index: -1;
         }
 
         /* Typography */
@@ -174,7 +189,9 @@
 </head>
 
 <body>
-
+    @if($logoB64)
+    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">
+    @endif
     <!-- HEADER -->
     <table class="header" style="margin-bottom:10px;">
         <tr>
