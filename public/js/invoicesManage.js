@@ -90,7 +90,8 @@
         const lateFee = Number(d.lateFee || 0);
         const totalDue = baseAmount + lateFee;
         const isLate = (d.status || "").toLowerCase() === "overdue";
-
+        const receiptPdfUrl = d.receiptPdf ? "/storage/" + d.receiptPdf : null;
+        const isPaid = (d.status || "").toLowerCase() === "paid";
         detailsTitle.textContent = d.invoiceNumber
             ? d.invoiceNumber
             : "Invoice";
@@ -148,6 +149,18 @@ ${
             ${invoicePdfUrl ? `<a href="${invoicePdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}
           </strong>
         </div>
+        <div class="invoices__kv">
+  <span>Receipt PDF</span>
+  <strong>
+    ${
+        isPaid
+            ? receiptPdfUrl
+                ? `<a href="${receiptPdfUrl}" target="_blank" rel="noopener">Download</a>`
+                : "—"
+            : "Available after payment"
+    }
+  </strong>
+</div>
       </div>
     `;
     }
@@ -268,9 +281,17 @@ ${
         try {
             paidConfirm.disabled = true;
 
-            await apiPatch(`/invoices/${invoiceId}/mark-paid`, { paid_at });
+            const resp = await apiPatch(`/invoices/${invoiceId}/mark-paid`, {
+                paid_at,
+            });
 
             setRowStatus(currentRow, "paid");
+
+            // if backend returns receipt path, store it on the row for instant UI update
+            if (resp?.receipt_path) {
+                currentRow.dataset.receiptPdf = resp.receipt_path;
+            }
+
             renderDetails(currentRow);
 
             closeModal(paidModal);

@@ -108,7 +108,8 @@
                                         data-contract-date="{{ $contract?->contract_date }}"
                                         data-payment-start="{{ $contract?->payment_start_date }}"
                                         data-contract-pdf="{{ $contract?->pdf_path }}"
-                                        data-invoice-pdf="{{ $inv->pdf_path }}">
+                                        data-invoice-pdf="{{ $inv->pdf_path }}"
+                                        data-receipt-pdf="{{ $inv->receipt_path }}">
                                         <td class="invoices__td invoices__td--strong">{{ $inv->invoice_number }}</td>
                                         <td class="invoices__td">{{ $client?->name ?? '-' }}</td>
                                         <td class="invoices__td">{{ $unit }}</td>
