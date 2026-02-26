@@ -1,9 +1,3 @@
-/*
-  Client portal pages (Contracts / Invoices / Settings)
-  The goal is to match the light-blue card UI shown in your screenshots,
-  while staying compatible with your existing app-shell/dashboard styles.
-*/
-
 .client-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(240px, 1fr));
@@ -119,15 +113,6 @@
     background: rgba(207, 227, 241, 0.65);
     font-weight: 800;
     color: #0f172a;
-}
-
-.badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 12px;
 }
 
 .badge--signed {
@@ -266,3 +251,148 @@
     background: #6b7280;
     color: #fff;
 } /* used as ToDo */
+/* ===== Progress Panel ===== */
+.progress-panel {
+}
+
+/* header */
+.progress-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px 0;
+}
+.progress-panel__title {
+    margin: 0;
+}
+.progress-panel__pct {
+    font-weight: 900;
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+/* segmented overall bar */
+.segbar {
+    width: 100%;
+    height: 14px;
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+    gap: 0;
+    background: rgba(15, 23, 42, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+.segbar__seg {
+    height: 100%;
+}
+
+/* items grid */
+.progress-items {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    gap: 12px;
+}
+@media (max-width: 900px) {
+    .progress-items {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* item card */
+.pitem {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+.pitem__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+.pitem__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.pitem__step {
+    color: #fff;
+    font-weight: 900;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.pitem__title {
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+}
+@media (max-width: 900px) {
+    .pitem__title {
+        max-width: 100%;
+        white-space: normal;
+    }
+}
+
+.pitem__desc {
+    margin-top: 8px;
+    color: rgba(15, 23, 42, 0.85);
+    line-height: 1.4;
+    font-size: 13px;
+}
+
+/* mini progress bar per item */
+.pitem__bar {
+    margin-top: 10px;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+}
+.pitem__fill {
+    height: 100%;
+    width: 0;
+}
+
+/* meta */
+.pitem__meta {
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(15, 23, 42, 0.75);
+}
+
+/* ===== Badges (keep ONLY this section) ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.badge--todo {
+    background: rgba(148, 163, 184, 0.25);
+    color: rgb(51, 65, 85);
+}
+.badge--prog {
+    background: rgba(245, 158, 11, 0.18);
+    color: rgb(180, 83, 9);
+}
+.badge--done {
+    background: rgba(34, 197, 94, 0.18);
+    color: rgb(21, 128, 61);
+}
