@@ -80,7 +80,7 @@
                         <a class="clients-index__add-btn" href="{{ route('accounting.purchases') }}">+ Purchase</a>
                     </header>
 
-                    <div style="overflow:auto; margin-top:12px;">
+                    <div class="table-scroll" style="margin-top:12px;">
                         <table style="width:100%; border-collapse:collapse; font-size:14px;">
                             <thead>
                                 <tr style="text-align:left; background:rgba(0,0,0,.04);">
@@ -174,7 +174,7 @@
                         <a class="clients-index__add-btn" href="{{ route('accounting.expenses') }}">+ Expense</a>
                     </header>
 
-                    <div style="overflow:auto; margin-top:12px;">
+                    <div class="table-scroll" style="margin-top:12px;">
                         <table style="width:100%; border-collapse:collapse; font-size:14px;">
                             <thead>
                                 <tr style="text-align:left; background:rgba(0,0,0,.04);">
@@ -256,7 +256,7 @@
                         <a class="clients-index__add-btn" href="{{ route('invoices.overview') }}">Go to invoices</a>
                     </header>
 
-                    <div style="overflow:auto; margin-top:12px;">
+                    <div class="table-scroll" style="margin-top:12px;">
                         <table style="width:100%; border-collapse:collapse; font-size:14px;">
                             <thead>
                                 <tr style="text-align:left; background:rgba(0,0,0,.04);">

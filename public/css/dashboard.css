@@ -400,3 +400,24 @@ body {
     white-space: nowrap;
     cursor: pointer;
 }
+/* scroll container for tables (about 5 rows) */
+.table-scroll {
+    max-height: 280px; /* adjust if your row height differs */
+    overflow-y: auto;
+    overflow-x: auto;
+    border-radius: 12px;
+}
+
+/* sticky table header */
+.table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgb(219, 219, 219); /* same as your header bg */
+}
+
+/* optional: smoother look */
+.table-scroll::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
