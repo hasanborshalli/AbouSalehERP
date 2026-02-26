@@ -126,6 +126,7 @@
                                         ? asset('storage/'.$contract->pdf_path)
                                         : null;
                                         @endphp <tr class="clients-index__row"
+                                            data-route="{{ route('contracts.progress.editor',$contract->id) }}"
                                             data-code="CL-{{str_pad( $client->user_id,5,'0', STR_PAD_LEFT) }}"
                                             data-id="{{ $client->id }}" data-email="{{ $user->email }}"
                                             data-name="{{ $user->name }}" data-phone="{{ $user->phone }}"
@@ -204,7 +205,6 @@
                                     Click “View” on any client to see details here.
                                 </div>
                             </div>
-                            <a href="{{ route('contracts.progress.editor', $contract->id) }}">Progress</a>
                         </aside>
                     </div>
                 </section>

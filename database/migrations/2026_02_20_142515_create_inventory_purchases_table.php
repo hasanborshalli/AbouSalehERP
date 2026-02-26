@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('inventory_purchases', function (Blueprint $table) {
              $table->id();
 
-            $table->foreignId('inventory_item_id')->constrained('inventory_items')->cascadeOnDelete();
+            $table->foreignId('inventory_item_id')->constrained('inventory_items')->nullOnDelete();
 
             $table->date('purchase_date');
             $table->unsignedInteger('qty');

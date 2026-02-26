@@ -50,6 +50,7 @@
         if (!tr) return;
 
         const data = {
+            route: tr.dataset.route,
             code: tr.dataset.code,
             name: tr.dataset.name,
             phone: tr.dataset.phone,
@@ -129,6 +130,8 @@
                                 : `<div class="muted" style="font-size:12px;">No contract PDF available yet.</div>`
                         }
                     </div>
+                    <br>
+                    <a class="clients-index__btn clients-index__btn--progress" href="${data.route}">View Progress</a>
                 </div>
 
             `;

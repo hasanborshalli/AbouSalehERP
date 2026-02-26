@@ -8,7 +8,9 @@ use App\Models\Invoice;
 use App\Services\CashAccountingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-
+use App\Jobs\GenerateReceiptPdfJob;
+use App\Jobs\SendInvoiceReceiptMailJob;
+use Illuminate\Support\Facades\Bus;
 class InvoicesController extends Controller
 {
 
@@ -57,11 +59,19 @@ class InvoicesController extends Controller
     $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : now();
     $invoice->paid_at=$paidAt;
         $invoice->save();
-        GenerateInvoicePdfJob::dispatch($invoice->id);
-        $audit->details='Marking invoice ('.$invoice->invoice_number.') as paid succeeded';
-        $audit->save();
+        
+        GenerateInvoicePdfJob::dispatch($invoice->id); 
         // Cash-basis: post revenue now
 $acct->postInvoicePaid($invoice, $paidAt, auth()->id());
+ // ✅ after commit: generate receipt PDF then email it
+    \DB::afterCommit(function () use ($invoice) {
+        Bus::chain([
+            new GenerateReceiptPdfJob($invoice->id, auth()->id()),
+            new SendInvoiceReceiptMailJob($invoice->id),
+        ])->dispatch();
+    });
+    $audit->details='Marking invoice ('.$invoice->invoice_number.') as paid succeeded';
+        $audit->save();
         return response()->json(['message' => 'Marked as paid']);
     }
 }

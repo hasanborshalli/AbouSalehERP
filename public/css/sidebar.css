@@ -81,7 +81,7 @@
     margin-top: 18px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
 }
 
 .app-sidebar__link {

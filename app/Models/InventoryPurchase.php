@@ -31,6 +31,6 @@ public function isVoided(): bool
 }
     public function item()
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+        return $this->belongsTo(InventoryItem::class, 'inventory_item_id')->withTrashed();
     }
 }

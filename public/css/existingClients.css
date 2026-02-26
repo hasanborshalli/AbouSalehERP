@@ -318,14 +318,14 @@
     justify-content: flex-end;
 }
 
-.clients-index__btn--download {
+.clients-index__btn--download,
+.clients-index__btn--progress {
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
-
 .clients-index__btn--download::before {
     content: "⬇";
     font-weight: 900;

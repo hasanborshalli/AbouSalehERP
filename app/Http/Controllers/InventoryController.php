@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\InventoryItem;
+use App\Models\InventoryPurchase;
 use App\Services\CashAccountingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 class InventoryController extends Controller
@@ -112,23 +114,41 @@ $inventoryItem->is_out_of_stock = $request->boolean('is_out_of_stock') || ((int)
         return redirect()->route('inventory.stock-control')->with('success', 'Item updated.');
     }
 
-    public function destroy(InventoryItem $inventoryItem)
-    {
-        $audit=new AuditLog();
-        $audit->user_id=auth()->id();
-        $audit->event='Delete';
-        $audit->entity_type='Inventory Item';
-        $audit->details='Deleting inventory item ('.$inventoryItem->name.') failed';
-        $audit->save();
-        $audit->record='ST-'.str_pad(auth()->id(), 5, '0', STR_PAD_LEFT).'-'.$audit->id;
-        $audit->save();
-        if ($inventoryItem->image_path) {
-            Storage::disk('public')->delete($inventoryItem->image_path);
+    public function destroy(InventoryItem $inventoryItem, CashAccountingService $cash)
+{
+    $audit = new AuditLog();
+    $audit->user_id = auth()->id();
+    $audit->event = 'Delete';
+    $audit->entity_type = 'Inventory Item';
+    $audit->details = 'Deleting inventory item (' . $inventoryItem->name . ') failed';
+    $audit->save();
+    $audit->record = 'ST-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
+    $audit->save();
+
+    DB::transaction(function () use ($inventoryItem, $cash) {
+
+        // 🔒 Lock the item row so it can't be deleted/changed mid-process
+        $item = InventoryItem::lockForUpdate()->findOrFail($inventoryItem->id);
+
+        // Void ALL purchases that reference this item (not just first)
+        $purchases = InventoryPurchase::where('inventory_item_id', $item->id)->lockForUpdate()->get();
+
+        foreach ($purchases as $purchase) {
+            $cash->voidInventoryPurchase($purchase, 'Item deleted', auth()->id());
         }
 
-        $inventoryItem->delete();
-        $audit->details='Deleting inventory item ('.$inventoryItem->name.') succeeded';
-        $audit->save();
-        return redirect()->route('inventory.stock-control')->with('success', 'Item deleted.');
+        // Now safe to delete the item (purchase rows should remain, or be voided)
+        $item->delete();
+    });
+
+    // File delete after DB success (optional: keep it inside try/catch)
+    if ($inventoryItem->image_path) {
+        Storage::disk('public')->delete($inventoryItem->image_path);
     }
+
+    $audit->details = 'Deleting inventory item (' . $inventoryItem->name . ') succeeded';
+    $audit->save();
+
+    return redirect()->route('inventory.stock-control')->with('success', 'Item deleted.');
+}
 }
