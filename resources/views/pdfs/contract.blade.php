@@ -6,10 +6,21 @@
     @php
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $signaturePath = public_path('img/abousaleh-signature.png');
+    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
+
     @endphp
     <style>
         @page {
             margin: 26px 22px 55px 22px;
+        }
+
+        .sig-signature-img {
+            height: 42px;
+            max-width: 220px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
         }
 
         body {
@@ -318,8 +329,13 @@
 
                         <div style="margin-top:10px;">
                             <span class="k">Signature:</span>
-
-                            ____________________________
+                            <span
+                                style="display:inline-block; width:240px; border-bottom:1px solid #111; height:18px; vertical-align:bottom;">
+                                @if($signatureB64)
+                                <img class="sig-signature-img" style="position:relative; top:-18px; left:10px;"
+                                    src="data:image/png;base64,{{ $signatureB64 }}" alt="Company Signature">
+                                @endif
+                            </span>
                         </div>
 
                         <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>

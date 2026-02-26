@@ -6,11 +6,38 @@
     @php
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $signaturePath = public_path('img/abousaleh-signature.png');
+    $signatureB64 = file_exists($signaturePath)
+    ? base64_encode(file_get_contents($signaturePath))
+    : null;
     @endphp
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+            text-align: right;
+        }
+
+        .signature-label {
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .signature-img {
+            height: 45px;
+            max-width: 220px;
+            display: block;
+            margin-top: 6px;
+        }
+
+        .signature-line {
+            width: 240px;
+            border-bottom: 1px solid #111;
+            margin-top: 6px;
         }
 
         .header {
@@ -108,6 +135,19 @@
         @endif
 
         <div style="margin-top:8px;"><strong>Description:</strong> Monthly installment</div>
+    </div>
+    <div class="signature-section">
+        <div class="signature-label">Authorized Signature</div>
+
+        @if($signatureB64)
+        <img class="signature-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Company Signature">
+        @else
+        <div class="signature-line"></div>
+        @endif
+
+        <div style="margin-top:4px; font-weight:600;">
+            Abou Saleh Real Estate
+        </div>
     </div>
 </body>
 

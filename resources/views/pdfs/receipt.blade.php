@@ -8,12 +8,30 @@
     @php
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $signaturePath = public_path('img/abousaleh-signature.png');
+    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
+
     @endphp
 
     <style>
         @page {
             margin: 32px 40px;
         }
+
+        .signature-wrap {
+            position: relative;
+            display: inline-block;
+        }
+
+        .signature-img {
+            position: relative;
+            top: -8px;
+            height: 40px;
+            max-width: 220px;
+            display: inline-block;
+            vertical-align: bottom;
+        }
+
 
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -141,14 +159,6 @@
             text-align: right;
         }
 
-        .sig-line {
-            border-bottom: 1px solid #0b2545;
-            display: inline-block;
-            width: 260px;
-            height: 14px;
-            vertical-align: bottom;
-        }
-
         .stamp-box {
             width: 90px;
             height: 90px;
@@ -263,7 +273,11 @@
             <span class="sig-line">Abou Saleh General Trading</span><br><br>
 
             <span class="label">Signature:</span>
-            <span class="sig-line"></span>
+            <div class="signature-wrap">
+                @if($signatureB64)
+                <img class="signature-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
+                @endif
+            </div>
         </div>
 
         <div class="sig-col-right">
