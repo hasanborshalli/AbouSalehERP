@@ -105,10 +105,16 @@ $end   = Carbon::now()->endOfMonth();
     }
     public function editClientPage(User $user){
            // Load what you need for the form
-    $user->load(['clientProfile', 'contracts.apartment.project']); // if you use contracts()
+    $user->load(['clientProfile', 'contracts.invoices', 'contracts.apartment.project']);
 
     // If you truly have only one contract per client, get it:
-    $contract = $user->contracts()->with(['apartment.project'])->latest('id')->first();
+    $contract = $user->contracts()->with(['apartment.project', 'invoices'])->latest('id')->first();
+
+    // Block access if client has paid invoices
+    if ($contract && $contract->invoices->where('status', 'paid')->count() > 0) {
+        return redirect()->route('clients.existing-clients')
+            ->with('error', 'This client cannot be edited because they have paid invoices.');
+    }
 
     $apartments = Apartment::with('project')
         ->whereNull('deleted_at')
@@ -238,11 +244,42 @@ $end   = Carbon::now()->endOfMonth();
     }
     public function accountingPage(CashAccountingService $acct){
         $summary = $acct->lastMonthsSummary(6);
-        $purchases = InventoryPurchase::with('item')
-        ->orderByDesc('purchase_date')
-        ->orderByDesc('id')
-        ->take(20)
-        ->get();
+        // Group purchases into receipts. Purchases without a receipt_ref
+        // (old single-item records) are shown as their own receipt.
+        $rawPurchases = InventoryPurchase::with('item')
+            ->orderByDesc('purchase_date')
+            ->orderByDesc('id')
+            ->take(100)
+            ->get();
+
+        // Build receipt groups: keyed by receipt_ref (or "solo-{id}" for legacy rows)
+        $receiptGroups = [];
+        foreach ($rawPurchases as $p) {
+            $key = $p->receipt_ref ?: ('solo-' . $p->id);
+            if (!isset($receiptGroups[$key])) {
+                $receiptGroups[$key] = [
+                    'receipt_ref'   => $p->receipt_ref,
+                    'purchase_date' => $p->purchase_date,
+                    'vendor_name'   => $p->vendor_name,
+                    'notes'         => $p->notes,
+                    'created_at'    => $p->created_at,
+                    'items'         => [],
+                    'total'         => 0,
+                    'all_voided'    => true,
+                    'any_voided'    => false,
+                    'voided_at'     => null,
+                    'void_reason'   => null,
+                ];
+            }
+            $receiptGroups[$key]['items'][] = $p;
+            $receiptGroups[$key]['total'] += (float) $p->total_cost;
+            if (!$p->voided_at) $receiptGroups[$key]['all_voided'] = false;
+            if ($p->voided_at)  $receiptGroups[$key]['any_voided'] = true;
+        }
+
+        // Sort by created_at desc, take 20 receipts
+        usort($receiptGroups, fn($a,$b) => $b['created_at'] <=> $a['created_at']);
+        $purchases = array_slice($receiptGroups, 0, 20);
 
     $opExpenses = OperatingExpense::orderByDesc('expense_date')
         ->orderByDesc('id')
@@ -267,7 +304,15 @@ $end   = Carbon::now()->endOfMonth();
     public function accountingPurchasesPage()
 {
     $items = InventoryItem::orderBy('name')->get();
-    return view('accounting.purchases', compact('items'));
+    $itemsJson = $items->map(function ($i) {
+        return [
+            'id'   => $i->id,
+            'name' => $i->name,
+            'qty'  => $i->quantity,
+            'unit' => $i->unit,
+        ];
+    })->values()->toJson();
+    return view('accounting.purchases', compact('items', 'itemsJson'));
 }
 
 public function accountingExpensesPage()

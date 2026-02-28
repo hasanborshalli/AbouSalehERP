@@ -92,6 +92,7 @@ public function contractsOverview()
         return [
             'contract' => $c,
             'project_name' => $c->project?->name,
+            'apartment' => $c->apartment?->unit_number,
             'start_date' => $c->project?->start_date,
             'estimated_completion_date' => $c->project?->estimated_completion_date,
             'status' => $this->contractStatus($c),

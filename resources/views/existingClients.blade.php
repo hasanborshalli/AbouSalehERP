@@ -125,6 +125,9 @@
                                         $contractPdfUrl = $contract?->pdf_path
                                         ? asset('storage/'.$contract->pdf_path)
                                         : null;
+                                        $hasPaidInvoice = $contract
+                                        ? $contract->invoices->where('status', 'paid')->count() > 0
+                                        : false;
                                         @endphp <tr class="clients-index__row"
                                             data-route="{{ route('contracts.progress.editor',$contract->id) }}"
                                             data-code="CL-{{str_pad( $client->user_id,5,'0', STR_PAD_LEFT) }}"
@@ -146,7 +149,8 @@
                                             data-late-fees-paid="{{ $totalLateFeesPaid }}"
                                             data-remainingmonths="{{ $remainingMonths }}" data-nextdue="{{ $nextdue }}"
                                             data-notes="{{ $contract->notes }}"
-                                            data-contract-pdf="{{ $contractPdfUrl }}">
+                                            data-contract-pdf="{{ $contractPdfUrl }}"
+                                            data-can-edit="{{ $hasPaidInvoice ? '0' : '1' }}">
                                             <td class="clients-index__td">CL-{{str_pad( $client->user_id,5,'0',
                                                 STR_PAD_LEFT)
                                                 }}
@@ -177,9 +181,16 @@
                                                     View
                                                 </button>
 
+                                                @if(!$hasPaidInvoice)
                                                 <a class="clients-index__icon-btn clients-index__icon-btn--edit"
                                                     href="{{ route('clients.edit-client',$user->id) }}"
                                                     aria-label="Edit client">✎</a>
+                                                @else
+                                                <span
+                                                    class="clients-index__icon-btn clients-index__icon-btn--edit clients-index__icon-btn--disabled"
+                                                    title="Cannot edit: client has paid invoices"
+                                                    aria-disabled="true">✎</span>
+                                                @endif
 
                                                 <button class="clients-index__icon-btn clients-index__icon-btn--delete"
                                                     type="button" aria-label="Delete client"

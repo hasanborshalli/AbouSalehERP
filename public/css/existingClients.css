@@ -336,3 +336,11 @@
     font-size: 12px;
     color: rgba(0, 0, 0, 0.45);
 }
+
+/* Disabled edit button — client has paid invoices */
+.clients-index__icon-btn--disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: grayscale(1);
+}

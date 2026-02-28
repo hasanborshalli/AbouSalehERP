@@ -315,8 +315,13 @@ public function update(Request $request, User $user)
         'notes' => ['nullable','string','max:2000'],
     ]);
 
-    $contract = $user->contracts()->latest()->firstOrFail(); // or however you load it
+    $contract = $user->contracts()->with('invoices')->latest()->firstOrFail();
     $oldApartmentId = $contract->apartment_id;
+
+    // Guard: cannot edit if any invoice is already paid
+    if ($contract->invoices->where('status', 'paid')->count() > 0) {
+        return back()->with('error', 'This client cannot be edited because they have paid invoices.');
+    }
 
     $months  = (int)$contractFields['installment_months'];
     $monthly = (float)$contractFields['installment_amount'];

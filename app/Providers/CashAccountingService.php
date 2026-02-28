@@ -84,6 +84,7 @@ class CashAccountingService
         $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
 
         $purchase = InventoryPurchase::create([
+    'receipt_ref'       => $data['receipt_ref'] ?? null,
     'inventory_item_id' => $item->id,
     'purchase_date' => $purchaseDate->toDateString(),
     'qty' => $qty,

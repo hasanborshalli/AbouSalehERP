@@ -13,41 +13,59 @@ class AccountingController extends Controller
 {
     public function storePurchase(Request $request, CashAccountingService $cash)
     {
-         $audit=new AuditLog();
-        $audit->user_id=auth()->id();
-        $audit->event='Create';
-        $audit->entity_type='Inventory Purchase';
-        $audit->details='Creating inventory purchase failed';
+        $audit = new AuditLog();
+        $audit->user_id = auth()->id();
+        $audit->event = 'Create';
+        $audit->entity_type = 'Inventory Purchase';
+        $audit->details = 'Creating inventory purchase receipt failed';
         $audit->save();
-        $audit->record='ACC-'.str_pad(auth()->id(), 5, '0', STR_PAD_LEFT).'-'.$audit->id;
+        $audit->record = 'ACC-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
-        $data = $request->validate([
-            'inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
-            'purchase_date'     => ['required', 'date'],
-            'qty'               => ['required', 'integer', 'min:1'],
-            'unit_cost'         => ['required', 'numeric', 'min:0'],
-            'vendor_name'       => ['nullable', 'string', 'max:255'],
-            'notes'             => ['nullable', 'string', 'max:255'],
+
+        // Receipt-level fields (shared across all line items)
+        $header = $request->validate([
+            'purchase_date' => ['required', 'date'],
+            'vendor_name'   => ['nullable', 'string', 'max:255'],
+            'notes'         => ['nullable', 'string', 'max:500'],
         ]);
 
-        // Optional extra safety: ensure qty remains integer-safe for unsignedInteger stock
-        $data['qty'] = (int) $data['qty'];
+        // Line items validation
+        $request->validate([
+            'items'                     => ['required', 'array', 'min:1'],
+            'items.*.inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+            'items.*.qty'               => ['required', 'integer', 'min:1'],
+            'items.*.unit_cost'         => ['required', 'numeric', 'min:0'],
+        ]);
 
-        $cash->createInventoryPurchase([
-            'inventory_item_id' => $data['inventory_item_id'],
-            'purchase_date'     => $data['purchase_date'],
-            'qty'               => $data['qty'],
-            'unit_cost'         => (float) $data['unit_cost'],
-            'vendor_name'       => $data['vendor_name'] ?? null,
-            'notes'             => $data['notes'] ?? null,
-        ], auth()->id());
+        $lines = $request->input('items');
+        $savedNames = [];
 
-        $item = InventoryItem::find($data['inventory_item_id']);
-        $audit->details='Creating inventory purchase succeeded';
+        // One receipt reference shared by all lines in this submission
+        $receiptRef = 'RCPT-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+
+        foreach ($lines as $line) {
+            $cash->createInventoryPurchase([
+                'receipt_ref'       =>          $receiptRef,
+                'inventory_item_id' => (int)   $line['inventory_item_id'],
+                'purchase_date'     =>          $header['purchase_date'],
+                'qty'               => (int)    $line['qty'],
+                'unit_cost'         => (float)  $line['unit_cost'],
+                'vendor_name'       =>          $header['vendor_name'] ?? null,
+                'notes'             =>          $header['notes'] ?? null,
+            ], auth()->id());
+
+            $item = InventoryItem::find($line['inventory_item_id']);
+            if ($item) $savedNames[] = $item->name;
+        }
+
+        $audit->details = 'Creating inventory purchase receipt succeeded (' . count($lines) . ' item(s): ' . implode(', ', $savedNames) . ')';
         $audit->save();
+
+        $label = count($savedNames) === 1 ? $savedNames[0] : count($savedNames) . ' items';
+
         return redirect()
             ->route('accounting.purchases')
-            ->with('success', 'Purchase saved. Stock updated for: ' . ($item?->name ?? 'Item'));
+            ->with('success', 'Receipt saved. Stock updated for: ' . $label);
     }
 
     public function storeExpense(Request $request, CashAccountingService $cash)

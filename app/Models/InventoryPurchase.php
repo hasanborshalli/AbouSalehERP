@@ -15,6 +15,7 @@ class InventoryPurchase extends Model
         'vendor_name',
         'notes',
         'created_by',
+        'receipt_ref',
         'voided_at','voided_by','void_reason'
     ];
 

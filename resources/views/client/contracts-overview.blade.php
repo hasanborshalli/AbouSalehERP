@@ -13,6 +13,7 @@
         <thead>
             <tr>
                 <th>Project</th>
+                <th>Apartment</th>
                 <th>Start Date</th>
                 <th>Estimated Completion</th>
                 <th>Status</th>
@@ -27,6 +28,7 @@
             @endphp
             <tr>
                 <td>{{ $r['project_name'] ?? '—' }}</td>
+                <td>{{ $r['apartment'] ?? '—' }}</td>
                 <td>{{ $r['start_date'] ? \Carbon\Carbon::parse($r['start_date'])->format('d M Y') : '—' }}</td>
                 <td>{{ $r['estimated_completion_date'] ?
                     \Carbon\Carbon::parse($r['estimated_completion_date'])->format('d M Y') : '—' }}</td>
