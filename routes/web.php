@@ -15,7 +15,8 @@ use App\Http\Controllers\AdditionalCostController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\WorkersController;
+use App\Http\Controllers\WorkerPortalController;
     Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
     Route::post('/login', action: [AuthController::class, 'login'])
         ->name('login.submit')->middleware('guest');
@@ -212,5 +213,31 @@ Route::middleware('role:owner,admin')->group(function () {
     // Project materials (post-creation)
     Route::post('/projects/{project}/materials', [AdditionalCostController::class, 'storeProjectMaterial'])->name('projects.materials.store');
     Route::delete('/projects/{project}/materials/{material}', [AdditionalCostController::class, 'destroyProjectMaterial'])->name('projects.materials.destroy');
+});
+// ── Workers (admin/owner) ─────────────────────────────────────
+Route::middleware(['auth', 'role:owner,admin'])->prefix('workers')->name('workers.')->group(function () {
+    Route::get('/',                                      [WorkersController::class, 'index'])->name('index');
+    Route::get('/create',                                [WorkersController::class, 'createPage'])->name('create');
+    Route::post('/',                                     [WorkersController::class, 'store'])->name('store');
+    Route::get('/{worker}',                              [WorkersController::class, 'show'])->name('show');
+    Route::post('/{worker}/contracts',                   [WorkersController::class, 'addContract'])->name('addContract');
+    Route::patch('/payments/{payment}/mark-paid',        [WorkersController::class, 'markPaid'])->name('payments.markPaid');
+    Route::get('/contracts/{contract}/pdf',              [WorkersController::class, 'contractPdf'])->name('contract.pdf');
+    Route::get('/contracts/{contract}/pdf/download',     [WorkersController::class, 'contractPdfDownload'])->name('contract.pdf.download');
+    Route::get('/payments/{payment}/receipt/download',   [WorkersController::class, 'paymentReceiptDownload'])->name('payments.receipt');
+});
+
+// ── Worker Portal ─────────────────────────────────────────────
+Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->group(function () {
+    Route::get('/home',                                         [WorkerPortalController::class, 'home'])->name('home');
+    Route::get('/contracts',                                    [WorkerPortalController::class, 'contractsList'])->name('contracts');
+    Route::get('/contracts/{contract}/pdf',                     [WorkerPortalController::class, 'viewContractPdf'])->name('contracts.pdf.view');
+    Route::get('/contracts/{contract}/pdf/download',            [WorkerPortalController::class, 'downloadContractPdf'])->name('contracts.pdf.download');
+    Route::get('/payments',                                     [WorkerPortalController::class, 'paymentsList'])->name('payments');
+    Route::get('/payments/{payment}/receipt',                   [WorkerPortalController::class, 'downloadReceipt'])->name('payments.receipt');
+    Route::get('/settings',                                     [WorkerPortalController::class, 'settings'])->name('settings');
+    Route::post('/settings/profile',                            [WorkerPortalController::class, 'updateProfile'])->name('settings.profile.update');
+    Route::post('/settings/password',                           [WorkerPortalController::class, 'updatePassword'])->name('settings.password.update');
+    Route::post('/settings/avatar',                             [WorkerPortalController::class, 'updateAvatar'])->name('settings.avatar.update');
 });
 });

@@ -86,6 +86,12 @@ public function auditLogs()
 public function isOwner(): bool { return $this->role === 'owner'; }
 public function isAdmin(): bool { return $this->role === 'admin'; }
 public function isClient(): bool { return $this->role === 'client'; }
+public function isWorker(): bool { return $this->role === 'worker'; }
+
+public function workerContracts()
+{
+    return $this->hasMany(WorkerContract::class, 'worker_user_id');
+}
 public function notifications()
 {
     return $this->hasMany(\App\Models\UserNotification::class)->latest();

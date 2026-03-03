@@ -39,7 +39,6 @@ $latest = $u?->notifications()?->take(5)->get() ?? collect();
             <span class="nav-bell__badge">{{ $unread }}</span>
             @endif
         </button>
-
         <div class="nav-bell__menu" id="notifBellMenu" style="display:none;">
             <div class="nav-bell__header">
                 <strong>Notifications</strong>

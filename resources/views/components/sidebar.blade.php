@@ -39,6 +39,11 @@
             <span>Reports</span>
         </a>
         @endif
+        @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
+        <a class="app-sidebar__link {{ activeRoute('workers*') }}" href="{{ route('workers.index') }}">
+            <span>Workers</span>
+        </a>
+        @endif
     </nav>
 
     <div class="app-sidebar__footer">

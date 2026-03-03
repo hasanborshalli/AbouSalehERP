@@ -70,7 +70,8 @@ class AuthController extends Controller
         return match ($user->role) {
             'owner'  => route('dashboard'),
             'admin'  => route('dashboard'),
-            'client' => route('client.contracts'), // change this to your client landing route later
+            'client' => route('client.contracts'),
+            'worker' => route('worker.home'),
             default  => route('dashboard'),
         };
     }

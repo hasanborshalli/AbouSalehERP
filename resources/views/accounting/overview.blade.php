@@ -164,7 +164,7 @@
                                             style="font-size:11px; font-weight:700; color:#15803d; background:rgba(21,128,61,0.08); padding:3px 10px; border-radius:999px;">ACTIVE</span>
                                         @endif
                                         @if(!$isVoided && $receipt['receipt_ref'])
-                                        <form method="post" action="{{ route('accounting.purchases.receipt.void') }}"
+                                        <form method="post" action="{{ route('purchases.receipt.void') }}"
                                             style="display:flex; gap:6px; align-items:center; margin-top:6px; flex-wrap:wrap;"
                                             onclick="event.stopPropagation()"
                                             onsubmit="return confirm('Void entire receipt {{ $receipt['receipt_ref'] }}? This will reverse all {{ count($receipt['items']) }} item(s) and restore stock.')">
@@ -300,6 +300,7 @@
                                         'rgba(42,127,176,.9)'],
                                         'apartment_cost_overrun' => ['Apt. Overrun', 'rgba(185,28,28,.12)', '#b91c1c'],
                                         'project_cost_overrun' => ['Proj. Overrun', 'rgba(185,28,28,.12)', '#b91c1c'],
+                                        'worker_payment' => ['Worker Pay', 'rgba(109,40,217,.12)', '#6d28d9'],
                                         ];
                                         $cat = $catLabels[$e->category] ?? null;
                                         @endphp
