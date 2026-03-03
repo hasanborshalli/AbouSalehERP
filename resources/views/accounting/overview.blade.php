@@ -378,6 +378,68 @@
                         </table>
                     </div>
                 </section>
+
+                {{-- Cost Savings table --}}
+                <section class="dashboard-card" style="padding:18px;">
+                    <header
+                        style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h3 style="margin:0;">Cost Savings (Cash In)</h3>
+                            <p style="margin:6px 0 0; opacity:.7;">Under-budget additional costs — savings returned as
+                                cash-in when settled below expected.</p>
+                        </div>
+                        <span
+                            style="padding:6px 14px; border-radius:999px; background:rgba(21,128,61,.1); color:#15803d; font-size:13px; font-weight:700;">
+                            Total: ${{ number_format($savingsRows->sum('amount'), 2) }}
+                        </span>
+                    </header>
+
+                    <div class="table-scroll" style="margin-top:12px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                            <thead>
+                                <tr style="text-align:left; background:rgba(0,0,0,.04);">
+                                    <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,.08);">Date</th>
+                                    <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,.08);">Type</th>
+                                    <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,.08);">Description</th>
+                                    <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,.08);">Amount Saved</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($savingsRows as $r)
+                                <tr>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06); white-space:nowrap;">
+                                        {{ optional($r->posted_at)->format('Y-m-d H:i') ?? '—' }}
+                                    </td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06); white-space:nowrap;">
+                                        @if($r->source_type === 'project_cost_saving')
+                                        <span
+                                            style="padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(42,127,176,.1); color:rgba(42,127,176,.9);">Project</span>
+                                        @else
+                                        <span
+                                            style="padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(217,119,6,.1); color:#d97706;">Apartment</span>
+                                        @endif
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06);">
+                                        {{ $r->description ?? '—' }}
+                                    </td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06); white-space:nowrap; font-weight:700; color:#15803d;">
+                                        +${{ number_format((float)$r->amount, 2) }}
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" style="padding:14px; opacity:.7;">No cost savings recorded yet.
+                                        Savings appear when an additional cost is settled below its expected amount.
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </section>
         </main>
 

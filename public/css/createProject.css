@@ -440,3 +440,175 @@
         align-items: stretch;
     }
 }
+/* ── Additional costs table ── */
+.cp-costs {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.cp-costs__row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.2fr 1.4fr 40px;
+    gap: 10px;
+    align-items: end;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.cp-costs__label {
+    display: block;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+    margin-bottom: 6px;
+}
+
+.cp-costs__input,
+.cp-costs__select {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.55);
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+}
+
+.cp-costs__remove {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    font-size: 16px;
+}
+
+@media (max-width: 900px) {
+    .cp-costs__row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ── Per-unit extras (materials + costs) ── */
+.cp-unit__extras {
+    margin-top: 12px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    padding-top: 12px;
+}
+
+.cp-unit__extras-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+    font-weight: 600;
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.cp-unit__extras-toggle .toggle-arrow {
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.cp-unit__extras-body {
+    display: none;
+}
+
+.cp-unit__extras-body.open {
+    display: block;
+}
+
+.cp-unit__extras-section {
+    margin-bottom: 14px;
+}
+
+.cp-unit__extras-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 8px 0;
+}
+
+/* mini table inside unit */
+.cp-mini-table {
+    display: grid;
+    gap: 8px;
+}
+
+.cp-mini-row {
+    display: grid;
+    gap: 8px;
+    align-items: end;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.cp-mini-row--mat {
+    grid-template-columns: 2fr 0.8fr 0.8fr 36px;
+}
+
+.cp-mini-row--cost {
+    grid-template-columns: 2fr 1fr 1.2fr 36px;
+}
+
+.cp-mini-label {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.5);
+    margin-bottom: 4px;
+    display: block;
+}
+
+.cp-mini-input,
+.cp-mini-select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 7px 10px;
+    font-size: 13px;
+    outline: none;
+}
+
+.cp-mini-remove {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(220, 50, 50, 0.2);
+    background: rgba(220, 50, 50, 0.06);
+    color: rgba(180, 30, 30, 0.7);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cp-mini-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px dashed rgba(42, 127, 176, 0.35);
+    background: rgba(42, 127, 176, 0.04);
+    color: rgba(42, 127, 176, 0.8);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (max-width: 700px) {
+    .cp-mini-row--mat,
+    .cp-mini-row--cost {
+        grid-template-columns: 1fr 1fr;
+    }
+}

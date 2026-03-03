@@ -1,0 +1,126 @@
+.reports-index {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.reports-index__hero {
+    text-align: center;
+    padding: 32px 16px 24px;
+}
+
+.reports-index__hero h2 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.reports-index__hero p {
+    margin: 0;
+    opacity: 0.6;
+    font-size: 14px;
+}
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+@media (max-width: 680px) {
+    .reports-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.reports-card {
+    border-radius: 18px;
+    border: 2px solid rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.45);
+    padding: 20px;
+}
+
+.reports-card__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.75);
+    margin: 0 0 4px;
+}
+
+.reports-card__sub {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    margin: 0 0 16px;
+}
+
+.reports-list {
+    display: grid;
+    gap: 8px;
+}
+
+.reports-list__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 14px;
+    transition: background 0.12s;
+}
+
+.reports-list__item:hover {
+    background: rgba(42, 127, 176, 0.07);
+}
+
+.reports-list__item-name {
+    font-weight: 600;
+}
+
+.reports-list__item-meta {
+    font-size: 12px;
+    opacity: 0.55;
+    white-space: nowrap;
+}
+
+.reports-list__arrow {
+    opacity: 0.4;
+    font-size: 16px;
+}
+
+.reports-apt-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 10px;
+}
+
+.reports-apt-go {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    border: 2px solid rgba(42, 127, 176, 0.25);
+    background: rgba(42, 127, 176, 0.1);
+    color: rgba(42, 127, 176, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.reports-empty {
+    opacity: 0.5;
+    font-size: 13px;
+    padding: 12px 0;
+}

@@ -229,6 +229,22 @@ class CashAccountingService
         'user_id'     => $userId,
     ]);
 }
+public function postCostSaving(float $amount, string $description, string $sourceType, int $sourceId, ?int $userId = null): void
+{
+    DB::transaction(function () use ($amount, $description, $sourceType, $sourceId, $userId) {
+        LedgerEntry::create([
+            'posted_at'   => now(),
+            'account_id'  => $this->operatingExpenseAccount()->id,
+            'amount'      => round($amount, 2),
+            'direction'   => 'in', // cash-in: under-budget saving
+            'description' => $description,
+            'source_type' => $sourceType,
+            'source_id'   => $sourceId,
+            'user_id'     => $userId,
+        ]);
+    });
+}
+
 public function voidInventoryPurchase(InventoryPurchase $purchase, string $reason, ?int $userId = null): void
 {
     if ($purchase->voided_at) return;

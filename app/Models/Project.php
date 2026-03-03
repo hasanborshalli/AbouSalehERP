@@ -52,4 +52,9 @@ public function inventoryUsages()
     return $this->hasMany(ProjectInventoryItem::class);
 }
 
+public function additionalCosts()
+{
+    return $this->hasMany(ProjectAdditionalCost::class);
+}
+
 }

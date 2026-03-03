@@ -1,0 +1,332 @@
+.rpt {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.rpt-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.45);
+    border: 2px solid rgba(0, 0, 0, 0.07);
+    margin-bottom: 14px;
+}
+
+.rpt-hero__title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.rpt-hero__meta {
+    font-size: 13px;
+    opacity: 0.55;
+}
+
+.rpt-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rpt-back {
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+}
+
+.rpt-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+@media (max-width: 680px) {
+    .rpt-kpis {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.rpt-kpi {
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 2px solid rgba(0, 0, 0, 0.07);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.rpt-kpi--green {
+    border-color: rgba(21, 128, 61, 0.2);
+    background: rgba(21, 128, 61, 0.06);
+}
+
+.rpt-kpi--red {
+    border-color: rgba(185, 28, 28, 0.2);
+    background: rgba(185, 28, 28, 0.06);
+}
+
+.rpt-kpi--blue {
+    border-color: rgba(42, 127, 176, 0.2);
+    background: rgba(42, 127, 176, 0.06);
+}
+
+.rpt-kpi__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin: 0 0 6px;
+}
+
+.rpt-kpi__value {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.rpt-kpi__sub {
+    font-size: 12px;
+    opacity: 0.55;
+    margin: 4px 0 0;
+}
+
+.rpt-section {
+    background: rgba(255, 255, 255, 0.45);
+    border: 2px solid rgba(0, 0, 0, 0.07);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+.rpt-section__title {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rpt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.rpt-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgba(0, 0, 0, 0.45);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.07);
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.rpt-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    vertical-align: middle;
+}
+
+.rpt-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rpt-table tr:hover td {
+    background: rgba(42, 127, 176, 0.03);
+}
+
+.rpt-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.rpt-table .bold {
+    font-weight: 700;
+}
+
+.rpt-table .muted {
+    opacity: 0.45;
+    font-size: 12px;
+}
+
+.rpt-table tfoot td {
+    font-weight: 700;
+    font-size: 13px;
+    border-top: 2px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.badge--over {
+    background: rgba(185, 28, 28, 0.1);
+    color: #b91c1c;
+}
+
+.badge--under {
+    background: rgba(21, 128, 61, 0.1);
+    color: #15803d;
+}
+
+.badge--pending {
+    background: rgba(217, 119, 6, 0.1);
+    color: #d97706;
+}
+
+.badge--paid {
+    background: rgba(21, 128, 61, 0.08);
+    color: #15803d;
+}
+
+.badge--overdue {
+    background: rgba(185, 28, 28, 0.1);
+    color: #b91c1c;
+}
+
+/* Settle form inline */
+.settle-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.settle-form input {
+    width: 110px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    font-size: 12px;
+    outline: none;
+}
+
+.settle-form button {
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 0;
+    cursor: pointer;
+    background: rgba(42, 127, 176, 0.15);
+    color: rgba(42, 127, 176, 0.9);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Add cost / material forms */
+.rpt-add-form {
+    background: rgba(42, 127, 176, 0.04);
+    border: 1px dashed rgba(42, 127, 176, 0.3);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.rpt-add-form__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.55);
+    margin: 0 0 10px;
+}
+
+.rpt-add-form__grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 8px;
+    align-items: end;
+}
+
+.rpt-add-form__grid--mat {
+    grid-template-columns: 2fr 1fr auto;
+}
+
+@media (max-width: 640px) {
+    .rpt-add-form__grid,
+    .rpt-add-form__grid--mat {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rpt-add-form label {
+    font-size: 11px;
+    opacity: 0.6;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.rpt-add-form input,
+.rpt-add-form select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    font-size: 13px;
+    outline: none;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.rpt-add-form__submit {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 0;
+    cursor: pointer;
+    background: rgba(42, 127, 176, 0.15);
+    color: rgba(42, 127, 176, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+/* Delete button */
+.btn-del {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(185, 28, 28, 0.2);
+    background: rgba(185, 28, 28, 0.06);
+    color: #b91c1c;
+    font-size: 11px;
+    cursor: pointer;
+}
+.rpt-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+}
+.rpt-info-item {
+}
+
+.rpt-info-item__key {
+    font-size: 11px;
+    opacity: 0.5;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 3px;
+}
+
+.rpt-info-item__val {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}

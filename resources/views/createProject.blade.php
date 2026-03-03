@@ -6,19 +6,189 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Create project</title>
     <link rel="icon" href="/img/abosaleh-logo.png">
-
-    {{-- shared --}}
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
-
-    {{-- page specific --}}
     <link rel="stylesheet" href="/css/createProject.css" />
+    <style>
+        /* ── Additional costs table ── */
+        .cp-costs {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .cp-costs__row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.2fr 1.4fr 40px;
+            gap: 10px;
+            align-items: end;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .cp-costs__label {
+            display: block;
+            font-size: 12px;
+            color: rgba(0, 0, 0, .55);
+            margin-bottom: 6px;
+        }
+
+        .cp-costs__input,
+        .cp-costs__select {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.55);
+            padding: 10px 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .cp-costs__remove {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.55);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        @media(max-width:900px) {
+            .cp-costs__row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ── Per-unit extras (materials + costs) ── */
+        .cp-unit__extras {
+            margin-top: 12px;
+            border-top: 1px dashed rgba(0, 0, 0, 0.1);
+            padding-top: 12px;
+        }
+
+        .cp-unit__extras-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: rgba(0, 0, 0, 0.55);
+            font-weight: 600;
+            padding: 0;
+            margin-bottom: 10px;
+        }
+
+        .cp-unit__extras-toggle .toggle-arrow {
+            transition: transform .2s;
+            display: inline-block;
+        }
+
+        .cp-unit__extras-body {
+            display: none;
+        }
+
+        .cp-unit__extras-body.open {
+            display: block;
+        }
+
+        .cp-unit__extras-section {
+            margin-bottom: 14px;
+        }
+
+        .cp-unit__extras-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.5);
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            margin: 0 0 8px 0;
+        }
+
+        /* mini table inside unit */
+        .cp-mini-table {
+            display: grid;
+            gap: 8px;
+        }
+
+        .cp-mini-row {
+            display: grid;
+            gap: 8px;
+            align-items: end;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.07);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .cp-mini-row--mat {
+            grid-template-columns: 2fr 0.8fr 0.8fr 36px;
+        }
+
+        .cp-mini-row--cost {
+            grid-template-columns: 2fr 1fr 1.2fr 36px;
+        }
+
+        .cp-mini-label {
+            font-size: 11px;
+            color: rgba(0, 0, 0, .5);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .cp-mini-input,
+        .cp-mini-select {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.6);
+            padding: 7px 10px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .cp-mini-remove {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(220, 50, 50, 0.2);
+            background: rgba(220, 50, 50, 0.06);
+            color: rgba(180, 30, 30, 0.7);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .cp-mini-add {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px dashed rgba(42, 127, 176, 0.35);
+            background: rgba(42, 127, 176, 0.04);
+            color: rgba(42, 127, 176, 0.8);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        @media(max-width:700px) {
+
+            .cp-mini-row--mat,
+            .cp-mini-row--cost {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body class="app-shell">
     <input class="app-shell__toggle" type="checkbox" id="sidebarToggle" />
-
     <aside class="app-shell__sidebar">
         <x-sidebar />
     </aside>
@@ -28,11 +198,9 @@
 
         <main class="dashboard-content">
             <section class="create-project" aria-label="Create project page">
-
                 <section class="dashboard-card create-project__card">
                     <header class="create-project__header">
                         <h2 class="create-project__title">Create new project</h2>
-
                         <a onclick="event.preventDefault(); history.back();" class="create-project__back">Back</a>
                     </header>
 
@@ -40,16 +208,13 @@
                         @csrf
                         @if ($errors->any())
                         <div class="alert alert-danger">
-                            <ul>
-                                @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
-                            </ul>
+                            <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
                         </div>
                         @endif
 
-                        {{-- ================= Project Info ================= --}}
+                        {{-- ═══ Project Info ═══ --}}
                         <section class="create-project__section">
                             <h3 class="create-project__section-title">Project information</h3>
-
                             <div class="create-project__grid">
                                 <div class="create-project__field create-project__field--wide">
                                     <label class="create-project__label" for="project_name">Project name</label>
@@ -57,38 +222,29 @@
                                         type="text" placeholder="e.g. Abou Saleh Tower" required
                                         value="{{ old('project_name') }}">
                                 </div>
-
                                 <div class="create-project__field">
                                     <label class="create-project__label" for="project_code">Project code
                                         (optional)</label>
                                     <input class="create-project__input" id="project_code" name="project_code"
                                         type="text" placeholder="e.g. AST-01" value="{{ old('project_code') }}">
                                 </div>
-
-
-
                                 <div class="create-project__field">
                                     <label class="create-project__label" for="city">City</label>
                                     <input class="create-project__input" id="city" name="city" type="text"
                                         placeholder="e.g. Beirut" required value="{{ old('city') }}">
                                 </div>
-
                                 <div class="create-project__field">
                                     <label class="create-project__label" for="area">Area / Neighborhood</label>
                                     <input class="create-project__input" id="area" name="area" type="text"
                                         placeholder="e.g. Verdun / Hamra" value="{{ old('area') }}">
                                 </div>
-
                                 <div class="create-project__field create-project__field--wide">
                                     <label class="create-project__label" for="address">Address</label>
                                     <input class="create-project__input" id="address" name="address" type="text"
                                         placeholder="Street, building, landmarks..." value="{{ old('address') }}">
                                 </div>
-
-
                                 <div class="create-project__field">
-                                    <label class="create-project__label" for="start_date">Start date
-                                        (optional)</label>
+                                    <label class="create-project__label" for="start_date">Start date (optional)</label>
                                     <input class="create-project__input" id="start_date" name="start_date" type="date"
                                         value="{{ old('start_date') }}">
                                 </div>
@@ -99,7 +255,6 @@
                                         name="estimated_completion_date" type="date"
                                         value="{{ old('estimated_completion_date') }}">
                                 </div>
-
                                 <div class="create-project__field create-project__field--wide">
                                     <label class="create-project__label" for="notes">Notes (optional)</label>
                                     <textarea class="create-project__textarea" id="notes" name="notes" rows="3"
@@ -108,23 +263,15 @@
                             </div>
                         </section>
 
-                        {{-- ================= Project Materials (Inventory Items) ================= --}}
+                        {{-- ═══ Project Materials (from inventory) ═══ --}}
                         <section class="create-project__section">
                             <div class="create-project__section-row">
                                 <h3 class="create-project__section-title">Project materials (from inventory)</h3>
-                                <button type="button" class="create-project__mini-btn" id="cpAddMaterialBtn">
-                                    + Add item
-                                </button>
+                                <button type="button" class="create-project__mini-btn" id="cpAddMaterialBtn">+ Add
+                                    item</button>
                             </div>
-
-                            <p class="create-project__hint">
-                                Select inventory items required for this project and the quantity needed.
-                            </p>
-
-
-
+                            <p class="create-project__hint">Shared inventory items consumed by the whole project.</p>
                             <div class="cp-materials" id="cpMaterials">
-                                {{-- Row 1 (default) --}}
                                 <div class="cp-materials__row" data-row>
                                     <div class="cp-materials__field">
                                         <label class="cp-materials__label">Item</label>
@@ -133,38 +280,30 @@
                                             @foreach($inventoryItems as $it)
                                             <option value="{{ $it->id }}" data-unit="{{ $it->unit }}">{{ $it->name }}
                                             </option>
-
                                             @endforeach
                                         </select>
                                     </div>
-
                                     <div class="cp-materials__field cp-materials__field--qty">
                                         <label class="cp-materials__label">Qty</label>
                                         <input class="cp-materials__input" name="materials[qty][]" type="number"
                                             step="0.01" min="0" placeholder="0" required>
                                     </div>
-
                                     <div class="cp-materials__field cp-materials__field--unit">
                                         <label class="cp-materials__label">Unit</label>
                                         <input class="cp-materials__input" name="materials[unit][]" type="text"
                                             placeholder="Auto" readonly>
                                     </div>
-
-
                                     <div class="cp-materials__field cp-materials__field--note">
                                         <label class="cp-materials__label">Note (optional)</label>
                                         <input class="cp-materials__input" name="materials[note][]" type="text"
                                             placeholder="e.g. for phase 1">
                                     </div>
-
                                     <div class="cp-materials__actions">
                                         <button type="button" class="cp-materials__remove" data-remove
                                             aria-label="Remove item">✕</button>
                                     </div>
                                 </div>
                             </div>
-
-                            {{-- Hidden template row (JS clones this) --}}
                             <template id="cpMaterialTemplate">
                                 <div class="cp-materials__row" data-row>
                                     <div class="cp-materials__field">
@@ -177,74 +316,100 @@
                                             @endforeach
                                         </select>
                                     </div>
-
                                     <div class="cp-materials__field cp-materials__field--qty">
                                         <label class="cp-materials__label">Qty</label>
                                         <input class="cp-materials__input" name="materials[qty][]" type="number"
                                             step="0.01" min="0" placeholder="0" required>
                                     </div>
-
                                     <div class="cp-materials__field cp-materials__field--unit">
                                         <label class="cp-materials__label">Unit</label>
                                         <input class="cp-materials__input" name="materials[unit][]" type="text"
                                             placeholder="Auto" readonly>
                                     </div>
-
                                     <div class="cp-materials__field cp-materials__field--note">
                                         <label class="cp-materials__label">Note (optional)</label>
                                         <input class="cp-materials__input" name="materials[note][]" type="text"
                                             placeholder="e.g. for phase 1">
                                     </div>
-
                                     <div class="cp-materials__actions">
                                         <button type="button" class="cp-materials__remove" data-remove
                                             aria-label="Remove item">✕</button>
                                     </div>
                                 </div>
                             </template>
-
                         </section>
 
+                        {{-- ═══ Project Additional Costs ═══ --}}
+                        <section class="create-project__section">
+                            <div class="create-project__section-row">
+                                <h3 class="create-project__section-title">Project additional costs (expected)</h3>
+                                <button type="button" class="create-project__mini-btn" id="addProjCostBtn">+ Add
+                                    cost</button>
+                            </div>
+                            <p class="create-project__hint">Non-inventory costs for the whole project (e.g. permits,
+                                elevator, scaffolding). Enter expected budget now — actual cost can be entered later.
+                            </p>
+                            <div class="cp-costs" id="projCostsList"></div>
+                            <template id="projCostTemplate">
+                                <div class="cp-costs__row" data-cost-row>
+                                    <div>
+                                        <label class="cp-costs__label">Description</label>
+                                        <input class="cp-costs__input" name="project_costs[__IDX__][description]"
+                                            type="text" placeholder="e.g. Elevator installation" required>
+                                    </div>
+                                    <div>
+                                        <label class="cp-costs__label">Category (optional)</label>
+                                        <input class="cp-costs__input" name="project_costs[__IDX__][category]"
+                                            type="text" placeholder="e.g. infrastructure">
+                                    </div>
+                                    <div>
+                                        <label class="cp-costs__label">Expected amount ($)</label>
+                                        <input class="cp-costs__input" name="project_costs[__IDX__][expected_amount]"
+                                            type="number" step="0.01" min="0" placeholder="0.00" required>
+                                    </div>
+                                    <div>
+                                        <label class="cp-costs__label">Notes (optional)</label>
+                                        <input class="cp-costs__input" name="project_costs[__IDX__][notes]" type="text"
+                                            placeholder="Any details...">
+                                    </div>
+                                    <div style="display:flex;align-items:flex-end">
+                                        <button type="button" class="cp-costs__remove" data-remove>✕</button>
+                                    </div>
+                                </div>
+                            </template>
+                        </section>
 
-                        {{-- ================= Floors & Units ================= --}}
+                        {{-- ═══ Floors & Units ═══ --}}
                         <section class="create-project__section" aria-label="Floors and units">
                             <div class="create-project__section-row">
                                 <h3 class="create-project__section-title">Floors & apartments</h3>
                                 <span class="create-project__badge">Auto-generated</span>
                             </div>
-
                             <div class="create-project__grid">
                                 <div class="create-project__field">
                                     <label class="create-project__label" for="floor_count">How many floors?</label>
                                     <input class="create-project__input" id="floor_count" name="floor_count"
                                         type="number" min="1" step="1" placeholder="e.g. 6" required>
                                 </div>
-
                                 <div class="create-project__field create-project__field--wide">
-                                    <p class="create-project__hint" style="margin:0;">
-                                        After you enter the number of floors, a unit form will appear for each floor.
-                                    </p>
+                                    <p class="create-project__hint" style="margin:0;">After you enter the number of
+                                        floors, a unit form will appear for each floor. Each unit has a section for its
+                                        own materials and additional costs.</p>
                                 </div>
                             </div>
-
                             <div class="cp-floors" id="cpFloorsWrap" aria-label="Floors forms"></div>
 
-                            {{-- Template (JS clones this) --}}
                             <template id="cpFloorTemplate">
                                 <section class="cp-floor" data-floor-card>
                                     <header class="cp-floor__header">
                                         <h4 class="cp-floor__title">Floor <span data-floor-number></span></h4>
-
                                         <div class="cp-floor__meta">
                                             <label class="cp-floor__meta-label">Units on this floor</label>
                                             <input class="cp-floor__units-count" type="number" min="1" step="1"
                                                 value="1" data-units-count aria-label="Units count">
                                         </div>
                                     </header>
-
                                     <div class="cp-floor__units" data-units-wrap></div>
-
-                                    {{-- Unit template inside each floor --}}
                                     <template data-unit-template>
                                         <div class="cp-unit" data-unit-row>
                                             <div class="cp-unit__grid">
@@ -253,31 +418,26 @@
                                                     <input class="cp-unit__input" type="text" placeholder="e.g. A-12"
                                                         data-name="unit_code">
                                                 </div>
-
                                                 <div class="cp-unit__field">
                                                     <label class="cp-unit__label">Bedrooms</label>
                                                     <input class="cp-unit__input" type="number" min="0" step="1"
                                                         placeholder="e.g. 2" data-name="bedrooms">
                                                 </div>
-
                                                 <div class="cp-unit__field">
                                                     <label class="cp-unit__label">Bathrooms</label>
                                                     <input class="cp-unit__input" type="number" min="0" step="1"
                                                         placeholder="e.g. 2" data-name="bathrooms">
                                                 </div>
-
                                                 <div class="cp-unit__field">
                                                     <label class="cp-unit__label">Area (m²)</label>
                                                     <input class="cp-unit__input" type="number" min="0" step="0.1"
                                                         placeholder="e.g. 130" data-name="area_m2">
                                                 </div>
-
                                                 <div class="cp-unit__field">
                                                     <label class="cp-unit__label">Price</label>
                                                     <input class="cp-unit__input" type="number" min="0" step="0.01"
                                                         placeholder="e.g. 150000" data-name="price">
                                                 </div>
-
                                                 <div class="cp-unit__field">
                                                     <label class="cp-unit__label">Status</label>
                                                     <select class="cp-unit__select" data-name="status">
@@ -286,21 +446,18 @@
                                                         <option value="sold">Sold</option>
                                                     </select>
                                                 </div>
-
                                                 <div class="cp-unit__field cp-unit__field--wide">
                                                     <label class="cp-unit__label">Notes (optional)</label>
                                                     <input class="cp-unit__input" type="text"
                                                         placeholder="e.g. sea view" data-name="note">
                                                 </div>
                                             </div>
-
                                             <div class="cp-unit__actions">
                                                 <button type="button" class="cp-unit__remove" data-remove-unit
                                                     aria-label="Remove unit">Remove</button>
                                             </div>
                                         </div>
                                     </template>
-
                                     <div class="cp-floor__footer">
                                         <button type="button" class="cp-floor__add-unit" data-add-unit>+ Add
                                             unit</button>
@@ -309,32 +466,198 @@
                             </template>
                         </section>
 
-
-                        {{-- ================= Actions ================= --}}
+                        {{-- ═══ Actions ═══ --}}
                         <div class="create-project__actions">
-                            <button class="create-project__btn create-project__btn--primary" type="submit">
-                                Create project
-                            </button>
-
+                            <button class="create-project__btn create-project__btn--primary" type="submit">Create
+                                project</button>
                             <a class="create-project__btn create-project__btn--ghost"
-                                href="{{ route('apartments.overview') }}">
-                                Cancel
-                            </a>
+                                href="{{ route('apartments.overview') }}">Cancel</a>
                         </div>
 
                     </form>
                 </section>
-
             </section>
         </main>
-
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
+
     <script src="/js/createProject.js"></script>
     <script src="/js/materials.js"></script>
     <script src="/js/navSearch.js"></script>
 
+    {{-- ── Per-unit extras: materials + costs injected via MutationObserver ── --}}
+    <script>
+        (() => {
+        const ITEMS = {!! $itemsJson !!};
 
+        let projCostIdx = 0;
+
+        // ── Project additional costs ──
+        document.getElementById('addProjCostBtn').addEventListener('click', () => {
+            const tpl = document.getElementById('projCostTemplate').innerHTML
+                .replace(/__IDX__/g, projCostIdx++);
+            const wrap = document.getElementById('projCostsList');
+            const div = document.createElement('div');
+            div.innerHTML = tpl;
+            const row = div.firstElementChild;
+            row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+            wrap.appendChild(row);
+        });
+
+        // ── Build item <option> HTML ──
+        function itemOptions() {
+            return '<option value="" disabled selected>Select item</option>' +
+                ITEMS.map(it => `<option value="${it.id}" data-unit="${it.unit ?? ''}">${it.name} (Stock: ${it.qty} ${it.unit ?? ''})</option>`).join('');
+        }
+
+        const floorsWrap = document.getElementById('cpFloorsWrap');
+
+        // ── Stamp name attributes on all [data-name] inputs in a unit ──
+        function stampNames(unitEl) {
+            const floor = unitEl.closest('[data-floor-card]');
+            const fi = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
+            const ui = Array.from(floor.querySelectorAll('[data-unit-row]')).indexOf(unitEl);
+            unitEl.querySelectorAll('[data-name]').forEach(inp => {
+                inp.name = `floors[${fi}][units][${ui}][${inp.dataset.name}]`;
+            });
+        }
+
+        // ── Re-index all units before submit so names match current DOM order ──
+        document.querySelector('form').addEventListener('submit', () => {
+            floorsWrap.querySelectorAll('[data-unit-row]').forEach(stampNames);
+        }, true); // capture phase so it runs before createProject.js submit handler
+
+        // ── Inject extras into a unit card ──
+        function injectExtras(unitEl) {
+            if (unitEl.dataset.extrasInjected) return;
+            unitEl.dataset.extrasInjected = '1';
+
+            // Compute fi / ui indices
+            const floor   = unitEl.closest('[data-floor-card]');
+            const floors   = Array.from(floorsWrap.querySelectorAll('[data-floor-card]'));
+            const fi = floors.indexOf(floor);
+            const units = Array.from(floor.querySelectorAll('[data-unit-row]'));
+            const ui = units.indexOf(unitEl);
+
+            // Immediately stamp name attributes on this unit's data-name inputs
+            stampNames(unitEl);
+
+            let matIdx = 0, costIdx = 0;
+
+            const extras = document.createElement('div');
+            extras.className = 'cp-unit__extras';
+            extras.innerHTML = `
+                <button type="button" class="cp-unit__extras-toggle">
+                    <span class="toggle-arrow">▶</span>
+                    Unit materials & additional costs
+                </button>
+                <div class="cp-unit__extras-body">
+                    <div class="cp-unit__extras-section">
+                        <p class="cp-unit__extras-section-title">Materials for this unit</p>
+                        <div class="cp-mini-table" data-apt-mats></div>
+                        <button type="button" class="cp-mini-add" data-add-mat>＋ Add material</button>
+                    </div>
+                    <div class="cp-unit__extras-section" style="margin-top:14px;">
+                        <p class="cp-unit__extras-section-title">Additional costs for this unit (expected)</p>
+                        <div class="cp-mini-table" data-apt-costs></div>
+                        <button type="button" class="cp-mini-add" data-add-cost>＋ Add cost</button>
+                    </div>
+                </div>`;
+
+            unitEl.appendChild(extras);
+
+            // Toggle
+            extras.querySelector('.cp-unit__extras-toggle').addEventListener('click', function() {
+                const body = this.nextElementSibling;
+                const arrow = this.querySelector('.toggle-arrow');
+                const open = body.classList.toggle('open');
+                arrow.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+            });
+
+            // Add material row
+            extras.querySelector('[data-add-mat]').addEventListener('click', () => {
+                // Recompute indices (floorsWrap is outer-scoped)
+                const fi2 = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
+                const ui2 = Array.from(floor.querySelectorAll('[data-unit-row]')).indexOf(unitEl);
+                const mi  = matIdx++;
+                const prefix = `floors[${fi2}][units][${ui2}][apt_materials][${mi}]`;
+
+                const row = document.createElement('div');
+                row.className = 'cp-mini-row cp-mini-row--mat';
+                row.innerHTML = `
+                    <div>
+                        <label class="cp-mini-label">Item</label>
+                        <select class="cp-mini-select" name="${prefix}[item_id]">${itemOptions()}</select>
+                    </div>
+                    <div>
+                        <label class="cp-mini-label">Qty</label>
+                        <input class="cp-mini-input" type="number" step="0.01" min="0" name="${prefix}[qty]" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="cp-mini-label">Unit</label>
+                        <input class="cp-mini-input" type="text" name="${prefix}[unit]" placeholder="Auto" readonly>
+                    </div>
+                    <button type="button" class="cp-mini-remove" title="Remove">✕</button>`;
+
+                // Auto-fill unit from selected item
+                const sel = row.querySelector('select');
+                const unitInput = row.querySelector('input[name*="[unit]"]');
+                sel.addEventListener('change', () => {
+                    const opt = sel.options[sel.selectedIndex];
+                    unitInput.value = opt.dataset.unit || '';
+                });
+                row.querySelector('.cp-mini-remove').addEventListener('click', () => row.remove());
+
+                extras.querySelector('[data-apt-mats]').appendChild(row);
+                extras.querySelector('.cp-unit__extras-body').classList.add('open');
+                extras.querySelector('.toggle-arrow').style.transform = 'rotate(90deg)';
+            });
+
+            // Add cost row
+            extras.querySelector('[data-add-cost]').addEventListener('click', () => {
+                const fi2 = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
+                const ui2 = Array.from(floor.querySelectorAll('[data-unit-row]')).indexOf(unitEl);
+                const ci  = costIdx++;
+                const prefix = `floors[${fi2}][units][${ui2}][apt_costs][${ci}]`;
+
+                const row = document.createElement('div');
+                row.className = 'cp-mini-row cp-mini-row--cost';
+                row.innerHTML = `
+                    <div>
+                        <label class="cp-mini-label">Description</label>
+                        <input class="cp-mini-input" type="text" name="${prefix}[description]" placeholder="e.g. Painting" required>
+                    </div>
+                    <div>
+                        <label class="cp-mini-label">Category</label>
+                        <input class="cp-mini-input" type="text" name="${prefix}[category]" placeholder="e.g. finishing">
+                    </div>
+                    <div>
+                        <label class="cp-mini-label">Expected ($)</label>
+                        <input class="cp-mini-input" type="number" step="0.01" min="0" name="${prefix}[expected_amount]" placeholder="0.00" required>
+                    </div>
+                    <button type="button" class="cp-mini-remove" title="Remove">✕</button>`;
+
+                row.querySelector('.cp-mini-remove').addEventListener('click', () => row.remove());
+
+                extras.querySelector('[data-apt-costs]').appendChild(row);
+                extras.querySelector('.cp-unit__extras-body').classList.add('open');
+                extras.querySelector('.toggle-arrow').style.transform = 'rotate(90deg)';
+            });
+        }
+
+        // ── Watch for new unit cards (floorsWrap is defined above) ──
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(m => {
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType !== 1) return;
+                    const units = node.matches('[data-unit-row]') ? [node] : Array.from(node.querySelectorAll('[data-unit-row]'));
+                    units.forEach(injectExtras);
+                });
+            });
+        });
+        observer.observe(document.getElementById('cpFloorsWrap'), { childList: true, subtree: true });
+    })();
+    </script>
 </body>
 
 </html>

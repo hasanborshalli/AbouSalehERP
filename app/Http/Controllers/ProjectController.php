@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Apartment;
+use App\Models\ApartmentAdditionalCost;
+use App\Models\ApartmentMaterial;
 use App\Models\AuditLog;
 use App\Models\InventoryItem;
 use App\Models\Project;
+use App\Models\ProjectAdditionalCost;
 use App\Models\ProjectFloor;
 use App\Models\ProjectInventoryItem;
+use App\Services\CashAccountingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
-    public function createProject(Request $request){
+    public function createProject(Request $request, CashAccountingService $cash){
         $audit=new AuditLog();
         $audit->user_id=auth()->id();
         $audit->event='Create';
@@ -51,6 +55,26 @@ class ProjectController extends Controller
             'floors.*.units.*.status' => ['nullable', 'in:available,reserved,sold'],
             'floors.*.units.*.note' => ['nullable', 'string', 'max:1000'],
 
+            // per-apartment materials
+            'floors.*.units.*.apt_materials' => ['nullable', 'array'],
+            'floors.*.units.*.apt_materials.*.item_id' => ['nullable', 'integer', 'exists:inventory_items,id'],
+            'floors.*.units.*.apt_materials.*.qty' => ['nullable', 'numeric', 'min:0'],
+            'floors.*.units.*.apt_materials.*.unit' => ['nullable', 'string', 'max:20'],
+
+            // per-apartment additional costs
+            'floors.*.units.*.apt_costs' => ['nullable', 'array'],
+            'floors.*.units.*.apt_costs.*.description' => ['nullable', 'string', 'max:255'],
+            'floors.*.units.*.apt_costs.*.category' => ['nullable', 'string', 'max:80'],
+            'floors.*.units.*.apt_costs.*.expected_amount' => ['nullable', 'numeric', 'min:0'],
+            'floors.*.units.*.apt_costs.*.notes' => ['nullable', 'string', 'max:500'],
+
+            // project-level additional costs
+            'project_costs' => ['nullable', 'array'],
+            'project_costs.*.description' => ['nullable', 'string', 'max:255'],
+            'project_costs.*.category' => ['nullable', 'string', 'max:80'],
+            'project_costs.*.expected_amount' => ['nullable', 'numeric', 'min:0'],
+            'project_costs.*.notes' => ['nullable', 'string', 'max:500'],
+
             // materials (we validate; storing depends on your DB tables)
             'materials' => ['nullable', 'array'],
             'materials.item_id' => ['nullable', 'array'],
@@ -61,7 +85,7 @@ class ProjectController extends Controller
             'materials.unit.*' => ['nullable', 'string', 'max:20'],
         ]);
 
-        return DB::transaction(function () use ($request, $validated,$audit) {
+        return DB::transaction(function () use ($request, $validated, $audit, $cash) {
             // ✅ Create Project (map your columns)
             $project = Project::create([
                 'name' => $validated['project_name'],
@@ -173,11 +197,17 @@ class ProjectController extends Controller
                     'floor_number' => (int) $floorNumber,
                 ]);
 
-                foreach ($floorData['units'] as $unit) {
-                    Apartment::create([
+                foreach ($floorData['units'] as $unitIdx => $unit) {
+                    // Auto-generate unit code if left blank: F1-U1, F1-U2, etc.
+                    $unitCode = trim($unit['unit_code'] ?? '');
+                    if ($unitCode === '') {
+                        $unitCode = 'F' . ((int)$floorNumber + 1) . '-U' . ($unitIdx + 1);
+                    }
+
+                    $apt = Apartment::create([
                         'project_id' => $project->id,
                         'floor_id' => $floor->id,
-                        'unit_number' => $unit['unit_code'] ?? null,
+                        'unit_number' => $unitCode,
                         'bedrooms' => $unit['bedrooms'] ?? 0,
                         'bathrooms' => $unit['bathrooms'] ?? 0,
                         'area_sqm' => $unit['area_m2'] ?? 0,
@@ -185,12 +215,78 @@ class ProjectController extends Controller
                         'status' => $unit['status'] ?? 'available',
                         'notes' => $unit['note'] ?? null,
                     ]);
+
+                    // Apartment-level materials (from inventory)
+                    $aptMaterials = $unit['apt_materials'] ?? [];
+                    foreach ($aptMaterials as $m) {
+                        $iid = $m['item_id'] ?? null;
+                        $qty = (float) ($m['qty'] ?? 0);
+                        if (!$iid || $qty <= 0) continue;
+
+                        $inv = InventoryItem::lockForUpdate()->find($iid);
+                        if (!$inv) continue;
+                        if ($inv->quantity < $qty) {
+                            throw ValidationException::withMessages([
+                                'materials' => "Not enough stock for {$inv->name}. Needed {$qty}, available {$inv->quantity}.",
+                            ]);
+                        }
+                        $inv->quantity -= $qty;
+                        $inv->is_out_of_stock = $inv->quantity <= 0;
+                        $inv->save();
+
+                        ApartmentMaterial::create([
+                            'apartment_id'      => $apt->id,
+                            'inventory_item_id' => $inv->id,
+                            'quantity_needed'   => $qty,
+                            'unit'              => $inv->unit,
+                        ]);
+                    }
+
+                    // Apartment-level additional costs
+                    $aptCosts = $unit['apt_costs'] ?? [];
+                    foreach ($aptCosts as $c) {
+                        $desc = trim($c['description'] ?? '');
+                        $exp  = (float) ($c['expected_amount'] ?? 0);
+                        if (!$desc || $exp <= 0) continue;
+                        ApartmentAdditionalCost::create([
+                            'apartment_id'    => $apt->id,
+                            'description'     => $desc,
+                            'category'        => $c['category'] ?? null,
+                            'expected_amount' => $exp,
+                            'notes'           => $c['notes'] ?? null,
+                        ]);
+                        // Post expected amount as immediate cash-out
+                        $cash->createOperatingExpense([
+                            'expense_date' => now()->toDateString(),
+                            'category'     => 'apartment_additional_cost',
+                            'amount'       => $exp,
+                            'description'  => "{$desc} (Unit: {$apt->unit_number}, Project: {$project->name})",
+                        ], auth()->id());
+                    }
                 }
             }
 
-            // ✅ Materials: only store if you already have a table for it.
-            // If you have something like project_materials table, tell me its name/columns and I’ll wire it.
-            // For now we just ignore storing it safely.
+            // Project-level additional costs
+            foreach ($request->input('project_costs', []) as $pc) {
+                $desc = trim($pc['description'] ?? '');
+                $exp  = (float) ($pc['expected_amount'] ?? 0);
+                if (!$desc || $exp <= 0) continue;
+                ProjectAdditionalCost::create([
+                    'project_id'      => $project->id,
+                    'description'     => $desc,
+                    'category'        => $pc['category'] ?? null,
+                    'expected_amount' => $exp,
+                    'notes'           => $pc['notes'] ?? null,
+                ]);
+                // Post expected amount as immediate cash-out
+                $cash->createOperatingExpense([
+                    'expense_date' => now()->toDateString(),
+                    'category'     => 'project_additional_cost',
+                    'amount'       => $exp,
+                    'description'  => "{$desc} (Project: {$project->name})",
+                ], auth()->id());
+            }
+
             $audit->details='Creating project succeeded. Project Code: '.$project->code.' Project Name: '.$project->name;
             $audit->save();
             return redirect()

@@ -150,8 +150,11 @@ $end   = Carbon::now()->endOfMonth();
     ));
     }
     public function createProjectPage(){
-        $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit']);
-        return view('createProject', compact('inventoryItems'));
+        $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit', 'quantity', 'price']);
+        $itemsJson = $inventoryItems->map(function ($i) {
+            return ['id' => $i->id, 'name' => $i->name, 'qty' => $i->quantity, 'unit' => $i->unit];
+        })->values()->toJson();
+        return view('createProject', compact('inventoryItems', 'itemsJson'));
     }
     public function editProjectPage(Project $project){
         $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit']);
@@ -287,18 +290,26 @@ $end   = Carbon::now()->endOfMonth();
         ->get();
 
         $revenuesRows = LedgerEntry::where('direction', 'in')
-    ->where('source_type', 'invoice') // only real revenue cash-in
-    ->orderByDesc('posted_at')
-    ->take(20)
-    ->get();
+            ->where('source_type', 'invoice')
+            ->orderByDesc('posted_at')
+            ->take(20)
+            ->get();
+
+        $savingsRows = LedgerEntry::where('direction', 'in')
+            ->whereIn('source_type', ['project_cost_saving', 'apartment_cost_saving'])
+            ->orderByDesc('posted_at')
+            ->take(20)
+            ->get();
+
         return view('accounting.overview', [
-            'labels' => $summary['labels'],
-            'revenues' => $summary['revenues'],
-            'expenses' => $summary['expenses'],
-            'net' => $summary['net'],
-            'purchases' => $purchases,
-        'opExpenses' => $opExpenses,
-        'revenuesRows' => $revenuesRows,
+            'labels'       => $summary['labels'],
+            'revenues'     => $summary['revenues'],
+            'expenses'     => $summary['expenses'],
+            'net'          => $summary['net'],
+            'purchases'    => $purchases,
+            'opExpenses'   => $opExpenses,
+            'revenuesRows' => $revenuesRows,
+            'savingsRows'  => $savingsRows,
         ]);
     }
     public function accountingPurchasesPage()

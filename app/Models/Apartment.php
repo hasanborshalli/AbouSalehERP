@@ -34,4 +34,14 @@ public function contract()
     return $this->hasOne(Contract::class);
 }
 
+public function materials()
+{
+    return $this->hasMany(ApartmentMaterial::class);
+}
+
+public function additionalCosts()
+{
+    return $this->hasMany(ApartmentAdditionalCost::class);
+}
+
 }

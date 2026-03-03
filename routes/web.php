@@ -11,7 +11,9 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InvoicesController;
 use App\Http\Controllers\PagesController;
+use App\Http\Controllers\AdditionalCostController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
@@ -179,5 +181,29 @@ Route::middleware([ 'role:owner,admin'])->group(function () {
     Route::post('/contracts/{contract}/progress', [ContractProgressController::class, 'store'])->name('contracts.progress.store');
     Route::post('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'update'])->name('contracts.progress.update');
     Route::delete('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'destroy'])->name('contracts.progress.destroy');
+});
+
+// ── Reports ──────────────────────────────────────────────────
+Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->group(function () {
+    Route::get('/', [ReportsController::class, 'index'])->name('index');
+    Route::get('/project/{project}', [ReportsController::class, 'byProject'])->name('project');
+    Route::get('/apartment/{apartment}', [ReportsController::class, 'byApartment'])->name('apartment');
+});
+
+// ── Additional Costs & Apartment Materials ────────────────────
+Route::middleware('role:owner,admin')->group(function () {
+    // Project additional costs
+    Route::post('/projects/{project}/costs', [AdditionalCostController::class, 'storeProjectCost'])->name('projects.costs.store');
+    Route::patch('/projects/{project}/costs/{cost}/settle', [AdditionalCostController::class, 'settleProjectCost'])->name('projects.costs.settle');
+    Route::delete('/projects/{project}/costs/{cost}', [AdditionalCostController::class, 'destroyProjectCost'])->name('projects.costs.destroy');
+
+    // Apartment additional costs
+    Route::post('/apartments/{apartment}/costs', [AdditionalCostController::class, 'storeApartmentCost'])->name('apartments.costs.store');
+    Route::patch('/apartments/{apartment}/costs/{cost}/settle', [AdditionalCostController::class, 'settleApartmentCost'])->name('apartments.costs.settle');
+    Route::delete('/apartments/{apartment}/costs/{cost}', [AdditionalCostController::class, 'destroyApartmentCost'])->name('apartments.costs.destroy');
+
+    // Apartment materials (post-creation)
+    Route::post('/apartments/{apartment}/materials', [AdditionalCostController::class, 'storeApartmentMaterial'])->name('apartments.materials.store');
+    Route::delete('/apartments/{apartment}/materials/{material}', [AdditionalCostController::class, 'destroyApartmentMaterial'])->name('apartments.materials.destroy');
 });
 });

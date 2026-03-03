@@ -34,6 +34,11 @@
         <a class="app-sidebar__link {{ activeRoute('settings*') }}" href="{{ route('settings.overview') }}">
             <span>Settings</span>
         </a>
+        @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
+        <a class="app-sidebar__link {{ activeRoute('reports*') }}" href="{{ route('reports.index') }}">
+            <span>Reports</span>
+        </a>
+        @endif
     </nav>
 
     <div class="app-sidebar__footer">
