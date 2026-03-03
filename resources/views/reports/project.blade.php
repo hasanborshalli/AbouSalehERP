@@ -337,6 +337,74 @@
         .btn-del:hover {
             background: rgba(185, 28, 28, 0.18);
         }
+
+        /* ── Add forms ── */
+        .rpt-add-form {
+            background: rgba(0, 0, 0, 0.025);
+            border: 1.5px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .rpt-add-form__title {
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, .55);
+            margin: 0 0 10px;
+        }
+
+        .rpt-add-form__grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .rpt-add-form__grid--mat {
+            grid-template-columns: 2fr 1fr auto;
+        }
+
+        @media(max-width:640px) {
+
+            .rpt-add-form__grid,
+            .rpt-add-form__grid--mat {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .rpt-add-form label {
+            font-size: 11px;
+            opacity: .6;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .rpt-add-form input,
+        .rpt-add-form select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(0, 0, 0, .12);
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+
+        .rpt-add-form__submit {
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(42, 127, 176, .15);
+            color: rgba(42, 127, 176, .9);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .rpt-add-form__submit:hover {
+            background: rgba(42, 127, 176, .25);
+        }
     </style>
 </head>
 
@@ -389,10 +457,10 @@
                 </div>
 
                 {{-- ── Project Materials ── --}}
-                @if($project->inventoryUsages->isNotEmpty())
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">🧱</span> Project-Level Materials
                         (from Inventory)</p>
+                    @if($project->inventoryUsages->isNotEmpty())
                     <table class="rpt-table">
                         <thead>
                             <tr>
@@ -401,6 +469,7 @@
                                 <th>Unit</th>
                                 <th class="num">Unit Price</th>
                                 <th class="num">Line Cost</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -413,6 +482,14 @@
                                 <td>{{ $u->unit ?? $u->inventoryItem->unit ?? '—' }}</td>
                                 <td class="num">${{ number_format((float)($u->inventoryItem->price ?? 0), 2) }}</td>
                                 <td class="num bold">${{ number_format($linePrice, 2) }}</td>
+                                <td>
+                                    <form method="post"
+                                        action="{{ route('projects.materials.destroy', [$project, $u]) }}"
+                                        onsubmit="return confirm('Remove this material and restore stock?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn-del">✕</button>
+                                    </form>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -420,16 +497,46 @@
                             <tr>
                                 <td colspan="4">Total project materials cost</td>
                                 <td class="num">${{ number_format($projectMaterialsCost, 2) }}</td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
+                    @else
+                    <p class="muted" style="font-size:13px; padding:8px 0;">No project-level materials added yet.</p>
+                    @endif
+
+                    {{-- Add material form --}}
+                    <div class="rpt-add-form">
+                        <p class="rpt-add-form__title">＋ Add material to this project</p>
+                        <form method="post" action="{{ route('projects.materials.store', $project) }}">
+                            @csrf
+                            <div class="rpt-add-form__grid rpt-add-form__grid--mat">
+                                <div>
+                                    <label>Inventory item</label>
+                                    <select name="inventory_item_id" required>
+                                        <option value="" disabled selected>Select item…</option>
+                                        @foreach($inventoryItems as $item)
+                                        <option value="{{ $item->id }}">{{ $item->name }} (Stock: {{ $item->quantity }}
+                                            {{ $item->unit }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Quantity</label>
+                                    <input type="number" name="quantity_needed" min="0.01" step="0.01" placeholder="0"
+                                        required>
+                                </div>
+                                <button type="submit" class="rpt-add-form__submit"
+                                    style="align-self:flex-end">Add</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                @endif
 
                 {{-- ── Project Additional Costs ── --}}
-                @if($projCosts->isNotEmpty())
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">📋</span> Project Additional Costs</p>
+                    @if($projCosts->isNotEmpty())
                     <table class="rpt-table">
                         <thead>
                             <tr>
@@ -508,8 +615,36 @@
                             </tr>
                         </tfoot>
                     </table>
+                    @else
+                    <p class="muted" style="font-size:13px; padding:8px 0;">No additional costs added yet.</p>
+                    @endif
+
+                    {{-- Add cost form --}}
+                    <div class="rpt-add-form">
+                        <p class="rpt-add-form__title">＋ Add expected cost for this project</p>
+                        <form method="post" action="{{ route('projects.costs.store', $project) }}">
+                            @csrf
+                            <div class="rpt-add-form__grid">
+                                <div>
+                                    <label>Description</label>
+                                    <input type="text" name="description" placeholder="e.g. Scaffolding hire" required>
+                                </div>
+                                <div>
+                                    <label>Category</label>
+                                    <input type="text" name="category" placeholder="e.g. equipment">
+                                </div>
+                                <div>
+                                    <label>Expected Amount ($)</label>
+                                    <input type="number" name="expected_amount" min="0" step="0.01" placeholder="0.00"
+                                        required>
+                                </div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <button type="submit" class="rpt-add-form__submit">Add Cost</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                @endif
 
                 {{-- ── Apartments Summary Grid ── --}}
                 <div class="rpt-section">

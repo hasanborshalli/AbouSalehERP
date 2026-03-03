@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Apartment;
+use App\Models\InventoryItem;
 use App\Models\Project;
 
 class ReportsController extends Controller
@@ -94,13 +95,16 @@ class ReportsController extends Controller
             'available'        => $apartments->where('status', 'available')->count(),
         ];
 
+        $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit', 'quantity']);
+
         return view('reports.project', compact(
             'project', 'apartments', 'contracts',
             'projectMaterialsCost', 'apartmentMaterialsCost',
             'projCosts', 'projCostsExpected', 'projCostsActual',
             'aptCostsExpected', 'aptCostsActual',
             'paidInvoicesTotal', 'downPaymentsTotal', 'totalRevenue',
-            'totalSellingPrice', 'totalCost', 'profit', 'stats'
+            'totalSellingPrice', 'totalCost', 'profit', 'stats',
+            'inventoryItems'
         ));
     }
 

@@ -151,7 +151,8 @@
                                         {{ $receipt['notes'] ?? '—' }}
                                     </td>
 
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06);">
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06);"
+                                        onclick="event.stopPropagation()">
                                         @if($isVoided)
                                         <span
                                             style="font-size:11px; font-weight:700; color:#b91c1c; background:rgba(185,28,28,0.08); padding:3px 10px; border-radius:999px;">VOID</span>
@@ -161,6 +162,22 @@
                                         @else
                                         <span
                                             style="font-size:11px; font-weight:700; color:#15803d; background:rgba(21,128,61,0.08); padding:3px 10px; border-radius:999px;">ACTIVE</span>
+                                        @endif
+                                        @if(!$isVoided && $receipt['receipt_ref'])
+                                        <form method="post" action="{{ route('accounting.purchases.receipt.void') }}"
+                                            style="display:flex; gap:6px; align-items:center; margin-top:6px; flex-wrap:wrap;"
+                                            onclick="event.stopPropagation()"
+                                            onsubmit="return confirm('Void entire receipt {{ $receipt['receipt_ref'] }}? This will reverse all {{ count($receipt['items']) }} item(s) and restore stock.')">
+                                            @csrf
+                                            <input type="hidden" name="receipt_ref"
+                                                value="{{ $receipt['receipt_ref'] }}">
+                                            <input name="reason" required placeholder="Void reason"
+                                                style="padding:5px 8px; border-radius:8px; border:1px solid rgba(0,0,0,.18); font-size:12px; min-width:140px;" />
+                                            <button type="submit"
+                                                style="padding:5px 12px; border-radius:999px; border:0; cursor:pointer; background:#b91c1c; color:white; font-size:12px; white-space:nowrap;">
+                                                Void Receipt
+                                            </button>
+                                        </form>
                                         @endif
                                     </td>
                                 </tr>
@@ -276,7 +293,23 @@
                                     </td>
 
                                     <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,.06);">
+                                        @php
+                                        $catLabels = [
+                                        'apartment_additional_cost' => ['Apt. Cost', 'rgba(217,119,6,.12)', '#b45309'],
+                                        'project_additional_cost' => ['Proj. Cost', 'rgba(42,127,176,.12)',
+                                        'rgba(42,127,176,.9)'],
+                                        'apartment_cost_overrun' => ['Apt. Overrun', 'rgba(185,28,28,.12)', '#b91c1c'],
+                                        'project_cost_overrun' => ['Proj. Overrun', 'rgba(185,28,28,.12)', '#b91c1c'],
+                                        ];
+                                        $cat = $catLabels[$e->category] ?? null;
+                                        @endphp
+                                        @if($cat)
+                                        <span
+                                            style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;background:{{ $cat[1] }};color:{{ $cat[2] }};">{{
+                                            $cat[0] }}</span>
+                                        @else
                                         {{ $e->category }}
+                                        @endif
                                     </td>
 
                                     <td

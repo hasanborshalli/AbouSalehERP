@@ -136,6 +136,9 @@ Route::middleware('role:owner,admin')->group(function () {
    Route::patch('/purchases/{purchase}/void', [AccountingController::class, 'voidPurchase'])
     ->name('purchases.void');
 
+   Route::post('/purchases/receipt/void', [AccountingController::class, 'voidReceipt'])
+    ->name('purchases.receipt.void');
+
 Route::patch('/expenses/{expense}/void', [AccountingController::class, 'voidExpense'])
     ->name('expenses.void');
         });
@@ -205,5 +208,9 @@ Route::middleware('role:owner,admin')->group(function () {
     // Apartment materials (post-creation)
     Route::post('/apartments/{apartment}/materials', [AdditionalCostController::class, 'storeApartmentMaterial'])->name('apartments.materials.store');
     Route::delete('/apartments/{apartment}/materials/{material}', [AdditionalCostController::class, 'destroyApartmentMaterial'])->name('apartments.materials.destroy');
+
+    // Project materials (post-creation)
+    Route::post('/projects/{project}/materials', [AdditionalCostController::class, 'storeProjectMaterial'])->name('projects.materials.store');
+    Route::delete('/projects/{project}/materials/{material}', [AdditionalCostController::class, 'destroyProjectMaterial'])->name('projects.materials.destroy');
 });
 });

@@ -44,17 +44,19 @@
     display: flex;
     flex-direction: column;
     padding: 18px 14px;
+    overflow: hidden;
 }
 
 .app-sidebar__profile {
     text-align: center;
-    padding: 12px 8px 18px;
+    padding: 10px 8px 12px;
+    flex-shrink: 0;
 }
 
 .app-sidebar__avatar {
-    width: 96px;
-    height: 96px;
-    margin: 0 auto 12px;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 10px;
     border-radius: 999px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.15);
@@ -78,22 +80,30 @@
 }
 
 .app-sidebar__nav {
-    margin-top: 18px;
+    margin-top: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 8px;
+    scrollbar-width: none; /* Firefox */
 }
+.app-sidebar__nav::-webkit-scrollbar {
+    display: none;
+} /* Chrome/Safari */
 
 .app-sidebar__link {
     color: var(--sidebarText);
     text-decoration: none;
-    font-size: 16px;
-    padding: 8px 12px;
+    font-size: 14px;
+    padding: 7px 12px;
     border-radius: 999px;
     width: 180px;
     margin: 0 auto;
     display: flex;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .app-sidebar__link.is-active {

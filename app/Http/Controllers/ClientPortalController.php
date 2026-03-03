@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\User;
@@ -92,7 +93,6 @@ public function contractsOverview()
         return [
             'contract' => $c,
             'project_name' => $c->project?->name,
-            'apartment' => $c->apartment?->unit_number,
             'start_date' => $c->project?->start_date,
             'estimated_completion_date' => $c->project?->estimated_completion_date,
             'status' => $this->contractStatus($c),
@@ -278,6 +278,15 @@ public function contractsOverview()
         // keep validation simple here; you can add unique rules if you want.
         $user->update($data);
 
+        $audit = new AuditLog();
+        $audit->user_id     = $user->id;
+        $audit->event       = 'Update';
+        $audit->entity_type = 'Client Profile';
+        $audit->details     = "Client {$user->name} (ID {$user->id}) updated their profile.";
+        $audit->save();
+        $audit->record = 'CLT-' . str_pad($user->id, 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
+        $audit->save();
+
         return back()->with('success', 'Profile updated.');
     }
 
@@ -297,6 +306,15 @@ public function contractsOverview()
 
         $user->password = $data['password'];
         $user->save();
+
+        $audit = new AuditLog();
+        $audit->user_id     = $user->id;
+        $audit->event       = 'Update';
+        $audit->entity_type = 'Client Password';
+        $audit->details     = "Client {$user->name} (ID {$user->id}) changed their password.";
+        $audit->save();
+        $audit->record = 'CLT-' . str_pad($user->id, 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
+        $audit->save();
 
         return back()->with('success', 'Password updated.');
     }
@@ -319,6 +337,15 @@ public function contractsOverview()
         $path = $data['avatar']->store('avatars', 'public');
         $user->avatar = '/storage/' . $path;
         $user->save();
+
+        $audit = new AuditLog();
+        $audit->user_id     = $user->id;
+        $audit->event       = 'Update';
+        $audit->entity_type = 'Client Avatar';
+        $audit->details     = "Client {$user->name} (ID {$user->id}) updated their avatar.";
+        $audit->save();
+        $audit->record = 'CLT-' . str_pad($user->id, 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
+        $audit->save();
 
         return back()->with('success', 'Avatar updated.');
     }

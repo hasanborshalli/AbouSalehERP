@@ -35,6 +35,9 @@ class AdditionalCostController extends Controller
             'description'  => "{$data['description']} (Project: {$project->name})",
         ], auth()->id());
 
+        $this->auditLog('Create', 'Project Additional Cost',
+            "Added cost '{$data['description']}' (\${$data['expected_amount']}) to project {$project->name}.");
+
         return back()->with('success', 'Additional cost added.');
     }
 
@@ -90,6 +93,8 @@ class AdditionalCostController extends Controller
     public function destroyProjectCost(Project $project, ProjectAdditionalCost $cost)
     {
         abort_unless($cost->project_id === $project->id, 404);
+        $this->auditLog('Delete', 'Project Additional Cost',
+            "Deleted cost '{$cost->description}' (\${$cost->expected_amount}) from project {$project->name}.");
         $cost->delete();
         return back()->with('success', 'Cost entry removed.');
     }
@@ -116,6 +121,9 @@ class AdditionalCostController extends Controller
             'amount'       => (float) $data['expected_amount'],
             'description'  => "{$data['description']} (Unit: {$apartment->unit_number})",
         ], auth()->id());
+
+        $this->auditLog('Create', 'Apartment Additional Cost',
+            "Added cost '{$data['description']}' (\${$data['expected_amount']}) to unit {$apartment->unit_number}.");
 
         return back()->with('success', 'Additional cost added to apartment.');
     }
@@ -169,6 +177,8 @@ class AdditionalCostController extends Controller
     public function destroyApartmentCost(Apartment $apartment, ApartmentAdditionalCost $cost)
     {
         abort_unless($cost->apartment_id === $apartment->id, 404);
+        $this->auditLog('Delete', 'Apartment Additional Cost',
+            "Deleted cost '{$cost->description}' (\${$cost->expected_amount}) from unit {$apartment->unit_number}.");
         $cost->delete();
         return back()->with('success', 'Cost entry removed.');
     }
@@ -200,6 +210,9 @@ class AdditionalCostController extends Controller
             'unit'              => $item->unit,
         ]);
 
+        $this->auditLog('Create', 'Apartment Material',
+            "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to unit {$apartment->unit_number}.");
+
         return back()->with('success', "Material added: {$item->name}.");
     }
 
@@ -208,6 +221,57 @@ class AdditionalCostController extends Controller
         abort_unless($material->apartment_id === $apartment->id, 404);
 
         // Restore stock
+        $item = \App\Models\InventoryItem::find($material->inventory_item_id);
+        if ($item) {
+            $item->increment('quantity', $material->quantity_needed);
+            $item->is_out_of_stock = false;
+            $item->save();
+        }
+
+        $itemName = $item?->name ?? "Item #{$material->inventory_item_id}";
+        $material->delete();
+        $this->auditLog('Delete', 'Apartment Material',
+            "Removed {$material->quantity_needed} {$material->unit} of {$itemName} from unit {$apartment->unit_number}. Stock restored.");
+        return back()->with('success', 'Material removed and stock restored.');
+    }
+
+    // ─────────────────────────────────────────────
+    // PROJECT-LEVEL MATERIALS (add/remove after creation)
+    // ─────────────────────────────────────────────
+
+    public function storeProjectMaterial(Request $request, Project $project)
+    {
+        $data = $request->validate([
+            'inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+            'quantity_needed'   => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
+
+        if ($item->quantity < $data['quantity_needed']) {
+            return back()->with('error', "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.");
+        }
+
+        $item->decrement('quantity', $data['quantity_needed']);
+        $item->is_out_of_stock = $item->quantity <= 0;
+        $item->save();
+
+        \App\Models\ProjectInventoryItem::create([
+            'project_id'        => $project->id,
+            'inventory_item_id' => $item->id,
+            'quantity_needed'   => $data['quantity_needed'],
+            'unit'              => $item->unit,
+        ]);
+
+        $this->auditLog('Create', 'Project Material', "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to project {$project->name}.");
+
+        return back()->with('success', "Material added: {$item->name}.");
+    }
+
+    public function destroyProjectMaterial(Project $project, \App\Models\ProjectInventoryItem $material)
+    {
+        abort_unless($material->project_id === $project->id, 404);
+
         $item = \App\Models\InventoryItem::find($material->inventory_item_id);
         if ($item) {
             $item->increment('quantity', $material->quantity_needed);

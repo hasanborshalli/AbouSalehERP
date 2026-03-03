@@ -136,4 +136,48 @@ public function voidExpense(Request $request, OperatingExpense $expense, CashAcc
             $audit->save();
     return redirect()->route('accounting.overview')->with('success', 'Expense voided.');
 }
+
+public function voidReceipt(Request $request, CashAccountingService $cash)
+{
+    $data = $request->validate([
+        'receipt_ref' => ['required', 'string', 'max:100'],
+        'reason'      => ['required', 'string', 'max:255'],
+    ]);
+
+    $purchases = InventoryPurchase::where('receipt_ref', $data['receipt_ref'])
+        ->whereNull('voided_at')
+        ->get();
+
+    if ($purchases->isEmpty()) {
+        return back()->with('error', 'No active items found for this receipt.');
+    }
+
+    $audit = new AuditLog();
+    $audit->user_id     = auth()->id();
+    $audit->event       = 'Delete';
+    $audit->entity_type = 'Inventory Purchase Receipt';
+    $audit->details     = 'Voiding receipt ' . $data['receipt_ref'] . ' failed';
+    $audit->save();
+    $audit->record = 'ACC-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
+    $audit->save();
+
+    $errors = [];
+    foreach ($purchases as $purchase) {
+        try {
+            $cash->voidInventoryPurchase($purchase, $data['reason'], auth()->id());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $errors[] = $e->errors()['void'][0] ?? 'Could not void item #' . $purchase->id;
+        }
+    }
+
+    if (!empty($errors)) {
+        $audit->details = 'Voiding receipt ' . $data['receipt_ref'] . ' partially failed: ' . implode('; ', $errors);
+        $audit->save();
+        return back()->with('error', 'Some items could not be voided: ' . implode(' | ', $errors));
+    }
+
+    $audit->details = 'Voiding receipt ' . $data['receipt_ref'] . ' succeeded (' . $purchases->count() . ' items).';
+    $audit->save();
+    return redirect()->route('accounting.overview')->with('success', 'Receipt voided (' . $purchases->count() . ' items reversed).');
+}
 }

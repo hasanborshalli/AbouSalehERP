@@ -286,7 +286,7 @@ $end   = Carbon::now()->endOfMonth();
 
     $opExpenses = OperatingExpense::orderByDesc('expense_date')
         ->orderByDesc('id')
-        ->take(20)
+        ->take(50)
         ->get();
 
         $revenuesRows = LedgerEntry::where('direction', 'in')
