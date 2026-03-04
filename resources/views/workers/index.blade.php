@@ -31,19 +31,25 @@
         }
 
         .btn-add {
-            padding: 9px 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 22px;
             border-radius: 999px;
-            background: rgba(42, 127, 176, .15);
-            color: rgba(42, 127, 176, .9);
+            background: rgba(42, 127, 176, .9);
+            color: #fff;
             text-decoration: none;
             font-weight: 700;
             font-size: 13px;
             border: none;
             cursor: pointer;
+            box-shadow: 0 4px 14px rgba(42, 127, 176, .25);
+            transition: background .15s, transform .1s;
         }
 
         .btn-add:hover {
-            background: rgba(42, 127, 176, .25);
+            background: rgba(42, 127, 176, 1);
+            transform: translateY(-1px);
         }
 
         .wrk-table-wrap {
@@ -137,7 +143,7 @@
 
                 <div class="wrk-header">
                     <h2>Workers & Contractors</h2>
-                    <a class="btn-add" href="{{ route('workers.create') }}">+ Add Worker</a>
+                    <a class="btn-add" href="{{ route('workers.create') }}">＋ Add Worker</a>
                 </div>
 
                 <div class="wrk-table-wrap">

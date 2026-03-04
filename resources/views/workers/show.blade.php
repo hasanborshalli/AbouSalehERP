@@ -324,7 +324,18 @@
                             <p class="contract-card__title">📋 {{ $contract->scope_of_work }}</p>
                             <p class="contract-card__meta">
                                 {{ ucfirst($contract->category ?? 'General') }}
-                                @if($contract->project) · Project: {{ $contract->project->name }} @endif
+                                @php
+                                $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
+                                $linkedApartments = \App\Models\Apartment::whereIn('id',
+                                $contract->allApartmentIds())->with('project')->get();
+                                @endphp
+                                @if($linkedProjects->isNotEmpty())
+                                · Projects: {{ $linkedProjects->pluck('name')->join(', ') }}
+                                @endif
+                                @if($linkedApartments->isNotEmpty())
+                                · Units: {{ $linkedApartments->map(fn($a) => ($a->project?->name ? $a->project->name.' –
+                                ' : '').'Unit '.($a->unit_number ?? '#'.$a->id))->join(', ') }}
+                                @endif
                                 · Contract date: {{ $contract->contract_date->format('d M Y') }}
                                 @if($contract->pdf_path)
                                 · <a class="link-btn" href="{{ route('workers.contract.pdf', $contract) }}"
@@ -403,7 +414,8 @@
                 {{-- Add new contract --}}
                 <div class="wrk-section">
                     <p class="wrk-section__title">➕ Add new contract for this worker</p>
-                    <form class="add-contract-form" method="post" action="{{ route('workers.addContract', $worker) }}">
+                    <form class="add-contract-form" method="post" action="{{ route('workers.addContract', $worker) }}"
+                        id="addContractForm">
                         @csrf
                         <div class="form-grid">
                             <div class="full">
@@ -414,31 +426,6 @@
                             <div>
                                 <label>Category</label>
                                 <input type="text" name="category" placeholder="e.g. plumbing" />
-                            </div>
-                            <div>
-                                <label>Projects (optional — hold Ctrl/Cmd to select multiple)</label>
-                                @php $allProjects = \App\Models\Project::orderByDesc('created_at')->get(['id','name']);
-                                @endphp
-                                <select name="project_ids[]" multiple size="4"
-                                    style="width:100%; padding:6px 8px; border-radius:8px; border:2px solid rgba(0,0,0,.1); height:auto;">
-                                    @foreach($allProjects as $proj)
-                                    <option value="{{ $proj->id }}">{{ $proj->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label>Apartments (optional — hold Ctrl/Cmd to select multiple)</label>
-                                @php $allApartments = \App\Models\Apartment::with('project')->orderBy('id')->get();
-                                @endphp
-                                <select name="apartment_ids[]" multiple size="4"
-                                    style="width:100%; padding:6px 8px; border-radius:8px; border:2px solid rgba(0,0,0,.1); height:auto;">
-                                    @foreach($allApartments as $apt)
-                                    <option value="{{ $apt->id }}">
-                                        {{ $apt->project?->name ? $apt->project->name.' — ' : '' }}{{ $apt->unit_number
-                                        ?? $apt->unit_code ?? 'Unit #'.$apt->id }}
-                                    </option>
-                                    @endforeach
-                                </select>
                             </div>
                             <div>
                                 <label>Contract date</label>
@@ -452,31 +439,112 @@
                                 <label>Expected end date</label>
                                 <input type="date" name="expected_end_date" />
                             </div>
+                        </div>
+
+                        {{-- Project & Apartment assignment --}}
+                        <div style="margin-top:14px;">
+                            <label
+                                style="display:block; font-size:12px; font-weight:700; color:rgba(0,0,0,.5); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">
+                                Project & Apartment Assignment
+                            </label>
+                            <p style="font-size:12px; color:rgba(0,0,0,.45); margin-bottom:10px;">
+                                Check a project to assign it. Checking a project disables its individual apartments.
+                                Enter a cost for each selection — the total will be auto-calculated.
+                            </p>
+                            <div class="nc-assign-panel"
+                                style="border:1.5px solid rgba(0,0,0,.08); border-radius:12px; overflow:hidden; background:#fff;">
+                                @foreach($projects as $proj)
+                                <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid rgba(0,0,0,.05);"
+                                    data-nc-proj-row="{{ $proj->id }}">
+                                    <label
+                                        style="display:flex; align-items:center; gap:7px; flex:1; cursor:pointer; font-size:13px; font-weight:600; color:rgba(0,0,0,.8);">
+                                        <input type="checkbox" class="nc-proj-cb" data-project-id="{{ $proj->id }}"
+                                            style="width:15px;height:15px;accent-color:rgba(42,127,176,.9);cursor:pointer;">
+                                        {{ $proj->name }}
+                                        @if($proj->apartments->count())
+                                        <span style="opacity:.4; font-size:11px; font-weight:400;">{{
+                                            $proj->apartments->count() }} unit(s)</span>
+                                        @endif
+                                    </label>
+                                    <input type="hidden" name="project_ids[]" value="{{ $proj->id }}"
+                                        class="nc-proj-id-hidden" disabled>
+                                    <div class="nc-proj-cost" style="display:none; align-items:center; gap:5px;">
+                                        <span
+                                            style="font-size:13px; font-weight:700; color:rgba(42,127,176,.8);">$</span>
+                                        <input type="number" class="nc-cost-input" name="project_costs[{{ $proj->id }}]"
+                                            min="0.01" step="0.01" placeholder="Cost" disabled
+                                            style="width:110px; padding:5px 8px; border:2px solid rgba(42,127,176,.25); border-radius:7px; font-size:13px; font-weight:600;">
+                                    </div>
+                                </div>
+                                @foreach($proj->apartments as $apt)
+                                <div style="display:flex; align-items:center; gap:10px; padding:8px 14px 8px 34px; border-bottom:1px solid rgba(0,0,0,.04); background:rgba(0,0,0,.01);"
+                                    data-nc-apt-row="{{ $apt->id }}" data-nc-apt-parent="{{ $proj->id }}"
+                                    class="nc-apt-row">
+                                    <label
+                                        style="display:flex; align-items:center; gap:7px; flex:1; cursor:pointer; font-size:12.5px; color:rgba(0,0,0,.65); font-weight:500;">
+                                        <input type="checkbox" class="nc-apt-cb" data-apt-id="{{ $apt->id }}"
+                                            data-apt-parent="{{ $proj->id }}"
+                                            style="width:14px;height:14px;accent-color:rgba(42,127,176,.9);cursor:pointer;">
+                                        Unit {{ $apt->unit_number ?? '#'.$apt->id }}
+                                        @if($apt->bedrooms) · {{ $apt->bedrooms }}BR @endif
+                                    </label>
+                                    <input type="hidden" name="apartment_ids[]" value="{{ $apt->id }}"
+                                        class="nc-apt-id-hidden" disabled>
+                                    <div class="nc-apt-cost" style="display:none; align-items:center; gap:5px;">
+                                        <span
+                                            style="font-size:13px; font-weight:700; color:rgba(42,127,176,.8);">$</span>
+                                        <input type="number" class="nc-cost-input"
+                                            name="apartment_costs[{{ $apt->id }}]" min="0.01" step="0.01"
+                                            placeholder="Cost" disabled
+                                            style="width:110px; padding:5px 8px; border:2px solid rgba(42,127,176,.25); border-radius:7px; font-size:13px; font-weight:600;">
+                                    </div>
+                                </div>
+                                @endforeach
+                                @endforeach
+                            </div>
+
+                            <div id="nc-total-bar"
+                                style="display:none; margin-top:8px; padding:9px 14px; background:rgba(42,127,176,.07); border-radius:9px; border:1.5px solid rgba(42,127,176,.15); display:none; justify-content:space-between; align-items:center;">
+                                <span style="font-size:12px; font-weight:700; color:rgba(0,0,0,.55);">Contract total
+                                    (from assignments)</span>
+                                <span id="nc-total-display"
+                                    style="font-size:17px; font-weight:800; color:rgba(42,127,176,.9);">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-top:14px;">
                             <div>
                                 <label>Total amount ($)</label>
-                                <input type="number" name="total_amount" min="0.01" step="0.01" placeholder="2000.00"
-                                    required id="nc_total" />
+                                <input type="number" name="total_amount" min="0.01" step="0.01"
+                                    placeholder="Auto-filled or enter manually" id="nc_total"
+                                    style="width:100%; padding:8px 10px; border:2px solid rgba(0,0,0,.1); border-radius:8px; font-size:13px;" />
                             </div>
                             <div>
                                 <label>Number of monthly payments</label>
                                 <input type="number" name="payment_months" min="1" max="120" placeholder="10" required
-                                    id="nc_months" />
+                                    id="nc_months"
+                                    style="width:100%; padding:8px 10px; border:2px solid rgba(0,0,0,.1); border-radius:8px; font-size:13px;" />
                             </div>
                             <div>
                                 <label>Monthly (preview)</label>
-                                <input type="text" id="nc_preview" readonly placeholder="Auto" style="opacity:.7;" />
+                                <input type="text" id="nc_preview" readonly placeholder="Auto"
+                                    style="opacity:.7; width:100%; padding:8px 10px; border:2px solid rgba(0,0,0,.07); border-radius:8px; font-size:13px;" />
                             </div>
                             <div>
                                 <label>First payment date</label>
                                 <input type="date" name="first_payment_date" required
-                                    value="{{ now()->addMonth()->format('Y-m-d') }}" />
+                                    value="{{ now()->addMonth()->format('Y-m-d') }}"
+                                    style="width:100%; padding:8px 10px; border:2px solid rgba(0,0,0,.1); border-radius:8px; font-size:13px;" />
                             </div>
                             <div class="full">
                                 <label>Notes</label>
-                                <input type="text" name="notes" placeholder="Optional notes" />
+                                <input type="text" name="notes" placeholder="Optional notes"
+                                    style="width:100%; padding:8px 10px; border:2px solid rgba(0,0,0,.1); border-radius:8px; font-size:13px;" />
                             </div>
                         </div>
-                        <button type="submit" class="btn-submit">Add Contract</button>
+                        <button type="submit" class="btn-submit"
+                            style="margin-top:14px; padding:10px 22px; border-radius:999px; border:none; background:rgba(42,127,176,.9); color:#fff; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(42,127,176,.25);">Add
+                            Contract</button>
                     </form>
                 </div>
 
@@ -487,11 +555,94 @@
     <script src="/js/navSearch.js"></script>
     <script>
         (function(){
-        const t = document.getElementById('nc_total');
-        const m = document.getElementById('nc_months');
-        const p = document.getElementById('nc_preview');
-        function calc(){ const tv=parseFloat(t.value),mv=parseInt(m.value); p.value=(tv>0&&mv>0)?'$'+(tv/mv).toFixed(2)+' / mo':''; }
-        t.addEventListener('input',calc); m.addEventListener('input',calc);
+        // ── Add-contract assignment logic ────────────────────────────────────
+        const ncTotal   = document.getElementById('nc_total');
+        const ncMonths  = document.getElementById('nc_months');
+        const ncPreview = document.getElementById('nc_preview');
+        const ncTotalBar = document.getElementById('nc-total-bar');
+        const ncTotalDisplay = document.getElementById('nc-total-display');
+
+        function ncSumCosts() {
+            let sum = 0;
+            document.querySelectorAll('#addContractForm .nc-cost-input').forEach(inp => {
+                const v = parseFloat(inp.value);
+                if (!isNaN(v) && v > 0) sum += v;
+            });
+            return sum;
+        }
+        function ncRefreshTotal() {
+            const sum = ncSumCosts();
+            if (sum > 0) {
+                ncTotalDisplay.textContent = '$' + sum.toFixed(2);
+                ncTotalBar.style.display = 'flex';
+                ncTotal.value = sum.toFixed(2);
+            } else {
+                ncTotalBar.style.display = 'none';
+                ncTotal.value = '';
+            }
+            ncRefreshPreview();
+        }
+        function ncRefreshPreview() {
+            const t = parseFloat(ncTotal.value), m = parseInt(ncMonths.value);
+            ncPreview.value = (t > 0 && m > 0) ? '$' + (t/m).toFixed(2) + ' / mo' : '';
+        }
+
+        document.querySelectorAll('.nc-proj-cb').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const pid     = this.dataset.projectId;
+                const row     = this.closest('[data-nc-proj-row]');
+                const costDiv = row.querySelector('.nc-proj-cost');
+                const costInp = costDiv.querySelector('input[type=number]');
+                const hidInp  = row.querySelector('.nc-proj-id-hidden');
+                const aptRows = document.querySelectorAll(`.nc-apt-row[data-nc-apt-parent="${pid}"]`);
+                if (this.checked) {
+                    costDiv.style.display = 'flex';
+                    costInp.disabled = false;
+                    hidInp.disabled  = false;
+                    aptRows.forEach(row => {
+                        const aptCb   = row.querySelector('.nc-apt-cb');
+                        const aptCost = row.querySelector('.nc-apt-cost');
+                        const aptInp  = aptCost.querySelector('input[type=number]');
+                        const aptHid  = row.querySelector('.nc-apt-id-hidden');
+                        row.style.opacity = '.3';
+                        row.style.pointerEvents = 'none';
+                        aptCb.checked = false;
+                        aptCost.style.display = 'none';
+                        if (aptInp) { aptInp.value = ''; aptInp.disabled = true; }
+                        if (aptHid) aptHid.disabled = true;
+                    });
+                } else {
+                    costDiv.style.display = 'none';
+                    costInp.value = ''; costInp.disabled = true;
+                    hidInp.disabled = true;
+                    aptRows.forEach(row => {
+                        row.style.opacity = '';
+                        row.style.pointerEvents = '';
+                    });
+                }
+                ncRefreshTotal();
+            });
+        });
+
+        document.querySelectorAll('.nc-apt-cb').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const costDiv = this.closest('.nc-apt-row').querySelector('.nc-apt-cost');
+                const costInp = costDiv.querySelector('input[type=number]');
+                const hidInp  = this.closest('.nc-apt-row').querySelector('.nc-apt-id-hidden');
+                costDiv.style.display = this.checked ? 'flex' : 'none';
+                costInp.disabled = !this.checked;
+                if (hidInp) hidInp.disabled = !this.checked;
+                if (!this.checked) costInp.value = '';
+                ncRefreshTotal();
+            });
+        });
+
+        document.querySelectorAll('#addContractForm .nc-cost-input').forEach(inp => {
+            inp.addEventListener('input', ncRefreshTotal);
+        });
+
+        ncTotal.addEventListener('input', ncRefreshPreview);
+        ncMonths.addEventListener('input', ncRefreshPreview);
     })();
     </script>
 </body>

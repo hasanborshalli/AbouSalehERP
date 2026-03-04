@@ -245,10 +245,32 @@
                 <td class="label">Email</td>
                 <td class="value">{{ $contract->worker->email ?? '—' }}</td>
             </tr>
-            @if($contract->project)
+            @php
+            $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
+            $linkedApartments = \App\Models\Apartment::whereIn('id',
+            $contract->allApartmentIds())->with('project')->get();
+            $projectCosts = $contract->project_costs ?? [];
+            $apartmentCosts = $contract->apartment_costs ?? [];
+            @endphp
+            @if($linkedProjects->isNotEmpty())
             <tr>
-                <td class="label">Project</td>
-                <td class="value">{{ $contract->project->name }}</td>
+                <td class="label">Project(s)</td>
+                <td class="value">
+                    @foreach($linkedProjects as $proj)
+                    {{ $proj->name }}@if($proj->code) ({{ $proj->code }})@endif @if(!$loop->last), @endif
+                    @endforeach
+                </td>
+            </tr>
+            @endif
+            @if($linkedApartments->isNotEmpty())
+            <tr>
+                <td class="label">Unit(s)</td>
+                <td class="value">
+                    @foreach($linkedApartments as $apt)
+                    @if($apt->project){{ $apt->project->name }} – @endif Unit {{ $apt->unit_number ?? '#'.$apt->id
+                    }}@if(!$loop->last), @endif
+                    @endforeach
+                </td>
             </tr>
             @endif
         </table>
@@ -287,14 +309,59 @@
 
     <div class="sp-10"></div>
 
+    <!-- ASSIGNMENT & COST BREAKDOWN -->
+    @if($linkedProjects->isNotEmpty() || $linkedApartments->isNotEmpty())
+    <div class="card">
+        <div class="h2">Assignment & Cost Breakdown</div>
+        <table class="money">
+            @foreach($linkedProjects as $proj)
+            <tr>
+                <th>Project: {{ $proj->name }}@if($proj->code) ({{ $proj->code }})@endif</th>
+                <td>
+                    @if(isset($projectCosts[$proj->id]) && $projectCosts[$proj->id] > 0)
+                    USD ${{ number_format($projectCosts[$proj->id], 2) }}
+                    @else
+                    <span style="color:#6b7280;">—</span>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+            @foreach($linkedApartments as $apt)
+            <tr>
+                <th>
+                    Unit {{ $apt->unit_number ?? '#'.$apt->id }}
+                    @if($apt->project) <span style="font-weight:400;color:#6b7280;">({{ $apt->project->name
+                        }})</span>@endif
+                </th>
+                <td>
+                    @if(isset($apartmentCosts[$apt->id]) && $apartmentCosts[$apt->id] > 0)
+                    USD ${{ number_format($apartmentCosts[$apt->id], 2) }}
+                    @else
+                    <span style="color:#6b7280;">—</span>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+            <tr class="final">
+                <th>Total Contract Amount</th>
+                <td>USD ${{ number_format($contract->total_amount, 2) }}</td>
+            </tr>
+        </table>
+    </div>
+    @endif
+
+    <div class="sp-10"></div>
+
     <!-- PAYMENT -->
     <div class="card">
         <div class="h2">Payment Terms</div>
         <table class="money">
+            @if($linkedProjects->isEmpty() && $linkedApartments->isEmpty())
             <tr>
                 <th>Total Contract Amount</th>
                 <td>USD ${{ number_format($contract->total_amount,2) }}</td>
             </tr>
+            @endif
             <tr class="final">
                 <th>Monthly Payment</th>
                 <td>USD ${{ number_format($contract->monthly_amount,2) }}</td>

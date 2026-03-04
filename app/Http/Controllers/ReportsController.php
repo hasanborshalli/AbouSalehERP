@@ -64,12 +64,13 @@ class ReportsController extends Controller
         // ── Project additional costs ──
         $projCosts = $project->additionalCosts;
         $projCostsExpected = $projCosts->sum('expected_amount');
-        $projCostsActual   = $projCosts->sum(fn($c) => $c->actual_amount ?? $c->expected_amount);
+        // Only count actual when settled; unsettled costs are still pending — not yet a real expense
+        $projCostsActual = $projCosts->sum(fn($c) => $c->isSettled() ? (float) $c->actual_amount : 0.0);
 
         // ── Apartment additional costs ──
         $aptCostsExpected = $apartments->sum(fn($apt) => $apt->additionalCosts->sum('expected_amount'));
         $aptCostsActual   = $apartments->sum(fn($apt) => $apt->additionalCosts->sum(
-            fn($c) => $c->actual_amount ?? $c->expected_amount
+            fn($c) => $c->isSettled() ? (float) $c->actual_amount : 0.0
         ));
 
         // ── Revenues (paid invoices + down payments) ──
@@ -130,7 +131,7 @@ class ReportsController extends Controller
 
         // ── Additional costs ──
         $costsExpected = $apartment->additionalCosts->sum('expected_amount');
-        $costsActual   = $apartment->additionalCosts->sum(fn($c) => $c->actual_amount ?? $c->expected_amount);
+        $costsActual   = $apartment->additionalCosts->sum(fn($c) => $c->isSettled() ? (float) $c->actual_amount : 0.0);
 
         // ── Revenue ──
         $paidAmount  = (float) $invoices->where('status', 'paid')->sum('amount');

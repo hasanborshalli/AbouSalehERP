@@ -16,7 +16,7 @@ class AdditionalCostController extends Controller
     // PROJECT-LEVEL ADDITIONAL COSTS
     // ─────────────────────────────────────────────
 
-    public function storeProjectCost(Request $request, Project $project, CashAccountingService $cash)
+    public function storeProjectCost(Request $request, Project $project)
     {
         $data = $request->validate([
             'description'     => ['required', 'string', 'max:255'],
@@ -27,13 +27,7 @@ class AdditionalCostController extends Controller
 
         $project->additionalCosts()->create($data);
 
-        // Post expected amount as immediate cash-out
-        $cash->createOperatingExpense([
-            'expense_date' => now()->toDateString(),
-            'category'     => 'project_additional_cost',
-            'amount'       => (float) $data['expected_amount'],
-            'description'  => "{$data['description']} (Project: {$project->name})",
-        ], auth()->id());
+        // NOTE: No cash-out posted here. Cash flows only when the cost is settled (actual_amount entered).
 
         $this->auditLog('Create', 'Project Additional Cost',
             "Added cost '{$data['description']}' (\${$data['expected_amount']}) to project {$project->name}.");
@@ -62,18 +56,17 @@ class AdditionalCostController extends Controller
             'notes'             => $data['notes'] ?? $cost->notes,
         ]);
 
-        // Post to ledger only when there is a variance
-        if (abs($variance) > 0.001) {
-            if ($variance > 0) {
-                // Over budget → extra cash out
-                $cash->createOperatingExpense([
-                    'expense_date' => now()->toDateString(),
-                    'category'     => 'project_cost_overrun',
-                    'amount'       => $variance,
-                    'description'  => "Over-budget: {$cost->description} (Project: {$project->name})",
-                ], auth()->id());
-            } else {
-                // Under budget → savings (post as negative expense / cash-in reversal)
+        // Worker-contract costs are accounted for when the worker payment is marked paid.
+        // Posting cash-out here would double-count. For all other cost types, post now.
+        if ($cost->category !== 'worker_contract') {
+            $cash->createOperatingExpense([
+                'expense_date' => now()->toDateString(),
+                'category'     => 'project_additional_cost',
+                'amount'       => $actual,
+                'description'  => "{$cost->description} (Project: {$project->name})",
+            ], auth()->id());
+
+            if ($variance < -0.001) {
                 $cash->postCostSaving(
                     abs($variance),
                     "Under-budget saving: {$cost->description} (Project: {$project->name})",
@@ -103,7 +96,7 @@ class AdditionalCostController extends Controller
     // APARTMENT-LEVEL ADDITIONAL COSTS
     // ─────────────────────────────────────────────
 
-    public function storeApartmentCost(Request $request, Apartment $apartment, CashAccountingService $cash)
+    public function storeApartmentCost(Request $request, Apartment $apartment)
     {
         $data = $request->validate([
             'description'     => ['required', 'string', 'max:255'],
@@ -114,13 +107,7 @@ class AdditionalCostController extends Controller
 
         $apartment->additionalCosts()->create($data);
 
-        // Post expected amount as immediate cash-out
-        $cash->createOperatingExpense([
-            'expense_date' => now()->toDateString(),
-            'category'     => 'apartment_additional_cost',
-            'amount'       => (float) $data['expected_amount'],
-            'description'  => "{$data['description']} (Unit: {$apartment->unit_number})",
-        ], auth()->id());
+        // NOTE: No cash-out posted here. Cash flows only when the cost is settled (actual_amount entered).
 
         $this->auditLog('Create', 'Apartment Additional Cost',
             "Added cost '{$data['description']}' (\${$data['expected_amount']}) to unit {$apartment->unit_number}.");
@@ -149,15 +136,17 @@ class AdditionalCostController extends Controller
             'notes'             => $data['notes'] ?? $cost->notes,
         ]);
 
-        if (abs($variance) > 0.001) {
-            if ($variance > 0) {
-                $cash->createOperatingExpense([
-                    'expense_date' => now()->toDateString(),
-                    'category'     => 'apartment_cost_overrun',
-                    'amount'       => $variance,
-                    'description'  => "Over-budget: {$cost->description} (Unit: {$apartment->unit_number})",
-                ], auth()->id());
-            } else {
+        // Worker-contract costs are accounted for when the worker payment is marked paid.
+        // Posting cash-out here would double-count. For all other cost types, post now.
+        if ($cost->category !== 'worker_contract') {
+            $cash->createOperatingExpense([
+                'expense_date' => now()->toDateString(),
+                'category'     => 'apartment_additional_cost',
+                'amount'       => $actual,
+                'description'  => "{$cost->description} (Unit: {$apartment->unit_number})",
+            ], auth()->id());
+
+            if ($variance < -0.001) {
                 $cash->postCostSaving(
                     abs($variance),
                     "Under-budget saving: {$cost->description} (Unit: {$apartment->unit_number})",

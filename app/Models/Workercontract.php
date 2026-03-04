@@ -10,8 +10,10 @@ class WorkerContract extends Model
         'worker_user_id',
         'project_id',
         'project_ids',
+        'project_costs',
         'apartment_id',
         'apartment_ids',
+        'apartment_costs',
         'scope_of_work',
         'category',
         'contract_date',
@@ -32,7 +34,9 @@ class WorkerContract extends Model
         'expected_end_date'  => 'date',
         'first_payment_date' => 'date',
         'project_ids'        => 'array',
+        'project_costs'      => 'array',
         'apartment_ids'      => 'array',
+        'apartment_costs'    => 'array',
     ];
 
     public function worker()
@@ -48,26 +52,6 @@ class WorkerContract extends Model
     public function apartment()
     {
         return $this->belongsTo(Apartment::class);
-    }
-
-    /** Resolve all linked projects (from project_ids JSON array) */
-    public function linkedProjects()
-    {
-        $ids = $this->project_ids ?? [];
-        if ($this->project_id && !in_array($this->project_id, $ids)) {
-            $ids[] = $this->project_id;
-        }
-        return Project::whereIn('id', $ids)->get();
-    }
-
-    /** Resolve all linked apartments (from apartment_ids JSON array) */
-    public function linkedApartments()
-    {
-        $ids = $this->apartment_ids ?? [];
-        if ($this->apartment_id && !in_array($this->apartment_id, $ids)) {
-            $ids[] = $this->apartment_id;
-        }
-        return \App\Models\Apartment::whereIn('id', $ids)->get();
     }
 
     public function createdBy()
@@ -98,5 +82,25 @@ class WorkerContract extends Model
     public function totalPending(): float
     {
         return (float) $this->pendingPayments()->sum('amount');
+    }
+
+    /** All linked project IDs merged */
+    public function allProjectIds(): array
+    {
+        $ids = $this->project_ids ?? [];
+        if ($this->project_id && !in_array($this->project_id, $ids)) {
+            $ids[] = $this->project_id;
+        }
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    /** All linked apartment IDs merged */
+    public function allApartmentIds(): array
+    {
+        $ids = $this->apartment_ids ?? [];
+        if ($this->apartment_id && !in_array($this->apartment_id, $ids)) {
+            $ids[] = $this->apartment_id;
+        }
+        return array_values(array_unique(array_filter($ids)));
     }
 }

@@ -17,7 +17,7 @@ use App\Http\Controllers\ReportsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WorkersController;
 use App\Http\Controllers\WorkerPortalController;
-    Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
+   Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
     Route::post('/login', action: [AuthController::class, 'login'])
         ->name('login.submit')->middleware('guest');
         
@@ -239,5 +239,7 @@ Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->g
     Route::post('/settings/profile',                            [WorkerPortalController::class, 'updateProfile'])->name('settings.profile.update');
     Route::post('/settings/password',                           [WorkerPortalController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/settings/avatar',                             [WorkerPortalController::class, 'updateAvatar'])->name('settings.avatar.update');
+    // Notification mark-read (used by navbar bell)
+    Route::post('/notifications/{notification}/read',           [WorkerPortalController::class, 'markNotificationRead'])->name('notifications.read');
 });
 });

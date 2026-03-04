@@ -655,7 +655,8 @@
                         @php
                         $aptMatCost = $apt->materials->sum(fn($m) => (float)($m->inventoryItem->price ?? 0) *
                         (float)$m->quantity_needed);
-                        $aptCostActual = $apt->additionalCosts->sum(fn($c) => $c->actual_amount ?? $c->expected_amount);
+                        $aptCostActual = $apt->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount
+                        : 0.0);
                         $aptTotalCost = $aptMatCost + $aptCostActual;
                         $aptPaid = (float)($apt->contract?->invoices->where('status','paid')->sum('amount') ?? 0)
                         + (float)($apt->contract?->down_payment ?? 0);
