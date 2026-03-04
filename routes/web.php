@@ -16,7 +16,6 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\WorkersController;
 use App\Http\Controllers\WorkerPortalController;
-use App\Http\Controllers\LedgerExportController;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
@@ -137,8 +136,8 @@ Route::middleware('role:owner,admin')->group(function () {
         Route::post('/expenses', [AccountingController::class, 'storeExpense'])->name('expenses.store');
 
         Route::get('/ledger', [PagesController::class, 'ledgerDetailPage'])->name('ledger');
-        Route::get('/ledger/export/excel', [LedgerExportController::class, 'exportExcel'])->name('ledger.export.excel');
-        Route::get('/ledger/export/pdf',   [LedgerExportController::class, 'exportPdf'])->name('ledger.export.pdf');
+        Route::get('/ledger/export/excel', [App\Http\Controllers\LedgerExportController::class, 'exportExcel'])->name('ledger.export.excel');
+        Route::get('/ledger/export/pdf',   [App\Http\Controllers\LedgerExportController::class, 'exportPdf'])->name('ledger.export.pdf');
    
    Route::patch('/purchases/{purchase}/void', [AccountingController::class, 'voidPurchase'])
     ->name('purchases.void');
@@ -198,6 +197,17 @@ Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->grou
     Route::get('/', [ReportsController::class, 'index'])->name('index');
     Route::get('/project/{project}', [ReportsController::class, 'byProject'])->name('project');
     Route::get('/apartment/{apartment}', [ReportsController::class, 'byApartment'])->name('apartment');
+
+    // New report pages
+    Route::get('/pl',                  [ReportsController::class, 'profitLoss'])->name('pl');
+    Route::get('/sales-pipeline',      [ReportsController::class, 'salesPipeline'])->name('sales-pipeline');
+    Route::get('/outstanding-invoices',[ReportsController::class, 'outstandingInvoices'])->name('outstanding-invoices');
+    Route::get('/worker-payments',     [ReportsController::class, 'workerPayments'])->name('worker-payments');
+    Route::get('/operating-expenses',  [ReportsController::class, 'operatingExpenses'])->name('operating-expenses');
+
+    // Exports
+    Route::get('/export/{type}/excel', [App\Http\Controllers\ReportExportController::class, 'excel'])->name('export.excel');
+    Route::get('/export/{type}/pdf',   [App\Http\Controllers\ReportExportController::class, 'pdf'])->name('export.pdf');
 });
 
 // ── Additional Costs & Apartment Materials ────────────────────

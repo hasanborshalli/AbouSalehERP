@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
     <link rel="stylesheet" href="/css/alert.css">
-
     <link rel="stylesheet" href="/css/reportsIndex.css">
 </head>
 
@@ -73,9 +72,57 @@
                     </div>
 
                 </div>
-            </section>
-        </main>
-        <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
+
+                {{-- New reports row --}}
+                <div style="margin-top:16px;">
+                    <p
+                        style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:rgba(0,0,0,.4);margin:0 0 10px;">
+                        Financial Reports</p>
+                    <div class="reports-grid" style="grid-template-columns:repeat(3,1fr);">
+
+                        <a class="reports-list__item" href="{{ route('reports.pl') }}"
+                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
+                            <div style="font-size:20px;margin-bottom:4px;">📈</div>
+                            <div class="reports-list__item-name">Profit & Loss</div>
+                            <div class="reports-list__item-meta">Revenue vs expenses by source & month</div>
+                        </a>
+
+                        <a class="reports-list__item" href="{{ route('reports.sales-pipeline') }}"
+                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
+                            <div style="font-size:20px;margin-bottom:4px;">🏗️</div>
+                            <div class="reports-list__item-name">Sales Pipeline</div>
+                            <div class="reports-list__item-meta">All units: status, pricing, collected & outstanding
+                            </div>
+                        </a>
+
+                        <a class="reports-list__item" href="{{ route('reports.outstanding-invoices') }}"
+                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
+                            <div style="font-size:20px;margin-bottom:4px;">🧾</div>
+                            <div class="reports-list__item-name">Outstanding Invoices</div>
+                            <div class="reports-list__item-meta">Pending & overdue invoices with days overdue</div>
+                        </a>
+
+                        <a class="reports-list__item" href="{{ route('reports.worker-payments') }}"
+                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
+                            <div style="font-size:20px;margin-bottom:4px;">👷</div>
+                            <div class="reports-list__item-name">Worker Payments</div>
+                            <div class="reports-list__item-meta">All installments: paid, pending, overdue</div>
+                        </a>
+
+                        <a class="reports-list__item" href="{{ route('reports.operating-expenses') }}"
+                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
+                            <div style="font-size:20px;margin-bottom:4px;">💸</div>
+                            <div class="reports-list__item-name">Operating Expenses</div>
+                            <div class="reports-list__item-meta">All office & operational costs by category</div>
+                        </a>
+
+                    </div>
+                </div>
+
+    </div>
+    </section>
+    </main>
+    <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
     <script src="/js/navSearch.js"></script>
     <script>
