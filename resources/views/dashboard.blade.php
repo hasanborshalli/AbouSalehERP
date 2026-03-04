@@ -11,6 +11,104 @@
     <link rel="stylesheet" href="/css/navbar.css" />
     <link rel="stylesheet" href="/css/sidebar.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dash-finance-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .dash-fin-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: transform .15s, box-shadow .15s;
+            cursor: pointer;
+        }
+
+        .dash-fin-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+        }
+
+        .dash-fin-card--credit {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border: 1.5px solid #6ee7b7;
+        }
+
+        .dash-fin-card--debit {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border: 1.5px solid #fca5a5;
+        }
+
+        .dash-fin-card--net-pos {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            border: 1.5px solid #93c5fd;
+        }
+
+        .dash-fin-card--net-neg {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1.5px solid #fcd34d;
+        }
+
+        .dash-fin-card__icon {
+            font-size: 28px;
+            font-weight: 900;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .dash-fin-card--credit .dash-fin-card__icon {
+            background: #059669;
+            color: #fff;
+        }
+
+        .dash-fin-card--debit .dash-fin-card__icon {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .dash-fin-card--net-pos .dash-fin-card__icon {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .dash-fin-card--net-neg .dash-fin-card__icon {
+            background: #d97706;
+            color: #fff;
+        }
+
+        .dash-fin-card__label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: rgba(0, 0, 0, .5);
+            margin-bottom: 2px;
+        }
+
+        .dash-fin-card__value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .dash-fin-card__hint {
+            font-size: 11px;
+            color: rgba(0, 0, 0, .4);
+            margin-top: 2px;
+        }
+    </style>
 </head>
 
 <body class="app-shell dashboard-page">
@@ -64,6 +162,46 @@
                                 <div class="dashboard-metric__label">Out of stock</div>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                {{-- Finance KPIs: Credit / Debit / Net --}}
+                <section class="dashboard-card dashboard-card--finance" style="grid-column: 1 / -1;">
+                    <div class="dashboard-card__header">
+                        <h2 class="dashboard-card__title">Cash Position</h2>
+                        <a href="{{ route('accounting.ledger') }}"
+                            style="font-size:12px; color:rgba(42,127,176,.9); font-weight:600; text-decoration:none;">View
+                            full ledger →</a>
+                    </div>
+                    <div class="dash-finance-row">
+                        <a class="dash-fin-card dash-fin-card--credit"
+                            href="{{ route('accounting.ledger', ['direction' => 'in']) }}">
+                            <div class="dash-fin-card__icon">↑</div>
+                            <div class="dash-fin-card__body">
+                                <div class="dash-fin-card__label">Total Credit (دين)</div>
+                                <div class="dash-fin-card__value">${{ number_format($totalCredit, 2) }}</div>
+                                <div class="dash-fin-card__hint">Click to view details</div>
+                            </div>
+                        </a>
+                        <a class="dash-fin-card dash-fin-card--debit"
+                            href="{{ route('accounting.ledger', ['direction' => 'out']) }}">
+                            <div class="dash-fin-card__icon">↓</div>
+                            <div class="dash-fin-card__body">
+                                <div class="dash-fin-card__label">Total Debit (مدين)</div>
+                                <div class="dash-fin-card__value">${{ number_format($totalDebit, 2) }}</div>
+                                <div class="dash-fin-card__hint">Click to view details</div>
+                            </div>
+                        </a>
+                        <a class="dash-fin-card {{ $netBalance >= 0 ? 'dash-fin-card--net-pos' : 'dash-fin-card--net-neg' }}"
+                            href="{{ route('accounting.ledger') }}">
+                            <div class="dash-fin-card__icon">{{ $netBalance >= 0 ? '=' : '!' }}</div>
+                            <div class="dash-fin-card__body">
+                                <div class="dash-fin-card__label">Net Balance</div>
+                                <div class="dash-fin-card__value">${{ number_format(abs($netBalance), 2) }} {{
+                                    $netBalance >= 0 ? 'surplus' : 'deficit' }}</div>
+                                <div class="dash-fin-card__hint">Click to view all entries</div>
+                            </div>
+                        </a>
                     </div>
                 </section>
 

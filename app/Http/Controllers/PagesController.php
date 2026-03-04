@@ -22,7 +22,10 @@ class PagesController extends Controller
         return view('login');
     }
     public function dashboardPage(CashAccountingService $acct){
-        
+        $totalCredit = (float) LedgerEntry::where('direction', 'in')->sum('amount');
+        $totalDebit  = (float) LedgerEntry::where('direction', 'out')->sum('amount');
+        $netBalance  = $totalCredit - $totalDebit;
+
     $totalProducts = InventoryItem::count();
     $totalStock = (int) InventoryItem::sum('quantity');
     $outOfStock = InventoryItem::where('is_out_of_stock', true)->count();
@@ -58,13 +61,65 @@ $end   = Carbon::now()->endOfMonth();
         'pieLabels',
         'pieValues',
         'topClients',
-        'totalOrders'
+        'totalOrders',
+        'totalCredit',
+        'totalDebit',
+        'netBalance'
     ),
     ['labels' => $summary['labels'],
         'revenues' => $summary['revenues'],
         'expenses' => $summary['expenses'],
         'net' => $summary['net'],]);
     }
+    public function ledgerDetailPage(\Illuminate\Http\Request $request)
+    {
+        $direction = $request->input('direction'); // 'in', 'out', or null = both
+        $dateFrom  = $request->input('date_from');
+        $dateTo    = $request->input('date_to');
+        $sourceType = $request->input('source_type');
+        $search    = $request->input('search');
+
+        $query = LedgerEntry::with('account')->orderByDesc('posted_at')->orderByDesc('id');
+
+        if ($direction && in_array($direction, ['in', 'out'])) {
+            $query->where('direction', $direction);
+        }
+        if ($dateFrom) {
+            $query->whereDate('posted_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('posted_at', '<=', $dateTo);
+        }
+        if ($sourceType) {
+            $query->where('source_type', $sourceType);
+        }
+        if ($search) {
+            $query->where('description', 'like', '%' . $search . '%');
+        }
+
+        $entries   = $query->paginate(50)->withQueryString();
+        $totalIn   = (clone $query->getQuery())->where('direction', 'in')->sum('amount');
+        $totalOut  = (clone $query->getQuery())->where('direction', 'out')->sum('amount');
+
+        // Re-query filtered totals separately
+        $filteredQuery = LedgerEntry::query();
+        if ($direction && in_array($direction, ['in', 'out'])) $filteredQuery->where('direction', $direction);
+        if ($dateFrom)    $filteredQuery->whereDate('posted_at', '>=', $dateFrom);
+        if ($dateTo)      $filteredQuery->whereDate('posted_at', '<=', $dateTo);
+        if ($sourceType)  $filteredQuery->where('source_type', $sourceType);
+        if ($search)      $filteredQuery->where('description', 'like', '%' . $search . '%');
+
+        $filteredCredit  = (float) (clone $filteredQuery)->where('direction', 'in')->sum('amount');
+        $filteredDebit = (float) (clone $filteredQuery)->where('direction', 'out')->sum('amount');
+
+        $sourceTypes = LedgerEntry::distinct()->orderBy('source_type')->pluck('source_type')->filter()->values();
+
+        return view('accounting.ledger', compact(
+            'entries', 'direction', 'dateFrom', 'dateTo', 'sourceType', 'search',
+            'filteredCredit', 'filteredDebit', 'sourceTypes'
+        ));
+    }
+
      public function inventoryPage(){
         $items = InventoryItem::orderBy('created_at', 'desc')->take(4)->get();
 

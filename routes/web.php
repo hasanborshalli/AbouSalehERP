@@ -14,10 +14,12 @@ use App\Http\Controllers\PagesController;
 use App\Http\Controllers\AdditionalCostController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReportsController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WorkersController;
 use App\Http\Controllers\WorkerPortalController;
-   Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
+use App\Http\Controllers\LedgerExportController;
+use Illuminate\Support\Facades\Route;
+
+    Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
     Route::post('/login', action: [AuthController::class, 'login'])
         ->name('login.submit')->middleware('guest');
         
@@ -133,6 +135,10 @@ Route::middleware('role:owner,admin')->group(function () {
 
         Route::get('/expenses', [PagesController::class, 'accountingExpensesPage'])->name('expenses');
         Route::post('/expenses', [AccountingController::class, 'storeExpense'])->name('expenses.store');
+
+        Route::get('/ledger', [PagesController::class, 'ledgerDetailPage'])->name('ledger');
+        Route::get('/ledger/export/excel', [LedgerExportController::class, 'exportExcel'])->name('ledger.export.excel');
+        Route::get('/ledger/export/pdf',   [LedgerExportController::class, 'exportPdf'])->name('ledger.export.pdf');
    
    Route::patch('/purchases/{purchase}/void', [AccountingController::class, 'voidPurchase'])
     ->name('purchases.void');
@@ -214,6 +220,7 @@ Route::middleware('role:owner,admin')->group(function () {
     Route::post('/projects/{project}/materials', [AdditionalCostController::class, 'storeProjectMaterial'])->name('projects.materials.store');
     Route::delete('/projects/{project}/materials/{material}', [AdditionalCostController::class, 'destroyProjectMaterial'])->name('projects.materials.destroy');
 });
+
 // ── Workers (admin/owner) ─────────────────────────────────────
 Route::middleware(['auth', 'role:owner,admin'])->prefix('workers')->name('workers.')->group(function () {
     Route::get('/',                                      [WorkersController::class, 'index'])->name('index');
