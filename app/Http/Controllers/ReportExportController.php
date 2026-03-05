@@ -4,8 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Apartment;
 use App\Models\Invoice;
+use App\Models\InventoryItem;
+use App\Models\InventoryPurchase;
+use App\Models\ApartmentMaterial;
+use App\Models\ProjectInventoryItem;
 use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
+use App\Models\Project;
+use App\Models\User;
 use App\Models\WorkerPayment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -23,6 +29,7 @@ class ReportExportController extends Controller
             'outstanding-invoices' => $this->invoicesExcel($request),
             'worker-payments'      => $this->workerExcel($request),
             'operating-expenses'   => $this->opexExcel($request),
+            'inventory'            => $this->inventoryExcel($request),
             default                => abort(404),
         };
     }
@@ -35,6 +42,7 @@ class ReportExportController extends Controller
             'outstanding-invoices' => $this->invoicesPdf($request),
             'worker-payments'      => $this->workerPdf($request),
             'operating-expenses'   => $this->opexPdf($request),
+            'inventory'            => $this->inventoryPdf($request),
             default                => abort(404),
         };
     }
@@ -298,4 +306,61 @@ class ReportExportController extends Controller
         $d = $this->opexData($request);
         return $this->pdfView('pdfs.reports.operating-expenses', $d)->download('operating-expenses.pdf');
     }
+
+
+    // ── Inventory ─────────────────────────────────────────────────────────
+
+    private function inventoryData(Request $request): array
+    {
+        $itemId = $request->input('item_id');
+        $item   = $itemId ? InventoryItem::withTrashed()->find($itemId) : null;
+
+        $pQ = InventoryPurchase::where('inventory_item_id', $itemId)->whereNull('voided_at');
+        if ($request->date_from) $pQ->whereDate('purchase_date', '>=', $request->date_from);
+        if ($request->date_to)   $pQ->whereDate('purchase_date', '<=', $request->date_to);
+        $purchases = $item ? $pQ->orderByDesc('purchase_date')->get() : collect();
+
+        $totalPurchaseCost = (float) $purchases->sum('total_cost');
+        $totalPurchased    = (int)   $purchases->sum('qty');
+
+        $projectUsages   = $item ? ProjectInventoryItem::with('project')->where('inventory_item_id',$itemId)->get() : collect();
+        $apartmentUsages = $item ? ApartmentMaterial::with('apartment.project','apartment.floor')->where('inventory_item_id',$itemId)->get() : collect();
+        $avgCost = $totalPurchased > 0 ? $totalPurchaseCost / $totalPurchased : (float)($item?->price ?? 0);
+
+        return compact('item','purchases','projectUsages','apartmentUsages','totalPurchaseCost','totalPurchased','avgCost');
+    }
+
+    private function inventoryExcel(Request $request)
+    {
+        $d = $this->inventoryData($request);
+        if (!$d['item']) return response('No item selected', 400);
+        $rows = [];
+        $rows[] = ['--- PURCHASES ---'];
+        $rows[] = ['Date','Vendor','Receipt Ref','Qty','Unit Cost','Total Cost'];
+        foreach ($d['purchases'] as $p) {
+            $rows[] = [$p->purchase_date->format('Y-m-d'),$p->vendor_name??'—',$p->receipt_ref??'—',$p->qty,number_format($p->unit_cost,2,'.',''),number_format($p->total_cost,2,'.','')];
+        }
+        $rows[] = [];
+        $rows[] = ['--- PROJECT USAGE ---'];
+        $rows[] = ['Project','Qty Assigned','Est. Cost'];
+        foreach ($d['projectUsages'] as $pu) {
+            $rows[] = [$pu->project->name??'—',number_format($pu->quantity_needed,1),number_format($pu->quantity_needed*$d['avgCost'],2,'.','')];
+        }
+        $rows[] = [];
+        $rows[] = ['--- APARTMENT USAGE ---'];
+        $rows[] = ['Project','Unit','Floor','Qty Needed','Est. Cost'];
+        foreach ($d['apartmentUsages'] as $au) {
+            $rows[] = [$au->apartment?->project?->name??'—','Unit '.($au->apartment?->unit_number??'?'),'Floor '.($au->apartment?->floor?->floor_number??'?'),number_format($au->quantity_needed,1),number_format($au->quantity_needed*$d['avgCost'],2,'.','')];
+        }
+        $totals = [['Total Cost Paid','','','','',$d['totalPurchaseCost']]];
+        return $this->csvResponse('inventory-'.$d['item']->name.'.csv',['Type/Date','Vendor/Project','Ref/Unit','Qty','Unit Cost','Total'],array_merge([['Item: '.$d['item']->name]],$rows),$totals);
+    }
+
+    private function inventoryPdf(Request $request)
+    {
+        $d = $this->inventoryData($request);
+        if (!$d['item']) abort(400,'No item selected');
+        return $this->pdfView('pdfs.reports.inventory', $d)->download('inventory-'.$d['item']->name.'.pdf');
+    }
+
 }

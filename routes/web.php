@@ -195,8 +195,10 @@ Route::middleware([ 'role:owner,admin'])->group(function () {
 // ── Reports ──────────────────────────────────────────────────
 Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->group(function () {
     Route::get('/', [ReportsController::class, 'index'])->name('index');
-    Route::get('/project/{project}', [ReportsController::class, 'byProject'])->name('project');
-    Route::get('/apartment/{apartment}', [ReportsController::class, 'byApartment'])->name('apartment');
+    Route::get('/project',            [ReportsController::class, 'byProject'])->name('project');
+    Route::get('/project/{project}',  [ReportsController::class, 'byProject'])->name('project.show');
+    Route::get('/apartment',          [ReportsController::class, 'byApartment'])->name('apartment');
+    Route::get('/apartment/{apartment}', [ReportsController::class, 'byApartment'])->name('apartment.show');
 
     // New report pages
     Route::get('/pl',                  [ReportsController::class, 'profitLoss'])->name('pl');
@@ -204,6 +206,7 @@ Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->grou
     Route::get('/outstanding-invoices',[ReportsController::class, 'outstandingInvoices'])->name('outstanding-invoices');
     Route::get('/worker-payments',     [ReportsController::class, 'workerPayments'])->name('worker-payments');
     Route::get('/operating-expenses',  [ReportsController::class, 'operatingExpenses'])->name('operating-expenses');
+    Route::get('/inventory',           [ReportsController::class, 'inventoryReport'])->name('inventory');
 
     // Exports
     Route::get('/export/{type}/excel', [App\Http\Controllers\ReportExportController::class, 'excel'])->name('export.excel');

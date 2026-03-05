@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
-    <link rel="stylesheet" href="/css/alert.css">
     <link rel="stylesheet" href="/css/reportsIndex.css">
 </head>
 
@@ -21,132 +20,81 @@
     <div class="app-shell__main">
         <x-navbar />
         <main class="dashboard-content">
-            <section class="reports-index">
-                <div class="reports-index__hero">
+            <div class="rpt-index-wrap">
+
+                <div class="rpt-index-hero">
                     <h2>Reports</h2>
-                    <p>Full financial breakdown by project or by individual apartment.</p>
+                    <p>Financial, operational and inventory reports — all exportable to Excel and PDF.</p>
                 </div>
 
-                <div class="reports-grid">
+                <div class="rpt-group-label">Project &amp; Unit Reports</div>
+                <div class="rpt-cards-grid" style="grid-template-columns:repeat(2,1fr);">
+                    <a class="rpt-card" href="{{ route('reports.project') }}">
+                        <div class="rpt-card__icon">📊</div>
+                        <div class="rpt-card__name">Report by Project</div>
+                        <div class="rpt-card__desc">Total costs, revenues, materials and profit per project. Select the
+                            project inside.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.apartment') }}">
+                        <div class="rpt-card__icon">🏠</div>
+                        <div class="rpt-card__name">Report by Apartment</div>
+                        <div class="rpt-card__desc">Individual unit cost breakdown, invoices paid and profit. Select the
+                            apartment inside.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                </div>
 
-                    {{-- By Project --}}
-                    <div class="reports-card">
-                        <p class="reports-card__title">📊 Report by Project</p>
-                        <p class="reports-card__sub">Total costs, revenues, materials and profit per project.</p>
-                        @if($projects->isEmpty())
-                        <p class="reports-empty">No projects yet.</p>
-                        @else
-                        <div class="reports-list">
-                            @foreach($projects as $proj)
-                            <a class="reports-list__item" href="{{ route('reports.project', $proj) }}">
-                                <div>
-                                    <div class="reports-list__item-name">{{ $proj->name }}</div>
-                                    <div class="reports-list__item-meta">{{ $proj->city }} · {{ $proj->code ?? 'No code'
-                                        }}</div>
-                                </div>
-                                <span class="reports-list__arrow">→</span>
-                            </a>
-                            @endforeach
+                <div class="rpt-group-label">Financial Reports</div>
+                <div class="rpt-cards-grid">
+                    <a class="rpt-card" href="{{ route('reports.pl') }}">
+                        <div class="rpt-card__icon">📈</div>
+                        <div class="rpt-card__name">Profit &amp; Loss</div>
+                        <div class="rpt-card__desc">Revenue vs expenses by source, with monthly trend breakdown.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.sales-pipeline') }}">
+                        <div class="rpt-card__icon">🏗️</div>
+                        <div class="rpt-card__name">Sales Pipeline</div>
+                        <div class="rpt-card__desc">All units across projects: status, pricing, collected and
+                            outstanding amounts.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.outstanding-invoices') }}">
+                        <div class="rpt-card__icon">🧾</div>
+                        <div class="rpt-card__name">Outstanding Invoices</div>
+                        <div class="rpt-card__desc">Pending and overdue client invoices with days overdue per invoice.
                         </div>
-                        @endif
-                    </div>
-
-                    {{-- By Apartment --}}
-                    <div class="reports-card">
-                        <p class="reports-card__title">🏠 Report by Apartment</p>
-                        <p class="reports-card__sub">Individual apartment cost breakdown, invoices paid, and profit.</p>
-                        <div id="aptPicker">
-                            <select id="projPicker" class="reports-apt-select" onchange="loadApts(this.value)">
-                                <option value="">— Select project first —</option>
-                                @foreach($projects as $proj)
-                                <option value="{{ $proj->id }}">{{ $proj->name }}</option>
-                                @endforeach
-                            </select>
-                            <select id="aptPicker" class="reports-apt-select" style="display:none">
-                                <option value="">— Select apartment —</option>
-                            </select>
-                            <a id="aptGoBtn" class="reports-apt-go" href="#" style="display:none">
-                                View apartment report →
-                            </a>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.worker-payments') }}">
+                        <div class="rpt-card__icon">👷</div>
+                        <div class="rpt-card__name">Worker Payments</div>
+                        <div class="rpt-card__desc">All worker installments: paid, pending and overdue by worker and
+                            project.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.operating-expenses') }}">
+                        <div class="rpt-card__icon">💸</div>
+                        <div class="rpt-card__name">Operating Expenses</div>
+                        <div class="rpt-card__desc">All office and operational costs broken down by category with trend.
                         </div>
-                    </div>
-
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                    <a class="rpt-card" href="{{ route('reports.inventory') }}">
+                        <div class="rpt-card__icon">📦</div>
+                        <div class="rpt-card__name">Inventory Report</div>
+                        <div class="rpt-card__desc">Purchases, usage, cost paid and where each item was used across
+                            projects and units.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
                 </div>
 
-                {{-- New reports row --}}
-                <div style="margin-top:16px;">
-                    <p
-                        style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:rgba(0,0,0,.4);margin:0 0 10px;">
-                        Financial Reports</p>
-                    <div class="reports-grid" style="grid-template-columns:repeat(3,1fr);">
-
-                        <a class="reports-list__item" href="{{ route('reports.pl') }}"
-                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
-                            <div style="font-size:20px;margin-bottom:4px;">📈</div>
-                            <div class="reports-list__item-name">Profit & Loss</div>
-                            <div class="reports-list__item-meta">Revenue vs expenses by source & month</div>
-                        </a>
-
-                        <a class="reports-list__item" href="{{ route('reports.sales-pipeline') }}"
-                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
-                            <div style="font-size:20px;margin-bottom:4px;">🏗️</div>
-                            <div class="reports-list__item-name">Sales Pipeline</div>
-                            <div class="reports-list__item-meta">All units: status, pricing, collected & outstanding
-                            </div>
-                        </a>
-
-                        <a class="reports-list__item" href="{{ route('reports.outstanding-invoices') }}"
-                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
-                            <div style="font-size:20px;margin-bottom:4px;">🧾</div>
-                            <div class="reports-list__item-name">Outstanding Invoices</div>
-                            <div class="reports-list__item-meta">Pending & overdue invoices with days overdue</div>
-                        </a>
-
-                        <a class="reports-list__item" href="{{ route('reports.worker-payments') }}"
-                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
-                            <div style="font-size:20px;margin-bottom:4px;">👷</div>
-                            <div class="reports-list__item-name">Worker Payments</div>
-                            <div class="reports-list__item-meta">All installments: paid, pending, overdue</div>
-                        </a>
-
-                        <a class="reports-list__item" href="{{ route('reports.operating-expenses') }}"
-                            style="flex-direction:column;align-items:flex-start;gap:4px;padding:16px;">
-                            <div style="font-size:20px;margin-bottom:4px;">💸</div>
-                            <div class="reports-list__item-name">Operating Expenses</div>
-                            <div class="reports-list__item-meta">All office & operational costs by category</div>
-                        </a>
-
-                    </div>
-                </div>
-
-    </div>
-    </section>
-    </main>
-    <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
+            </div>
+        </main>
+        <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
     <script src="/js/navSearch.js"></script>
-    <script>
-        const APT_ROUTES = {!! $aptRoutesJson !!};
-
-    function loadApts(projId) {
-        const sel  = document.getElementById('aptPicker');
-        const btn  = document.getElementById('aptGoBtn');
-        sel.innerHTML = '<option value="">— Select apartment —</option>';
-        sel.style.display = 'block';
-        btn.style.display = 'none';
-        const apts = APT_ROUTES[projId] || [];
-        apts.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.url;
-            opt.textContent = a.label + ' · ' + a.status;
-            sel.appendChild(opt);
-        });
-        sel.onchange = () => {
-            btn.href = sel.value || '#';
-            btn.style.display = sel.value ? 'flex' : 'none';
-        };
-    }
-    </script>
 </body>
 
 </html>

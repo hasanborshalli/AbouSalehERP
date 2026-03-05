@@ -313,9 +313,6 @@
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 10px;
 }
-.rpt-info-item {
-}
-
 .rpt-info-item__key {
     font-size: 11px;
     opacity: 0.5;

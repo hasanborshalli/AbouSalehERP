@@ -279,3 +279,115 @@
     border-top: 2px solid rgba(0, 0, 0, 0.1);
     background: rgba(0, 0, 0, 0.02);
 }
+
+/* ── Settle form inline ── */
+.settle-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.settle-form input {
+    width: 110px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+}
+
+.settle-form button {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(21, 128, 61, 0.15);
+    color: #15803d;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.settle-form button:hover {
+    background: rgba(21, 128, 61, 0.25);
+}
+
+.btn-del {
+    padding: 4px 9px;
+    border-radius: 7px;
+    border: none;
+    background: rgba(185, 28, 28, 0.08);
+    color: #b91c1c;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-del:hover {
+    background: rgba(185, 28, 28, 0.18);
+}
+
+/* ── Add forms ── */
+.rpt-add-form {
+    background: rgba(0, 0, 0, 0.025);
+    border: 1.5px dashed rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.rpt-add-form__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.55);
+    margin: 0 0 10px;
+}
+
+.rpt-add-form__grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 8px;
+    align-items: end;
+}
+
+.rpt-add-form__grid--mat {
+    grid-template-columns: 2fr 1fr auto;
+}
+
+@media (max-width: 640px) {
+    .rpt-add-form__grid,
+    .rpt-add-form__grid--mat {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rpt-add-form label {
+    font-size: 11px;
+    opacity: 0.6;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.rpt-add-form input,
+.rpt-add-form select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(0, 0, 0, 0.12);
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.rpt-add-form__submit {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(42, 127, 176, 0.15);
+    color: rgba(42, 127, 176, 0.9);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.rpt-add-form__submit:hover {
+    background: rgba(42, 127, 176, 0.25);
+}

@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/dashboard.css">
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
-    <link rel="stylesheet" href="/css/reportsExpenses.css">
+    <link rel="stylesheet" href="/css/reportsIndex.css">
 </head>
 
 <body class="app-shell dashboard-page">

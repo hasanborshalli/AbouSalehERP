@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Apartment;
 use App\Models\InventoryItem;
+use App\Models\InventoryPurchase;
+use App\Models\ApartmentMaterial;
+use App\Models\ProjectInventoryItem;
 use App\Models\Invoice;
 use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
@@ -42,8 +45,16 @@ class ReportsController extends Controller
         return view('reports.index', compact('projects', 'aptRoutesJson'));
     }
 
-    public function byProject(Project $project)
+    public function byProject(Request $request, ?Project $project = null)
     {
+        $allProjects = Project::orderBy('name')->get(['id','name','code','city']);
+        // Support ?id= query string from the select picker
+        if (!$project && $request->input('id')) {
+            $project = Project::find($request->input('id'));
+        }
+        if (!$project) {
+            return view('reports.project', ['project' => null, 'allProjects' => $allProjects]);
+        }
         $project->load([
             'floors.apartments.contract.invoices',
             'floors.apartments.materials.inventoryItem',
@@ -112,12 +123,31 @@ class ReportsController extends Controller
             'aptCostsExpected', 'aptCostsActual',
             'paidInvoicesTotal', 'downPaymentsTotal', 'totalRevenue',
             'totalSellingPrice', 'totalCost', 'profit', 'stats',
-            'inventoryItems'
+            'inventoryItems', 'allProjects'
         ));
     }
 
-    public function byApartment(Apartment $apartment)
+    public function byApartment(Request $request, ?Apartment $apartment = null)
     {
+        $allProjects = Project::with('floors.apartments')->orderBy('name')->get(['id','name']);
+        if (!$apartment) {
+            // Still need routes map for the picker even on empty state
+            $aptRoutesMap = [];
+            foreach ($allProjects as $proj) {
+                $list = [];
+                foreach ($proj->floors as $floor) {
+                    foreach ($floor->apartments as $apt) {
+                        $list[] = [
+                            'url'   => route('reports.apartment.show', $apt->id),
+                            'label' => 'Unit '.$apt->unit_number.' (Floor '.$floor->floor_number.') · '.ucfirst($apt->status),
+                        ];
+                    }
+                }
+                $aptRoutesMap[$proj->id] = $list;
+            }
+            $aptRoutesJson = json_encode($aptRoutesMap);
+            return view('reports.apartment', ['apartment' => null, 'allProjects' => $allProjects, 'aptRoutesJson' => $aptRoutesJson]);
+        }
         $apartment->load([
             'project',
             'floor',
@@ -153,12 +183,28 @@ class ReportsController extends Controller
         $paidInvoices    = $invoices->where('status', 'paid');
         $pendingInvoices = $invoices->whereIn('status', ['pending', 'overdue']);
 
+        // Build flat routes map for JS picker
+        $aptRoutesMap = [];
+        foreach ($allProjects as $proj) {
+            $list = [];
+            foreach ($proj->floors as $floor) {
+                foreach ($floor->apartments as $apt) {
+                    $list[] = [
+                        'url'   => route('reports.apartment.show', $apt->id),
+                        'label' => 'Unit '.$apt->unit_number.' (Floor '.$floor->floor_number.') · '.ucfirst($apt->status),
+                    ];
+                }
+            }
+            $aptRoutesMap[$proj->id] = $list;
+        }
+        $aptRoutesJson = json_encode($aptRoutesMap);
+
         return view('reports.apartment', compact(
             'apartment', 'contract', 'invoices',
             'paidInvoices', 'pendingInvoices',
             'materialsCost', 'costsExpected', 'costsActual',
             'paidAmount', 'downPayment', 'totalRevenue',
-            'totalCost', 'profit'
+            'totalCost', 'profit', 'allProjects', 'aptRoutesJson'
         ));
     }
 
@@ -345,6 +391,98 @@ class ReportsController extends Controller
         return view('reports.operating-expenses', compact(
             'expenses','categories','category','dateFrom','dateTo',
             'totalAmount','byCategory','countRows'
+        ));
+    }
+
+
+
+    // ── Inventory Report ──────────────────────────────────────────────────
+    public function inventoryReport(Request $request)
+    {
+        $itemId   = $request->input('item_id');
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        $allItems = InventoryItem::withTrashed()->orderBy('name')->get(['id','name','unit','price','quantity','deleted_at']);
+
+        // If specific item selected — load full detail
+        $item = null;
+        $purchases = collect();
+        $projectUsages = collect();
+        $apartmentUsages = collect();
+        $totalPurchased = 0;
+        $totalPurchaseCost = 0;
+        $totalQuantityUsed = 0;
+        $totalUsageCost = 0;
+
+        if ($itemId) {
+            $item = InventoryItem::withTrashed()->findOrFail($itemId);
+
+            $pQ = \App\Models\InventoryPurchase::where('inventory_item_id', $itemId)
+                ->whereNull('voided_at');
+            if ($dateFrom) $pQ->whereDate('purchase_date', '>=', $dateFrom);
+            if ($dateTo)   $pQ->whereDate('purchase_date', '<=', $dateTo);
+            $purchases = $pQ->orderByDesc('purchase_date')->get();
+
+            $totalPurchased    = (int) $purchases->sum('qty');
+            $totalPurchaseCost = (float) $purchases->sum('total_cost');
+
+            // Project-level usage
+            $projectUsages = \App\Models\ProjectInventoryItem::with('project')
+                ->where('inventory_item_id', $itemId)
+                ->get();
+
+            // Apartment-level usage
+            $apartmentUsages = \App\Models\ApartmentMaterial::with('apartment.project','apartment.floor')
+                ->where('inventory_item_id', $itemId)
+                ->get();
+
+            $totalQuantityUsed = (float) $projectUsages->sum('quantity_needed')
+                                + (float) $apartmentUsages->sum('quantity_needed');
+
+            $avgCost = $totalPurchased > 0 ? $totalPurchaseCost / $totalPurchased : (float) $item->price;
+            $totalUsageCost = $totalQuantityUsed * $avgCost;
+        }
+
+        // Summary table — all items with purchase totals
+        $summary = InventoryItem::withTrashed()
+            ->with(['projectUsages','projectUsages.project'])
+            ->withCount(['projectUsages as project_uses'])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($i) {
+                $purchased = (float) \App\Models\InventoryPurchase::where('inventory_item_id',$i->id)
+                    ->whereNull('voided_at')->sum('total_cost');
+                $qtyBought = (int) \App\Models\InventoryPurchase::where('inventory_item_id',$i->id)
+                    ->whereNull('voided_at')->sum('qty');
+                $qtyUsedProj = (float) \App\Models\ProjectInventoryItem::where('inventory_item_id',$i->id)->sum('quantity_needed');
+                $qtyUsedApt  = (float) \App\Models\ApartmentMaterial::where('inventory_item_id',$i->id)->sum('quantity_needed');
+                $qtyUsed = $qtyUsedProj + $qtyUsedApt;
+                $avgCost = $qtyBought > 0 ? $purchased / $qtyBought : (float) $i->price;
+                $usageCost = $qtyUsed * $avgCost;
+                return (object)[
+                    'id'            => $i->id,
+                    'name'          => $i->name,
+                    'unit'          => $i->unit,
+                    'current_price' => (float) $i->price,
+                    'qty_in_stock'  => (int) $i->quantity,
+                    'qty_bought'    => $qtyBought,
+                    'total_cost'    => $purchased,
+                    'qty_used'      => $qtyUsed,
+                    'usage_cost'    => $usageCost,
+                    'deleted_at'    => $i->deleted_at,
+                ];
+            });
+
+        $grandTotalCost  = $summary->sum('total_cost');
+        $grandUsageCost  = $summary->sum('usage_cost');
+
+        return view('reports.inventory', compact(
+            'allItems','item','itemId','dateFrom','dateTo',
+            'purchases','projectUsages','apartmentUsages',
+            'totalPurchased','totalPurchaseCost',
+            'totalQuantityUsed','totalUsageCost',
+            'summary','grandTotalCost','grandUsageCost'
         ));
     }
 

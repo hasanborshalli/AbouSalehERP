@@ -4,407 +4,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Project Report — {{ $project->name }}</title>
+    <title>{{ $project ? 'Project Report — '.$project->name : 'Report by Project' }}</title>
     <link rel="icon" href="/img/abosaleh-logo.png">
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportsIndex.css">
+    <link rel="stylesheet" href="/css/reportsProject.css">
     <link rel="stylesheet" href="/css/alert.css">
     <style>
-        .rpt {
-            max-width: 1180px;
-            margin: 0 auto;
-        }
 
-        /* ── Header card ── */
-        .rpt-hero {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-            padding: 20px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.45);
-            border: 2px solid rgba(0, 0, 0, 0.07);
-            margin-bottom: 14px;
-        }
-
-        .rpt-hero__title {
-            margin: 0 0 4px;
-            font-size: 22px;
-            font-weight: 700;
-        }
-
-        .rpt-hero__meta {
-            font-size: 13px;
-            opacity: .55;
-        }
-
-        .rpt-back {
-            text-decoration: none;
-            color: rgba(0, 0, 0, .65);
-            font-size: 13px;
-            font-weight: 600;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .55);
-            border: 1px solid rgba(0, 0, 0, .1);
-            white-space: nowrap;
-        }
-
-        /* ── KPI row ── */
-        .rpt-kpis {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-
-        @media(max-width:860px) {
-            .rpt-kpis {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media(max-width:500px) {
-            .rpt-kpis {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .rpt-kpi {
-            padding: 16px 18px;
-            border-radius: 16px;
-            border: 2px solid rgba(0, 0, 0, 0.07);
-            background: rgba(255, 255, 255, 0.45);
-        }
-
-        .rpt-kpi--green {
-            border-color: rgba(21, 128, 61, 0.2);
-            background: rgba(21, 128, 61, 0.06);
-        }
-
-        .rpt-kpi--red {
-            border-color: rgba(185, 28, 28, 0.2);
-            background: rgba(185, 28, 28, 0.06);
-        }
-
-        .rpt-kpi--blue {
-            border-color: rgba(42, 127, 176, 0.2);
-            background: rgba(42, 127, 176, 0.06);
-        }
-
-        .rpt-kpi--amber {
-            border-color: rgba(217, 119, 6, 0.2);
-            background: rgba(217, 119, 6, 0.06);
-        }
-
-        .rpt-kpi__label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-            opacity: .55;
-            margin: 0 0 6px;
-        }
-
-        .rpt-kpi__value {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .rpt-kpi__sub {
-            font-size: 12px;
-            opacity: .55;
-            margin: 4px 0 0;
-        }
-
-        /* ── Section cards ── */
-        .rpt-section {
-            background: rgba(255, 255, 255, 0.45);
-            border: 2px solid rgba(0, 0, 0, 0.07);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 14px;
-        }
-
-        .rpt-section__title {
-            font-size: 14px;
-            font-weight: 700;
-            margin: 0 0 14px;
-            color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .rpt-section__icon {
-            font-size: 18px;
-        }
-
-        /* ── Table ── */
-        .rpt-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .rpt-table th {
-            text-align: left;
-            padding: 8px 12px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .04em;
-            color: rgba(0, 0, 0, .45);
-            border-bottom: 2px solid rgba(0, 0, 0, .07);
-            background: rgba(0, 0, 0, .03);
-        }
-
-        .rpt-table td {
-            padding: 9px 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, .05);
-            vertical-align: middle;
-        }
-
-        .rpt-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .rpt-table tr:hover td {
-            background: rgba(42, 127, 176, 0.03);
-        }
-
-        .rpt-table .num {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .rpt-table .bold {
-            font-weight: 700;
-        }
-
-        .rpt-table .muted {
-            opacity: .45;
-            font-size: 12px;
-        }
-
-        /* ── Cost variance badge ── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .badge--over {
-            background: rgba(185, 28, 28, .1);
-            color: #b91c1c;
-        }
-
-        .badge--under {
-            background: rgba(21, 128, 61, .1);
-            color: #15803d;
-        }
-
-        .badge--pending {
-            background: rgba(217, 119, 6, .1);
-            color: #d97706;
-        }
-
-        .badge--paid {
-            background: rgba(21, 128, 61, .08);
-            color: #15803d;
-        }
-
-        .badge--status-sold {
-            background: rgba(42, 127, 176, .1);
-            color: rgba(42, 127, 176, .9);
-        }
-
-        .badge--status-reserved {
-            background: rgba(217, 119, 6, .1);
-            color: #d97706;
-        }
-
-        .badge--status-available {
-            background: rgba(0, 0, 0, .06);
-            color: rgba(0, 0, 0, .55);
-        }
-
-        /* ── Apt grid summary ── */
-        .rpt-apts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 10px;
-        }
-
-        .rpt-apt-card {
-            border-radius: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            background: rgba(255, 255, 255, 0.5);
-            padding: 12px 14px;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            transition: border-color .12s;
-        }
-
-        .rpt-apt-card:hover {
-            border-color: rgba(42, 127, 176, 0.35);
-        }
-
-        .rpt-apt-card__unit {
-            font-size: 14px;
-            font-weight: 700;
-            margin: 0 0 4px;
-        }
-
-        .rpt-apt-card__floor {
-            font-size: 12px;
-            opacity: .5;
-            margin: 0 0 8px;
-        }
-
-        .rpt-apt-card__row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        .rpt-apt-card__key {
-            opacity: .55;
-        }
-
-        .rpt-apt-card__val {
-            font-weight: 600;
-        }
-
-        /* ── Totals footer row ── */
-        .rpt-table tfoot td {
-            font-weight: 700;
-            font-size: 13px;
-            border-top: 2px solid rgba(0, 0, 0, .1);
-            background: rgba(0, 0, 0, .02);
-        }
-
-        /* ── Settle form inline ── */
-        .settle-form {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .settle-form input {
-            width: 110px;
-            padding: 5px 8px;
-            border-radius: 8px;
-            border: 1.5px solid rgba(0, 0, 0, .15);
-            font-size: 12px;
-        }
-
-        .settle-form button {
-            padding: 5px 12px;
-            border-radius: 8px;
-            border: none;
-            background: rgba(21, 128, 61, 0.15);
-            color: #15803d;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .settle-form button:hover {
-            background: rgba(21, 128, 61, 0.25);
-        }
-
-        .btn-del {
-            padding: 4px 9px;
-            border-radius: 7px;
-            border: none;
-            background: rgba(185, 28, 28, 0.08);
-            color: #b91c1c;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .btn-del:hover {
-            background: rgba(185, 28, 28, 0.18);
-        }
-
-        /* ── Add forms ── */
-        .rpt-add-form {
-            background: rgba(0, 0, 0, 0.025);
-            border: 1.5px dashed rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 12px;
-        }
-
-        .rpt-add-form__title {
-            font-size: 12px;
-            font-weight: 700;
-            color: rgba(0, 0, 0, .55);
-            margin: 0 0 10px;
-        }
-
-        .rpt-add-form__grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 8px;
-            align-items: end;
-        }
-
-        .rpt-add-form__grid--mat {
-            grid-template-columns: 2fr 1fr auto;
-        }
-
-        @media(max-width:640px) {
-
-            .rpt-add-form__grid,
-            .rpt-add-form__grid--mat {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .rpt-add-form label {
-            font-size: 11px;
-            opacity: .6;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .rpt-add-form input,
-        .rpt-add-form select {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1.5px solid rgba(0, 0, 0, .12);
-            font-size: 13px;
-            box-sizing: border-box;
-        }
-
-        .rpt-add-form__submit {
-            padding: 8px 16px;
-            border-radius: 999px;
-            border: none;
-            background: rgba(42, 127, 176, .15);
-            color: rgba(42, 127, 176, .9);
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .rpt-add-form__submit:hover {
-            background: rgba(42, 127, 176, .25);
-        }
     </style>
 </head>
 
@@ -418,6 +27,31 @@
         <main class="dashboard-content">
             <div class="rpt">
 
+                {{-- ── Back + Picker ── --}}
+                <div
+                    style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                    <a class="rpt-back" href="{{ route('reports.index') }}">← Reports</a>
+                    <form method="GET" action="{{ route('reports.project') }}"
+                        style="display:flex;align-items:center;gap:8px;">
+                        <select name="id" onchange="this.form.submit()"
+                            style="padding:7px 32px 7px 11px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;min-width:200px;">
+                            <option value="">— Select a project —</option>
+                            @foreach($allProjects as $p)
+                            <option value="{{ $p->id }}" {{ $project && $project->id===$p->id ? 'selected' : '' }}>{{
+                                $p->name }}{{ $p->code ? ' ('.$p->code.')' : '' }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+
+                @if(!$project)
+                <div
+                    style="text-align:center;padding:64px;color:rgba(0,0,0,.4);font-size:15px;background:#fff;border-radius:12px;border:1.5px solid #e5e7eb;">
+                    <div style="font-size:40px;margin-bottom:12px;">📊</div>
+                    Select a project above to view its full report.
+                </div>
+                @else
+
                 {{-- ── Hero ── --}}
                 <div class="rpt-hero">
                     <div>
@@ -428,7 +62,6 @@
                             @if($project->start_date) · Started: {{ $project->start_date }}@endif
                         </div>
                     </div>
-                    <a class="rpt-back" href="{{ route('reports.index') }}">← Reports</a>
                 </div>
 
                 {{-- ── KPIs ── --}}
@@ -781,6 +414,7 @@
                     </table>
                 </div>
 
+                @endif {{-- end project check --}}
             </div>
         </main>
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>

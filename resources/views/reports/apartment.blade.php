@@ -4,14 +4,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Apartment Report — Unit {{ $apartment->unit_number }}</title>
+    <title>{{ $apartment ? 'Apartment Report — Unit '.$apartment->unit_number : 'Report by Apartment' }}</title>
     <link rel="icon" href="/img/abosaleh-logo.png">
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
-    <link rel="stylesheet" href="/css/alert.css">
-
     <link rel="stylesheet" href="/css/reportsApartment.css">
+    <link rel="stylesheet" href="/css/alert.css">
+    <link rel="stylesheet" href="/css/reportsIndex.css">
 </head>
 
 <body class="app-shell">
@@ -40,6 +40,44 @@
 
             <div class="rpt">
 
+                {{-- ── Back + Pickers ── --}}
+                <div style="margin-bottom:16px;">
+                    <a class="rpt-back" href="{{ route('reports.index') }}">← Reports</a>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
+                    <select id="projPicker" onchange="loadApartments(this.value)"
+                        style="padding:7px 11px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:600;background:#fff;min-width:180px;">
+                        <option value="">— Select project —</option>
+                        @foreach($allProjects as $p)
+                        <option value="{{ $p->id }}" {{ ($apartment && $apartment->project_id===$p->id) ? 'selected' :
+                            '' }}>{{ $p->name }}</option>
+                        @endforeach
+                    </select>
+                    <select id="aptPicker" onchange="goToApartment(this.value)"
+                        style="padding:7px 11px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:600;background:#fff;min-width:200px;">
+                        <option value="">— Select apartment —</option>
+                        @if($apartment)
+                        @foreach($allProjects->firstWhere('id', $apartment->project_id)?->floors ?? [] as $floor)
+                        @foreach($floor->apartments as $apt)
+                        <option value="{{ route('reports.apartment.show', $apt->id) }}" {{ $apt->
+                            id===$apartment->id?'selected':'' }}>
+                            Unit {{ $apt->unit_number }} (Floor {{ $floor->floor_number }}) · {{ ucfirst($apt->status)
+                            }}
+                        </option>
+                        @endforeach
+                        @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                @if(!$apartment)
+                <div
+                    style="text-align:center;padding:64px;color:rgba(0,0,0,.4);font-size:15px;background:#fff;border-radius:12px;border:1.5px solid #e5e7eb;">
+                    <div style="font-size:40px;margin-bottom:12px;">🏠</div>
+                    Select a project and apartment above to view its report.
+                </div>
+                @else
+
                 {{-- ── Hero ── --}}
                 <div class="rpt-hero">
                     <div>
@@ -52,11 +90,6 @@
                             @if($apartment->area_sqm) · {{ $apartment->area_sqm }} m² @endif
                             · Selling price: ${{ number_format($apartment->price_total, 2) }}
                         </div>
-                    </div>
-                    <div class="rpt-nav">
-                        <a class="rpt-back" href="{{ route('reports.project', $apartment->project) }}">← Project
-                            report</a>
-                        <a class="rpt-back" href="{{ route('reports.index') }}">All reports</a>
                     </div>
                 </div>
 
@@ -283,7 +316,9 @@
                                         }}</span>
                                         @else <span class="badge badge--paid">On budget</span>
                                         @endif
-                                        @else — @endif
+                                        @else
+                                        —
+                                        @endif
                                 </td>
                                 <td>
                                     @if(!$c->isSettled())
@@ -401,11 +436,32 @@
                     </table>
                 </div>
 
+                @endif {{-- end apartment check --}}
             </div>
         </main>
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
     <script src="/js/navSearch.js"></script>
+    <script>
+        const APT_ROUTES = {!! $aptRoutesJson !!};
+
+    function loadApartments(projId) {
+        const sel = document.getElementById('aptPicker');
+        sel.innerHTML = '<option value="">— Select apartment —</option>';
+        (APT_ROUTES[projId] || []).forEach(a => {
+            const o = document.createElement('option');
+            o.value = a.url; o.textContent = a.label;
+            sel.appendChild(o);
+        });
+    }
+    function goToApartment(url) { if(url) window.location.href = url; }
+
+    // Pre-populate apartments if project already selected
+    document.addEventListener('DOMContentLoaded', function(){
+        const projSel = document.getElementById('projPicker');
+        if(projSel.value) loadApartments(projSel.value);
+    });
+    </script>
 </body>
 
 </html>
