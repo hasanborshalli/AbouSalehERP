@@ -91,7 +91,7 @@
     <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">
     @endif
     {{-- Logo --}}
-    <img src="{{ public_path('img/abosaleh-logo.png') }}" class="logo" alt="Company logo">
+    @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" class="logo" alt="Logo">@endif
     <div class="header">
         <div>
             <div class="title">Invoice</div>

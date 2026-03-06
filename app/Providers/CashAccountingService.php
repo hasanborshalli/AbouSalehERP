@@ -325,4 +325,199 @@ public function voidOperatingExpense(OperatingExpense $expense, string $reason, 
         ]);
     });
 }
+ // ── Account helper ───────────────────────────────────────────
+    private function managedPropertyAccount(): Account
+    {
+        // Use operating expense account (6000) for property management
+        // Alternatively create a dedicated account code 6100
+        return Account::where('code', '6000')->firstOrFail();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  MANAGED PROPERTY — EXPENSE (renovation / maintenance cost)
+    //  Records cash-out when company pays for property renovation
+    // ─────────────────────────────────────────────────────────────
+    public function postManagedPropertyExpense(
+        \App\Models\ManagedPropertyExpense $expense,
+        ?int $userId = null
+    ): void {
+        $expenseDate = \Carbon\Carbon::parse($expense->expense_date)->startOfDay();
+
+        $exists = LedgerEntry::where('source_type', 'managed_property_expense')
+            ->where('source_id', $expense->id)
+            ->where('direction', 'out')
+            ->exists();
+
+        if ($exists) return;
+
+        DB::transaction(function () use ($expense, $expenseDate, $userId) {
+            LedgerEntry::create([
+                'posted_at'   => $expenseDate,
+                'account_id'  => $this->operatingExpenseAccount()->id,
+                'amount'      => round((float)$expense->amount, 2),
+                'direction'   => 'out',
+                'description' => 'Managed property expense: ' . $expense->description
+                               . ' — ' . ($expense->property->address ?? 'Property #'.$expense->managed_property_id),
+                'source_type' => 'managed_property_expense',
+                'source_id'   => $expense->id,
+                'user_id'     => $userId,
+            ]);
+        });
+    }
+
+    public function voidManagedPropertyExpense(
+        \App\Models\ManagedPropertyExpense $expense,
+        string $reason,
+        ?int $userId = null
+    ): void {
+        if ($expense->voided_at) return;
+
+        DB::transaction(function () use ($expense, $reason, $userId) {
+            $expense->voided_at  = now();
+            $expense->voided_by  = $userId;
+            $expense->void_reason = $reason;
+            $expense->save();
+
+            $original = LedgerEntry::where('source_type', 'managed_property_expense')
+                ->where('source_id', $expense->id)
+                ->where('direction', 'out')
+                ->first();
+
+            LedgerEntry::create([
+                'posted_at'          => now(),
+                'account_id'         => $this->operatingExpenseAccount()->id,
+                'amount'             => round((float)$expense->amount, 2),
+                'direction'          => 'in',
+                'description'        => "VOID managed property expense #{$expense->id}: {$reason}",
+                'source_type'        => 'managed_property_expense_void',
+                'source_id'          => $expense->id,
+                'user_id'            => $userId,
+                'reverses_entry_id'  => $original?->id,
+            ]);
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  MANAGED PROPERTY — SALE (flip sold)
+    //  Step 1: cash-in for full sale price
+    //  Step 2: cash-out when owner is paid
+    // ─────────────────────────────────────────────────────────────
+    public function postManagedPropertySaleIncome(
+        \App\Models\ManagedPropertySale $sale,
+        ?int $userId = null
+    ): void {
+        $exists = LedgerEntry::where('source_type', 'managed_property_sale')
+            ->where('source_id', $sale->id)
+            ->where('direction', 'in')
+            ->exists();
+
+        if ($exists) return;
+
+        DB::transaction(function () use ($sale, $userId) {
+            LedgerEntry::create([
+                'posted_at'   => \Carbon\Carbon::parse($sale->sale_date)->startOfDay(),
+                'account_id'  => $this->revenueAccount()->id,
+                'amount'      => round((float)$sale->sale_price, 2),
+                'direction'   => 'in',
+                'description' => 'Managed property sold: '
+                               . ($sale->property->address ?? 'Property #'.$sale->managed_property_id)
+                               . ' — Buyer: ' . $sale->buyer_name,
+                'source_type' => 'managed_property_sale',
+                'source_id'   => $sale->id,
+                'user_id'     => $userId,
+            ]);
+        });
+    }
+
+    public function postManagedPropertyOwnerPayout(
+        \App\Models\ManagedPropertySale $sale,
+        ?int $userId = null
+    ): void {
+        $exists = LedgerEntry::where('source_type', 'managed_property_owner_payout')
+            ->where('source_id', $sale->id)
+            ->exists();
+
+        if ($exists) return;
+
+        DB::transaction(function () use ($sale, $userId) {
+            LedgerEntry::create([
+                'posted_at'   => now(),
+                'account_id'  => $this->operatingExpenseAccount()->id,
+                'amount'      => round((float)$sale->owner_payout_amount, 2),
+                'direction'   => 'out',
+                'description' => 'Owner payout for sold property: '
+                               . ($sale->property->address ?? 'Property #'.$sale->managed_property_id)
+                               . ' — Owner: ' . ($sale->property->owner_name ?? ''),
+                'source_type' => 'managed_property_owner_payout',
+                'source_id'   => $sale->id,
+                'user_id'     => $userId,
+            ]);
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  MANAGED PROPERTY — RENTAL PAYMENT
+    //  Step 1: cash-in when rent is collected from tenant
+    //  Step 2: cash-out when owner share is paid
+    // ─────────────────────────────────────────────────────────────
+    public function postRentalPaymentCollected(
+        \App\Models\ManagedPropertyRentalPayment $payment,
+        ?int $userId = null
+    ): void {
+        $exists = LedgerEntry::where('source_type', 'managed_rental_payment')
+            ->where('source_id', $payment->id)
+            ->where('direction', 'in')
+            ->exists();
+
+        if ($exists) return;
+
+        $rental   = $payment->rental;
+        $property = $rental->property;
+
+        DB::transaction(function () use ($payment, $rental, $property, $userId) {
+            LedgerEntry::create([
+                'posted_at'   => now(),
+                'account_id'  => $this->revenueAccount()->id,
+                'amount'      => round((float)$payment->amount_collected, 2),
+                'direction'   => 'in',
+                'description' => 'Rental payment collected: '
+                               . ($property->address ?? 'Property #'.$property->id)
+                               . ' — Tenant: ' . $rental->tenant_name
+                               . ' — Due: ' . $payment->due_date->format('M Y'),
+                'source_type' => 'managed_rental_payment',
+                'source_id'   => $payment->id,
+                'user_id'     => $userId,
+            ]);
+        });
+    }
+
+    public function postRentalOwnerPayout(
+        \App\Models\ManagedPropertyRentalPayment $payment,
+        ?int $userId = null
+    ): void {
+        $exists = LedgerEntry::where('source_type', 'managed_rental_owner_payout')
+            ->where('source_id', $payment->id)
+            ->exists();
+
+        if ($exists) return;
+
+        $rental   = $payment->rental;
+        $property = $rental->property;
+
+        DB::transaction(function () use ($payment, $rental, $property, $userId) {
+            LedgerEntry::create([
+                'posted_at'   => now(),
+                'account_id'  => $this->operatingExpenseAccount()->id,
+                'amount'      => round((float)$payment->owner_paid_amount, 2),
+                'direction'   => 'out',
+                'description' => 'Rental owner payout: '
+                               . ($property->address ?? 'Property #'.$property->id)
+                               . ' — Owner: ' . $property->owner_name
+                               . ' — ' . $payment->due_date->format('M Y'),
+                'source_type' => 'managed_rental_owner_payout',
+                'source_id'   => $payment->id,
+                'user_id'     => $userId,
+            ]);
+        });
+    }
 }

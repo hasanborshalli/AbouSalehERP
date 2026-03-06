@@ -194,7 +194,7 @@ class ProjectController extends Controller
             foreach ($validated['floors'] as $floorNumber => $floorData) {
                 $floor = ProjectFloor::create([
                     'project_id' => $project->id,
-                    'floor_number' => (int) $floorNumber,
+                    'floor_number' => (int) $floorNumber + 1,
                 ]);
 
                 foreach ($floorData['units'] as $unitIdx => $unit) {

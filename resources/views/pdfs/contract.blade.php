@@ -217,7 +217,7 @@
                 </div>
             </td>
             <td style="text-align:right;">
-                <img src="{{ public_path('img/abosaleh-logo.png') }}" class="logo" alt="Abou Saleh Logo">
+                @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" class="logo" alt="Logo">@endif
             </td>
         </tr>
     </table>

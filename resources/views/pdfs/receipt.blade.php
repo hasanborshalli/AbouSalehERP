@@ -3,24 +3,15 @@
 
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-
     @php
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-
     @endphp
-
     <style>
         @page {
             margin: 32px 40px;
-        }
-
-        .signature-wrap {
-            position: relative;
-            display: inline-block;
         }
 
         .signature-img {
@@ -32,21 +23,20 @@
             vertical-align: bottom;
         }
 
-
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
             color: #0b2545;
         }
 
-        /* Watermark */
+        /* WATERMARK */
         .watermark {
             position: fixed;
             left: 50%;
             top: 55%;
             transform: translate(-50%, -50%);
             width: 480px;
-            opacity: 0.07;
+            opacity: 0.06;
             z-index: -1;
         }
 
@@ -85,12 +75,13 @@
         }
 
         .voucher-bar {
-            background: #0d3b66;
+            background: #1e3a5f;
             color: #fff;
             padding: 10px 14px;
             font-weight: bold;
             font-size: 14px;
             margin-bottom: 18px;
+            text-align: center;
         }
 
         .row {
@@ -167,49 +158,43 @@
             display: inline-block;
         }
 
+        .info-note {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 12px;
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 8px;
+        }
+
         .footer-line {
             margin-top: 26px;
-            border-top: 3px solid #0d3b66;
+            border-top: 3px solid #1e3a5f;
         }
     </style>
 </head>
 
 <body>
-
-    {{-- Watermark --}}
     @if($logoB64)
-    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">
+    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="">
     @endif
 
-    {{-- Top Logo --}}
     <div class="logo-top">
         @if($logoB64)
         <img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
         @endif
     </div>
 
-    <!-- HEADER -->
     <div class="header">
         <div class="title">ABOU SALEH GENERAL TRADING</div>
     </div>
 
     <div class="contact-row">
-        <div class="contact-col">
-            Address: ___________________________<br>
-            Email: ___________________________
-        </div>
-        <div class="contact-col" style="text-align:right;">
-            Tel: ___________________________<br>
-            Email: ___________________________
-        </div>
+        <div class="contact-col">Address: ___________________________<br>Email: info@abousaleh.me</div>
+        <div class="contact-col" style="text-align:right;">Tel: +961 71 999 219<br>www.abousaleh.me</div>
     </div>
 
-    <!-- VOUCHER BAR -->
-    <div class="voucher-bar" style="text-align: center">
-        RECEIPT VOUCHER
-    </div>
+    <div class="voucher-bar">RECEIPT VOUCHER</div>
 
-    <!-- RECEIPT NO -->
     <div class="row">
         <div class="col">
             <span class="label">Receipt No:</span>
@@ -217,7 +202,6 @@
         </div>
     </div>
 
-    <!-- DATE -->
     <div class="row">
         <div class="col">
             <span class="label">Date:</span>
@@ -225,7 +209,6 @@
         </div>
     </div>
 
-    <!-- RECEIVED FROM -->
     <div class="row">
         <div class="col">
             <span class="label">Received From:</span>
@@ -233,7 +216,6 @@
         </div>
     </div>
 
-    <!-- SUM -->
     <div class="row">
         <div class="col">
             <span class="label">The Sum of:</span>
@@ -241,7 +223,6 @@
         </div>
     </div>
 
-    <!-- AMOUNT NUMBERS -->
     <div class="row">
         <div class="col">
             <span class="label">Amount in Numbers:</span>
@@ -249,7 +230,6 @@
         </div>
     </div>
 
-    <!-- FOR -->
     <div class="row">
         <div class="col">
             <span class="label">For:</span>
@@ -257,36 +237,35 @@
         </div>
     </div>
 
-    <!-- PAYMENT METHOD -->
     <div class="payment-method">
         <span class="label">Payment Method:</span>
-
         <span class="checkbox">{{ $paymentMethod === 'cash' ? '✓' : '' }}</span> Cash
         <span class="checkbox">{{ $paymentMethod === 'cheque' ? '✓' : '' }}</span> Cheque
         <span class="checkbox">{{ $paymentMethod === 'bank_transfer' ? '✓' : '' }}</span> Bank Transfer
     </div>
 
-    <!-- SIGNATURE -->
     <div class="signature-section">
         <div class="sig-col">
-            <span class="label">Receiver Name:</span>
-            <span class="sig-line">Abou Saleh General Trading</span><br><br>
-
-            <span class="label">Signature:</span>
-            <div class="signature-wrap">
+            <span class="label">Received by (Company):</span>
+            <span style="margin-left:8px;">Abou Saleh General Trading</span><br><br>
+            <span class="label">Authorised Signature:</span>
+            <div style="display:inline-block;">
                 @if($signatureB64)
                 <img class="signature-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
                 @endif
             </div>
         </div>
-
         <div class="sig-col-right">
             <div class="stamp-box"></div>
         </div>
     </div>
 
-    <div class="footer-line"></div>
+    <div class="info-note">
+        This receipt confirms that the above payment has been received.
+        Please retain this document for your records.
+    </div>
 
+    <div class="footer-line"></div>
 </body>
 
 </html>

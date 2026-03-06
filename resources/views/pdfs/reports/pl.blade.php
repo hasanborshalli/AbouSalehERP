@@ -173,10 +173,22 @@
             font-size: 7.5px;
             font-weight: 700;
         }
+
+        /* WATERMARK */
+        .watermark {
+            position: fixed;
+            left: 50%;
+            top: 52%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            opacity: 0.06;
+            z-index: -1;
+        }
     </style>
 </head>
 
 <body>
+    @if($logoB64)<img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">@endif
     <div class="header-row">
         <div>
             <h1>Profit & Loss Report</h1>

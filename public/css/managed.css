@@ -1,0 +1,705 @@
+/* ============================================================
+   managed.css  –  Managed Properties Section
+   ============================================================ */
+
+/* ── Page wrapper ─────────────────────────────────────────── */
+.mp {
+    padding: 0 2px;
+}
+
+.mp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.mp-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #0b2545;
+}
+
+.mp-back {
+    font-size: 13px;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+.mp-back:hover {
+    text-decoration: underline;
+}
+
+/* ── Stat KPI row ─────────────────────────────────────────── */
+.mp-kpi-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.mp-kpi {
+    flex: 1 1 130px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 120px;
+}
+.mp-kpi__label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin: 0 0 4px;
+}
+.mp-kpi__value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0b2545;
+    margin: 0;
+}
+.mp-kpi__value.green {
+    color: #059669;
+}
+.mp-kpi__value.amber {
+    color: #d97706;
+}
+.mp-kpi__value.blue {
+    color: #2563eb;
+}
+.mp-kpi__value.purple {
+    color: #7c3aed;
+}
+
+/* ── Filter tabs ──────────────────────────────────────────── */
+.mp-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.mp-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+}
+.mp-tab:hover,
+.mp-tab.active {
+    background: #0b2545;
+    color: #fff;
+    border-color: #0b2545;
+}
+
+/* ── Property cards grid ──────────────────────────────────── */
+.mp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.mp-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+}
+.mp-card:hover {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+}
+
+.mp-card__top {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.mp-card__address {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0b2545;
+    margin: 0 0 3px;
+}
+.mp-card__sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+.mp-card__badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.mp-card__body {
+    padding: 12px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+}
+.mp-card__stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 700;
+}
+.mp-card__stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.mp-card__footer {
+    padding: 10px 18px;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ── Badges ───────────────────────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.badge-flip {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.badge-rental {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+.badge-active {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.badge-sold {
+    background: #d1fae5;
+    color: #065f46;
+}
+.badge-rented {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+.badge-terminated {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ── Add button ───────────────────────────────────────────── */
+.btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #0b2545;
+    color: #fff;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-add:hover {
+    background: #1e3a5f;
+}
+.btn-add.green {
+    background: #059669;
+}
+.btn-add.green:hover {
+    background: #047857;
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    color: #374151;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-outline:hover {
+    background: #f9fafb;
+}
+.btn-outline.danger {
+    color: #dc2626;
+    border-color: #fecaca;
+}
+.btn-outline.danger:hover {
+    background: #fef2f2;
+}
+
+/* ── Detail page hero ─────────────────────────────────────── */
+.mp-hero {
+    background: linear-gradient(135deg, #0b2545 0%, #1e3a5f 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.mp-hero__address {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 6px;
+}
+.mp-hero__meta {
+    font-size: 13px;
+    opacity: 0.75;
+    margin: 0;
+}
+.mp-hero__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.mp-hero__actions a,
+.mp-hero__actions button {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 7px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transition: background 0.15s;
+}
+.mp-hero__actions a:hover,
+.mp-hero__actions button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+.mp-hero__actions .danger-btn {
+    background: rgba(220, 38, 38, 0.2);
+    border-color: rgba(220, 38, 38, 0.4);
+}
+
+/* ── KPI row inside detail ────────────────────────────────── */
+.kpi-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.kpi {
+    flex: 1 1 130px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+.kpi__label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin: 0 0 4px;
+}
+.kpi__value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0b2545;
+    margin: 0;
+}
+
+/* ── Sections ─────────────────────────────────────────────── */
+.mp-section {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.mp-section__head {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafafa;
+}
+.mp-section__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0b2545;
+    margin: 0;
+}
+.mp-section__body {
+    padding: 18px 20px;
+}
+
+/* ── Table ────────────────────────────────────────────────── */
+.mp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.mp-table thead th {
+    background: #f8fafc;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+}
+.mp-table thead th.num {
+    text-align: right;
+}
+.mp-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #111827;
+}
+.mp-table tbody td.num {
+    text-align: right;
+    font-weight: 600;
+}
+.mp-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.mp-table tfoot td {
+    padding: 10px 12px;
+    font-weight: 800;
+    border-top: 2px solid #e5e7eb;
+    background: #f8fafc;
+}
+.mp-table tfoot td.num {
+    text-align: right;
+}
+
+/* ── Mini action buttons in table ─────────────────────────── */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    text-decoration: none;
+    transition: all 0.12s;
+}
+.action-btn.green {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+.action-btn.green:hover {
+    background: #a7f3d0;
+}
+.action-btn.blue {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+}
+.action-btn.blue:hover {
+    background: #bfdbfe;
+}
+.action-btn.red {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+.action-btn.red:hover {
+    background: #fecaca;
+}
+
+/* ── Inline form panels ───────────────────────────────────── */
+.mp-form-panel {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 16px;
+}
+.mp-form-panel h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0b2545;
+    margin: 0 0 14px;
+}
+.mp-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.mp-form-grid.wide {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.mp-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.mp-form-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+.mp-form-field input,
+.mp-form-field select,
+.mp-form-field textarea {
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    font-size: 13px;
+    color: #111827;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+.mp-form-field input:focus,
+.mp-form-field select:focus,
+.mp-form-field textarea:focus {
+    outline: none;
+    border-color: #0b2545;
+}
+.form-error {
+    color: #dc2626;
+    font-size: 11px;
+}
+
+/* ── Money highlight ──────────────────────────────────────── */
+.money-green {
+    color: #059669;
+    font-weight: 700;
+}
+.money-red {
+    color: #dc2626;
+    font-weight: 700;
+}
+.money-blue {
+    color: #2563eb;
+    font-weight: 700;
+}
+.money-amber {
+    color: #d97706;
+    font-weight: 700;
+}
+
+/* ── Summary box (profit breakdown) ──────────────────────── */
+.profit-box {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+.profit-box.loss {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-color: #fca5a5;
+}
+.profit-box__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #065f46;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+}
+.profit-box.loss .profit-box__title {
+    color: #991b1b;
+}
+.profit-box__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.profit-box__row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #374151;
+}
+.profit-box__row.total {
+    border-top: 1px solid #86efac;
+    padding-top: 8px;
+    margin-top: 4px;
+    font-weight: 800;
+    font-size: 15px;
+    color: #059669;
+}
+.profit-box.loss .profit-box__row.total {
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.mp-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+    font-size: 14px;
+}
+.mp-empty strong {
+    display: block;
+    font-size: 16px;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+/* ── Two-panel layout for create/edit ────────────────────── */
+.mp-create-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+}
+.mp-create-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.mp-create-card__head {
+    padding: 20px 28px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.mp-create-card__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0b2545;
+    margin: 0;
+}
+.mp-create-card__body {
+    padding: 28px;
+}
+.mp-create-section {
+    margin-bottom: 28px;
+}
+.mp-create-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.06em;
+    margin: 0 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f3f4f6;
+}
+.mp-create-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+.mp-create-grid.two-col {
+    grid-template-columns: 1fr 1fr;
+}
+.mp-create-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.mp-create-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+.mp-create-field input,
+.mp-create-field select,
+.mp-create-field textarea {
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #111827;
+    background: #fff;
+}
+.mp-create-field input:focus,
+.mp-create-field select:focus,
+.mp-create-field textarea:focus {
+    outline: none;
+    border-color: #0b2545;
+    box-shadow: 0 0 0 3px rgba(11, 37, 69, 0.08);
+}
+.mp-create-field--wide {
+    grid-column: 1 / -1;
+}
+.mp-create-field .form-error {
+    font-size: 11px;
+    color: #dc2626;
+}
+
+/* type toggle */
+.type-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 300px;
+}
+.type-toggle input[type="radio"] {
+    display: none;
+}
+.type-toggle label {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #6b7280;
+    background: #f9fafb;
+    transition: all 0.15s;
+    border: none;
+}
+.type-toggle input[type="radio"]:checked + label {
+    background: #0b2545;
+    color: #fff;
+}
+
+/* conditional sections */
+.type-section {
+    display: none;
+}
+.type-section.visible {
+    display: block;
+}
+
+.mp-create-footer {
+    padding: 18px 28px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}

@@ -17,6 +17,11 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\WorkersController;
 use App\Http\Controllers\WorkerPortalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ManagedPropertyController;
+use App\Http\Controllers\ManagedPropertyExpenseController;
+use App\Http\Controllers\ManagedPropertySaleController;
+use App\Http\Controllers\ManagedPropertyRentalController;
+use App\Http\Controllers\ManagedPropertyRentalPaymentController;
 
     Route::get('/login',[PagesController::class,'loginPage'])->name('login')->middleware('guest');
     Route::post('/login', action: [AuthController::class, 'login'])
@@ -264,5 +269,50 @@ Route::middleware(['auth', 'role:worker'])->prefix('worker')->name('worker.')->g
     Route::post('/settings/avatar',                             [WorkerPortalController::class, 'updateAvatar'])->name('settings.avatar.update');
     // Notification mark-read (used by navbar bell)
     Route::post('/notifications/{notification}/read',           [WorkerPortalController::class, 'markNotificationRead'])->name('notifications.read');
+});
+Route::middleware(['auth', 'role:owner,admin'])
+    ->prefix('managed')
+    ->name('managed.')
+    ->group(function () {
+
+    // ── Properties CRUD ──────────────────────────────────────────
+    Route::get('/',              [ManagedPropertyController::class, 'index'])->name('index');
+    Route::get('/create',        [ManagedPropertyController::class, 'create'])->name('create');
+    Route::post('/',             [ManagedPropertyController::class, 'store'])->name('store');
+    Route::get('/{property}',    [ManagedPropertyController::class, 'show'])->name('show');
+    Route::get('/{property}/edit',   [ManagedPropertyController::class, 'edit'])->name('edit');
+    Route::put('/{property}',        [ManagedPropertyController::class, 'update'])->name('update');
+    Route::delete('/{property}',     [ManagedPropertyController::class, 'destroy'])->name('destroy');
+    Route::patch('/{property}/terminate', [ManagedPropertyController::class, 'terminate'])->name('terminate');
+
+    // ── Expenses ─────────────────────────────────────────────────
+    Route::post('/{property}/expenses',
+        [ManagedPropertyExpenseController::class, 'store'])->name('expenses.store');
+    Route::delete('/{property}/expenses/{expense}',
+        [ManagedPropertyExpenseController::class, 'destroy'])->name('expenses.destroy');
+
+    // ── Sale (flip) ───────────────────────────────────────────────
+    Route::post('/{property}/sale',
+        [ManagedPropertySaleController::class, 'store'])->name('sale.store');
+    Route::patch('/{property}/sale/payout',
+        [ManagedPropertySaleController::class, 'markOwnerPaid'])->name('sale.payout');
+
+    // ── Rentals ───────────────────────────────────────────────────
+    Route::post('/{property}/rentals',
+        [ManagedPropertyRentalController::class, 'store'])->name('rentals.store');
+    Route::patch('/{property}/rentals/{rental}/end',
+        [ManagedPropertyRentalController::class, 'end'])->name('rentals.end');
+    Route::get('/{property}/rentals/{rental}/contract/pdf',
+        [ManagedPropertyRentalController::class, 'contractPdf'])->name('rentals.contract.pdf');
+
+    // ── Rental Payments ───────────────────────────────────────────
+    Route::patch('/{property}/rentals/{rental}/payments/{payment}/collect',
+        [ManagedPropertyRentalPaymentController::class, 'markCollected'])->name('rentals.payments.collect');
+    Route::patch('/{property}/rentals/{rental}/payments/{payment}/payout',
+        [ManagedPropertyRentalPaymentController::class, 'markOwnerPaid'])->name('rentals.payments.payout');
+
+    // ── PDFs ──────────────────────────────────────────────────────
+    Route::get('/{property}/agreement/pdf',
+        [ManagedPropertyController::class, 'agreementPdf'])->name('agreement.pdf');
 });
 });
