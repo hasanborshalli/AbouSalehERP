@@ -11,10 +11,6 @@
     <link rel="stylesheet" href="/css/sidebar.css">
     <link rel="stylesheet" href="/css/reportsIndex.css">
     <link rel="stylesheet" href="/css/reportsProject.css">
-    <link rel="stylesheet" href="/css/alert.css">
-    <style>
-
-    </style>
 </head>
 
 <body class="app-shell">
@@ -27,7 +23,7 @@
         <main class="dashboard-content">
             <div class="rpt">
 
-                {{-- ── Back + Picker ── --}}
+                {{-- Back + Picker --}}
                 <div
                     style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
                     <a class="rpt-back" href="{{ route('reports.index') }}">← Reports</a>
@@ -52,7 +48,7 @@
                 </div>
                 @else
 
-                {{-- ── Hero ── --}}
+                {{-- Hero + Exports --}}
                 <div class="rpt-hero">
                     <div>
                         <h2 class="rpt-hero__title">{{ $project->name }}</h2>
@@ -62,9 +58,20 @@
                             @if($project->start_date) · Started: {{ $project->start_date }}@endif
                         </div>
                     </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <a href="{{ route('apartments.project', $project->id) }}"
+                            style="text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;background:rgba(42,127,176,0.1);color:rgba(42,127,176,0.9);">✏️
+                            Edit Costs & Materials</a>
+                        <a class="exp-btn exp-btn--excel"
+                            href="{{ route('reports.export.excel','project') }}?project_id={{ $project->id }}">⬇
+                            Excel</a>
+                        <a class="exp-btn exp-btn--pdf"
+                            href="{{ route('reports.export.pdf','project') }}?project_id={{ $project->id }}"
+                            target="_blank">⬇ PDF</a>
+                    </div>
                 </div>
 
-                {{-- ── KPIs ── --}}
+                {{-- KPIs --}}
                 <div class="rpt-kpis">
                     <div class="rpt-kpi rpt-kpi--blue">
                         <p class="rpt-kpi__label">Total Revenue Collected</p>
@@ -89,7 +96,7 @@
                     </div>
                 </div>
 
-                {{-- ── Project Materials ── --}}
+                {{-- Project-Level Materials (read-only) --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">🧱</span> Project-Level Materials
                         (from Inventory)</p>
@@ -98,11 +105,10 @@
                         <thead>
                             <tr>
                                 <th>Item</th>
-                                <th class="num">Qty Used</th>
+                                <th class="num">Qty Needed</th>
                                 <th>Unit</th>
                                 <th class="num">Unit Price</th>
                                 <th class="num">Line Cost</th>
-                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -115,14 +121,6 @@
                                 <td>{{ $u->unit ?? $u->inventoryItem->unit ?? '—' }}</td>
                                 <td class="num">${{ number_format((float)($u->inventoryItem->price ?? 0), 2) }}</td>
                                 <td class="num bold">${{ number_format($linePrice, 2) }}</td>
-                                <td>
-                                    <form method="post"
-                                        action="{{ route('projects.materials.destroy', [$project, $u]) }}"
-                                        onsubmit="return confirm('Remove this material and restore stock?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-del">✕</button>
-                                    </form>
-                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -130,43 +128,15 @@
                             <tr>
                                 <td colspan="4">Total project materials cost</td>
                                 <td class="num">${{ number_format($projectMaterialsCost, 2) }}</td>
-                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
                     @else
-                    <p class="muted" style="font-size:13px; padding:8px 0;">No project-level materials added yet.</p>
+                    <p class="muted" style="font-size:13px;padding:8px 0;">No project-level materials added yet.</p>
                     @endif
-
-                    {{-- Add material form --}}
-                    <div class="rpt-add-form">
-                        <p class="rpt-add-form__title">＋ Add material to this project</p>
-                        <form method="post" action="{{ route('projects.materials.store', $project) }}">
-                            @csrf
-                            <div class="rpt-add-form__grid rpt-add-form__grid--mat">
-                                <div>
-                                    <label>Inventory item</label>
-                                    <select name="inventory_item_id" required>
-                                        <option value="" disabled selected>Select item…</option>
-                                        @foreach($inventoryItems as $item)
-                                        <option value="{{ $item->id }}">{{ $item->name }} (Stock: {{ $item->quantity }}
-                                            {{ $item->unit }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div>
-                                    <label>Quantity</label>
-                                    <input type="number" name="quantity_needed" min="0.01" step="0.01" placeholder="0"
-                                        required>
-                                </div>
-                                <button type="submit" class="rpt-add-form__submit"
-                                    style="align-self:flex-end">Add</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
 
-                {{-- ── Project Additional Costs ── --}}
+                {{-- Project Additional Costs (read-only) --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">📋</span> Project Additional Costs</p>
                     @if($projCosts->isNotEmpty())
@@ -178,16 +148,12 @@
                                 <th class="num">Expected</th>
                                 <th class="num">Actual</th>
                                 <th class="num">Variance</th>
-                                <th>Settle / Status</th>
-                                <th></th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($projCosts as $c)
-                            @php
-                            $variance = $c->variance();
-                            $settled = $c->isSettled();
-                            @endphp
+                            @php $variance = $c->variance(); $settled = $c->isSettled(); @endphp
                             <tr>
                                 <td>{{ $c->description }}</td>
                                 <td class="muted">{{ $c->category ?? '—' }}</td>
@@ -195,36 +161,19 @@
                                 <td class="num">{{ $settled ? '$'.number_format($c->actual_amount, 2) : '—' }}</td>
                                 <td class="num">
                                     @if($settled)
-                                    @if($variance > 0)
-                                    <span class="badge badge--over">▲ ${{ number_format($variance, 2) }} over</span>
+                                    @if($variance > 0) <span class="badge badge--over">▲ ${{ number_format($variance, 2)
+                                        }} over</span>
                                     @elseif($variance < 0) <span class="badge badge--under">▼ ${{
                                         number_format(abs($variance), 2) }} saved</span>
-                                        @else
-                                        <span class="badge badge--paid">On budget</span>
+                                        @else <span class="badge badge--paid">On budget</span>
                                         @endif
-                                        @else — @endif
+                                        @else —
+                                        @endif
                                 </td>
                                 <td>
-                                    @if(!$settled)
-                                    <form class="settle-form" method="post"
-                                        action="{{ route('projects.costs.settle', [$project, $c]) }}">
-                                        @csrf @method('PATCH')
-                                        <input type="number" name="actual_amount" step="0.01" min="0"
-                                            placeholder="Actual $" required>
-                                        <button type="submit">✔ Settle</button>
-                                    </form>
-                                    @else
-                                    <span class="badge badge--paid">Settled {{ $c->actual_entered_at?->format('Y-m-d')
-                                        }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(!$settled)
-                                    <form method="post" action="{{ route('projects.costs.destroy', [$project, $c]) }}"
-                                        onsubmit="return confirm('Delete this cost entry?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-del">✕</button>
-                                    </form>
+                                    @if($settled) <span class="badge badge--paid">Settled {{
+                                        $c->actual_entered_at?->format('Y-m-d') }}</span>
+                                    @else <span class="badge badge--pending">Pending</span>
                                     @endif
                                 </td>
                             </tr>
@@ -237,49 +186,22 @@
                                 <td class="num">${{ number_format($projCostsActual, 2) }}</td>
                                 <td class="num">
                                     @php $projVariance = $projCostsActual - $projCostsExpected; @endphp
-                                    @if($projVariance > 0)
-                                    <span class="badge badge--over">▲ ${{ number_format($projVariance, 2) }}</span>
+                                    @if($projVariance > 0) <span class="badge badge--over">▲ ${{
+                                        number_format($projVariance, 2) }}</span>
                                     @elseif($projVariance < 0) <span class="badge badge--under">▼ ${{
                                         number_format(abs($projVariance), 2) }}</span>
-                                        @else —
-                                        @endif
+                                        @else — @endif
                                 </td>
                                 <td></td>
                             </tr>
                         </tfoot>
                     </table>
                     @else
-                    <p class="muted" style="font-size:13px; padding:8px 0;">No additional costs added yet.</p>
+                    <p class="muted" style="font-size:13px;padding:8px 0;">No additional costs added yet.</p>
                     @endif
-
-                    {{-- Add cost form --}}
-                    <div class="rpt-add-form">
-                        <p class="rpt-add-form__title">＋ Add expected cost for this project</p>
-                        <form method="post" action="{{ route('projects.costs.store', $project) }}">
-                            @csrf
-                            <div class="rpt-add-form__grid">
-                                <div>
-                                    <label>Description</label>
-                                    <input type="text" name="description" placeholder="e.g. Scaffolding hire" required>
-                                </div>
-                                <div>
-                                    <label>Category</label>
-                                    <input type="text" name="category" placeholder="e.g. equipment">
-                                </div>
-                                <div>
-                                    <label>Expected Amount ($)</label>
-                                    <input type="number" name="expected_amount" min="0" step="0.01" placeholder="0.00"
-                                        required>
-                                </div>
-                            </div>
-                            <div style="margin-top:8px;">
-                                <button type="submit" class="rpt-add-form__submit">Add Cost</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
 
-                {{-- ── Apartments Summary Grid ── --}}
+                {{-- Apartments Overview --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">🏘️</span> Apartments Overview ({{
                         $stats['total_apartments'] }} units)</p>
@@ -291,11 +213,11 @@
                         $aptCostActual = $apt->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount
                         : 0.0);
                         $aptTotalCost = $aptMatCost + $aptCostActual;
-                        $aptPaid = (float)($apt->contract?->invoices->where('status','paid')->sum('amount') ?? 0)
-                        + (float)($apt->contract?->down_payment ?? 0);
+                        $aptPaid = (float)($apt->contract?->invoices->where('status','paid')->sum('amount') ?? 0) +
+                        (float)($apt->contract?->down_payment ?? 0);
                         $aptProfit = $aptPaid - $aptTotalCost;
                         @endphp
-                        <a class="rpt-apt-card" href="{{ route('reports.apartment', $apt) }}">
+                        <a class="rpt-apt-card" href="{{ route('reports.apartment.show', $apt) }}">
                             <p class="rpt-apt-card__unit">Unit {{ $apt->unit_number }}</p>
                             <p class="rpt-apt-card__floor">Floor {{ $apt->floor->floor_number }}</p>
                             <div class="rpt-apt-card__row">
@@ -322,7 +244,7 @@
                     </div>
                 </div>
 
-                {{-- ── Revenue Table ── --}}
+                {{-- Revenue Table --}}
                 @if($contracts->isNotEmpty())
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">💰</span> Revenue — Paid Invoices
@@ -341,8 +263,7 @@
                         <tbody>
                             @foreach($apartments as $apt)
                             @php
-                            $c = $apt->contract;
-                            if (!$c) continue;
+                            $c = $apt->contract; if (!$c) continue;
                             $aptPaidInv = (float)$c->invoices->where('status','paid')->sum('amount');
                             $aptDown = (float)$c->down_payment;
                             $aptTotal = $aptPaidInv + $aptDown;
@@ -371,7 +292,7 @@
                 </div>
                 @endif
 
-                {{-- ── Cost Summary ── --}}
+                {{-- Full Cost Summary --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title"><span class="rpt-section__icon">📊</span> Full Cost Summary</p>
                     <table class="rpt-table">

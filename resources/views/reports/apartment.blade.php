@@ -9,9 +9,8 @@
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/sidebar.css">
-    <link rel="stylesheet" href="/css/reportsApartment.css">
-    <link rel="stylesheet" href="/css/alert.css">
     <link rel="stylesheet" href="/css/reportsIndex.css">
+    <link rel="stylesheet" href="/css/reportsApartment.css">
 </head>
 
 <body class="app-shell">
@@ -22,25 +21,9 @@
     <div class="app-shell__main">
         <x-navbar />
         <main class="dashboard-content">
-
-            @if(session('success'))
-            <div class="alert alert--success" data-alert>
-                <span class="alert__icon">✔</span>
-                <span class="alert__text">{{ session('success') }}</span>
-                <button class="alert__close" onclick="this.parentElement.remove()">✕</button>
-            </div>
-            @endif
-            @if(session('error'))
-            <div class="alert alert--error" data-alert>
-                <span class="alert__icon">✕</span>
-                <span class="alert__text">{{ session('error') }}</span>
-                <button class="alert__close" onclick="this.parentElement.remove()">✕</button>
-            </div>
-            @endif
-
             <div class="rpt">
 
-                {{-- ── Back + Pickers ── --}}
+                {{-- Back + Pickers --}}
                 <div style="margin-bottom:16px;">
                     <a class="rpt-back" href="{{ route('reports.index') }}">← Reports</a>
                 </div>
@@ -59,8 +42,8 @@
                         @if($apartment)
                         @foreach($allProjects->firstWhere('id', $apartment->project_id)?->floors ?? [] as $floor)
                         @foreach($floor->apartments as $apt)
-                        <option value="{{ route('reports.apartment.show', $apt->id) }}" {{ $apt->
-                            id===$apartment->id?'selected':'' }}>
+                        <option value="{{ route('reports.apartment.show', $apt->id) }}" {{ $apt->id===$apartment->id ?
+                            'selected' : '' }}>
                             Unit {{ $apt->unit_number }} (Floor {{ $floor->floor_number }}) · {{ ucfirst($apt->status)
                             }}
                         </option>
@@ -78,7 +61,7 @@
                 </div>
                 @else
 
-                {{-- ── Hero ── --}}
+                {{-- Hero + Exports --}}
                 <div class="rpt-hero">
                     <div>
                         <h2 class="rpt-hero__title">Unit {{ $apartment->unit_number }} — {{ $apartment->project->name }}
@@ -91,9 +74,20 @@
                             · Selling price: ${{ number_format($apartment->price_total, 2) }}
                         </div>
                     </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <a href="{{ route('apartments.unit', $apartment->id) }}"
+                            style="text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;background:rgba(42,127,176,0.1);color:rgba(42,127,176,0.9);">✏️
+                            Edit Costs & Materials</a>
+                        <a class="exp-btn exp-btn--excel"
+                            href="{{ route('reports.export.excel','apartment') }}?apartment_id={{ $apartment->id }}">⬇
+                            Excel</a>
+                        <a class="exp-btn exp-btn--pdf"
+                            href="{{ route('reports.export.pdf','apartment') }}?apartment_id={{ $apartment->id }}"
+                            target="_blank">⬇ PDF</a>
+                    </div>
                 </div>
 
-                {{-- ── KPIs ── --}}
+                {{-- KPIs --}}
                 <div class="rpt-kpis">
                     <div class="rpt-kpi rpt-kpi--blue">
                         <p class="rpt-kpi__label">Revenue Collected</p>
@@ -112,10 +106,10 @@
                     </div>
                 </div>
 
-                {{-- ── Client & Contract Info ── --}}
+                {{-- Client & Contract (read-only) --}}
                 @if($contract)
                 <div class="rpt-section">
-                    <p class="rpt-section__title">🧾 Contract & Client</p>
+                    <p class="rpt-section__title">🧾 Contract &amp; Client</p>
                     <div class="rpt-info-grid">
                         <div class="rpt-info-item">
                             <p class="rpt-info-item__key">Client</p>
@@ -155,7 +149,7 @@
                 </div>
                 @endif
 
-                {{-- ── Invoices ── --}}
+                {{-- Invoices (read-only) --}}
                 @if($invoices->isNotEmpty())
                 <div class="rpt-section">
                     <p class="rpt-section__title">💰 Invoices ({{ $invoices->count() }} total)</p>
@@ -178,17 +172,13 @@
                                 <td>{{ $inv->issue_date }}</td>
                                 <td>{{ $inv->due_date }}</td>
                                 <td class="num bold">${{ number_format($inv->amount, 2) }}</td>
-                                <td class="num muted">
-                                    @if($inv->late_fee_amount > 0) +${{ number_format($inv->late_fee_amount, 2) }} @else
-                                    — @endif
-                                </td>
+                                <td class="num muted">@if($inv->late_fee_amount > 0)+${{
+                                    number_format($inv->late_fee_amount, 2) }}@else —@endif</td>
                                 <td>
-                                    @if($inv->status === 'paid')
-                                    <span class="badge badge--paid">Paid</span>
-                                    @elseif($inv->status === 'overdue')
-                                    <span class="badge badge--overdue">Overdue</span>
-                                    @else
-                                    <span class="badge badge--pending">Pending</span>
+                                    @if($inv->status === 'paid') <span class="badge badge--paid">Paid</span>
+                                    @elseif($inv->status === 'overdue') <span
+                                        class="badge badge--overdue">Overdue</span>
+                                    @else <span class="badge badge--pending">Pending</span>
                                     @endif
                                 </td>
                                 <td class="muted">{{ $inv->paid_at ?
@@ -208,11 +198,11 @@
                 </div>
                 @endif
 
-                {{-- ── Apartment Materials ── --}}
+                {{-- Materials (read-only) --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title">🧱 Materials Used for This Unit</p>
                     @if($apartment->materials->isNotEmpty())
-                    <table class="rpt-table" style="margin-bottom:14px">
+                    <table class="rpt-table">
                         <thead>
                             <tr>
                                 <th>Item</th>
@@ -220,7 +210,6 @@
                                 <th>Unit</th>
                                 <th class="num">Unit Price</th>
                                 <th class="num">Line Cost</th>
-                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -232,14 +221,6 @@
                                 <td>{{ $m->unit ?? '—' }}</td>
                                 <td class="num">${{ number_format((float)($m->inventoryItem->price ?? 0), 2) }}</td>
                                 <td class="num bold">${{ number_format($lp, 2) }}</td>
-                                <td>
-                                    <form method="post"
-                                        action="{{ route('apartments.materials.destroy', [$apartment, $m]) }}"
-                                        onsubmit="return confirm('Remove this material and restore stock?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-del">Remove</button>
-                                    </form>
-                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -247,48 +228,19 @@
                             <tr>
                                 <td colspan="4">Total materials cost</td>
                                 <td class="num">${{ number_format($materialsCost, 2) }}</td>
-                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
                     @else
-                    <p style="opacity:.5;font-size:13px;margin:0 0 12px">No materials recorded for this unit yet.</p>
+                    <p style="opacity:.5;font-size:13px;margin:0;">No materials recorded for this unit yet.</p>
                     @endif
-
-                    {{-- Add material form --}}
-                    <div class="rpt-add-form">
-                        <p class="rpt-add-form__title">＋ Add material to this unit</p>
-                        <form method="post" action="{{ route('apartments.materials.store', $apartment) }}">
-                            @csrf
-                            <div class="rpt-add-form__grid rpt-add-form__grid--mat">
-                                <div>
-                                    <label>Inventory Item</label>
-                                    <select name="inventory_item_id" required>
-                                        <option value="">Select item</option>
-                                        @foreach(\App\Models\InventoryItem::orderBy('name')->get() as $it)
-                                        <option value="{{ $it->id }}">{{ $it->name }} (Stock: {{ $it->quantity }} {{
-                                            $it->unit }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div>
-                                    <label>Quantity</label>
-                                    <input type="number" name="quantity_needed" step="0.01" min="0.01"
-                                        placeholder="0.00" required>
-                                </div>
-                                <button type="submit" class="rpt-add-form__submit"
-                                    style="align-self:flex-end">Add</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
 
-                {{-- ── Additional Costs ── --}}
+                {{-- Additional Costs (read-only) --}}
                 <div class="rpt-section">
                     <p class="rpt-section__title">📋 Additional Costs for This Unit</p>
-
                     @if($apartment->additionalCosts->isNotEmpty())
-                    <table class="rpt-table" style="margin-bottom:14px">
+                    <table class="rpt-table">
                         <thead>
                             <tr>
                                 <th>Description</th>
@@ -296,8 +248,7 @@
                                 <th class="num">Expected</th>
                                 <th class="num">Actual</th>
                                 <th class="num">Variance</th>
-                                <th>Settle / Status</th>
-                                <th></th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -316,32 +267,13 @@
                                         }}</span>
                                         @else <span class="badge badge--paid">On budget</span>
                                         @endif
-                                        @else
-                                        —
+                                        @else —
                                         @endif
                                 </td>
                                 <td>
-                                    @if(!$c->isSettled())
-                                    <form class="settle-form" method="post"
-                                        action="{{ route('apartments.costs.settle', [$apartment, $c]) }}">
-                                        @csrf @method('PATCH')
-                                        <input type="number" name="actual_amount" step="0.01" min="0"
-                                            placeholder="Actual $" required>
-                                        <button type="submit">✔ Settle</button>
-                                    </form>
-                                    @else
-                                    <span class="badge badge--paid">Settled {{ $c->actual_entered_at?->format('Y-m-d')
-                                        }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if(!$c->isSettled())
-                                    <form method="post"
-                                        action="{{ route('apartments.costs.destroy', [$apartment, $c]) }}"
-                                        onsubmit="return confirm('Delete this cost entry?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-del">✕</button>
-                                    </form>
+                                    @if($c->isSettled()) <span class="badge badge--paid">Settled {{
+                                        $c->actual_entered_at?->format('Y-m-d') }}</span>
+                                    @else <span class="badge badge--pending">Pending</span>
                                     @endif
                                 </td>
                             </tr>
@@ -360,42 +292,18 @@
                                         number_format(abs($totalV),2) }}</span>
                                         @else — @endif
                                 </td>
-                                <td colspan="2"></td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
                     @else
-                    <p style="opacity:.5;font-size:13px;margin:0 0 12px">No additional costs recorded yet.</p>
+                    <p style="opacity:.5;font-size:13px;margin:0;">No additional costs recorded yet.</p>
                     @endif
-
-                    {{-- Add cost form --}}
-                    <div class="rpt-add-form">
-                        <p class="rpt-add-form__title">＋ Add expected cost for this unit</p>
-                        <form method="post" action="{{ route('apartments.costs.store', $apartment) }}">
-                            @csrf
-                            <div class="rpt-add-form__grid">
-                                <div>
-                                    <label>Description</label>
-                                    <input type="text" name="description" placeholder="e.g. Painting" required>
-                                </div>
-                                <div>
-                                    <label>Category (optional)</label>
-                                    <input type="text" name="category" placeholder="e.g. finishing">
-                                </div>
-                                <div>
-                                    <label>Expected Amount ($)</label>
-                                    <input type="number" name="expected_amount" step="0.01" min="0" placeholder="0.00"
-                                        required>
-                                </div>
-                            </div>
-                            <button type="submit" class="rpt-add-form__submit">Add cost</button>
-                        </form>
-                    </div>
                 </div>
 
-                {{-- ── Cost Summary ── --}}
+                {{-- Cost Summary --}}
                 <div class="rpt-section">
-                    <p class="rpt-section__title">📊 Cost & Profit Summary</p>
+                    <p class="rpt-section__title">📊 Cost &amp; Profit Summary</p>
                     <table class="rpt-table">
                         <tbody>
                             <tr>
@@ -428,7 +336,7 @@
                             <tr style="background:{{ $profit >= 0 ? 'rgba(21,128,61,0.06)' : 'rgba(185,28,28,0.06)' }}">
                                 <td>NET PROFIT / LOSS</td>
                                 <td class="num"
-                                    style="color:{{ $profit >= 0 ? '#15803d' : '#b91c1c' }}; font-size:18px;">
+                                    style="color:{{ $profit >= 0 ? '#15803d' : '#b91c1c' }};font-size:18px;">
                                     {{ $profit >= 0 ? '+' : '' }}${{ number_format($profit, 2) }}
                                 </td>
                             </tr>
@@ -444,7 +352,6 @@
     <script src="/js/navSearch.js"></script>
     <script>
         const APT_ROUTES = {!! $aptRoutesJson !!};
-
     function loadApartments(projId) {
         const sel = document.getElementById('aptPicker');
         sel.innerHTML = '<option value="">— Select apartment —</option>';
@@ -455,8 +362,6 @@
         });
     }
     function goToApartment(url) { if(url) window.location.href = url; }
-
-    // Pre-populate apartments if project already selected
     document.addEventListener('DOMContentLoaded', function(){
         const projSel = document.getElementById('projPicker');
         if(projSel.value) loadApartments(projSel.value);

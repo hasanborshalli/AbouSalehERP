@@ -247,6 +247,8 @@ $end   = Carbon::now()->endOfMonth();
         'manager',
         'floors.apartments',
         'inventoryItems', // pivot has quantity_needed, unit, quantity_used
+        'inventoryUsages.inventoryItem',
+        'additionalCosts',
     ]);
 
     // Flatten apartments from floors
@@ -262,7 +264,17 @@ $end   = Carbon::now()->endOfMonth();
         'available'  => $apartments->where('status', 'available')->count(),
     ];
 
-    return view('project', compact('project', 'stats'));
+    $inventoryItems = InventoryItem::orderBy('name')->get(['id','name','unit','quantity','price']);
+
+    // Cost summaries for display
+    $projectMaterialsCost = $project->inventoryUsages->sum(fn($u) =>
+        (float)$u->quantity_needed * (float)($u->inventoryItem->price ?? 0));
+    $projCosts         = $project->additionalCosts;
+    $projCostsExpected = (float)$projCosts->sum('expected_amount');
+    $projCostsActual   = (float)$projCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
+
+    return view('project', compact('project', 'stats', 'inventoryItems',
+        'projectMaterialsCost', 'projCosts', 'projCostsExpected', 'projCostsActual'));
 }
 
     public function existingProjectsPage(){
@@ -391,4 +403,39 @@ public function accountingExpensesPage()
 
     return view('accounting.expenses', compact('categories'));
 }
+
+    // ── Apartment Unit Detail Page ─────────────────────────────────────────
+    public function apartmentUnitPage(Apartment $apartment)
+    {
+        $apartment->load([
+            'project',
+            'floor',
+            'contract.invoices',
+            'contract.client',
+            'materials.inventoryItem',
+            'additionalCosts',
+        ]);
+
+        $inventoryItems = InventoryItem::orderBy('name')->get(['id','name','unit','quantity','price']);
+        $contract       = $apartment->contract;
+        $invoices       = $contract?->invoices ?? collect();
+        $paidInvoices   = $invoices->where('status','paid');
+
+        $materialsCost = $apartment->materials->sum(function ($m) {
+            return (float)$m->quantity_needed * (float)($m->inventoryItem->price ?? 0);
+        });
+        $costsExpected = (float)$apartment->additionalCosts->sum('expected_amount');
+        $costsActual   = (float)$apartment->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
+        $paidAmount    = (float)$paidInvoices->sum('amount');
+        $downPayment   = (float)($contract?->down_payment ?? 0);
+        $totalRevenue  = $paidAmount + $downPayment;
+        $totalCost     = $materialsCost + $costsActual;
+        $profit        = $totalRevenue - $totalCost;
+
+        return view('apartments-unit', compact(
+            'apartment','contract','invoices','paidInvoices',
+            'inventoryItems','materialsCost','costsExpected','costsActual',
+            'paidAmount','downPayment','totalRevenue','totalCost','profit'
+        ));
+    }
 }

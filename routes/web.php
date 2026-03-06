@@ -213,6 +213,9 @@ Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->grou
     Route::get('/export/{type}/pdf',   [App\Http\Controllers\ReportExportController::class, 'pdf'])->name('export.pdf');
 });
 
+// ── Apartment Unit Detail Page (edit costs & materials) ───────
+Route::middleware('role:owner,admin')->get('/apartments/unit/{apartment}', [App\Http\Controllers\PagesController::class, 'apartmentUnitPage'])->name('apartments.unit');
+
 // ── Additional Costs & Apartment Materials ────────────────────
 Route::middleware('role:owner,admin')->group(function () {
     // Project additional costs

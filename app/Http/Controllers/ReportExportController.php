@@ -30,6 +30,8 @@ class ReportExportController extends Controller
             'worker-payments'      => $this->workerExcel($request),
             'operating-expenses'   => $this->opexExcel($request),
             'inventory'            => $this->inventoryExcel($request),
+            'project'              => $this->projectExcel($request),
+            'apartment'            => $this->apartmentExcel($request),
             default                => abort(404),
         };
     }
@@ -43,6 +45,8 @@ class ReportExportController extends Controller
             'worker-payments'      => $this->workerPdf($request),
             'operating-expenses'   => $this->opexPdf($request),
             'inventory'            => $this->inventoryPdf($request),
+            'project'              => $this->projectPdf($request),
+            'apartment'            => $this->apartmentPdf($request),
             default                => abort(404),
         };
     }
@@ -361,6 +365,169 @@ class ReportExportController extends Controller
         $d = $this->inventoryData($request);
         if (!$d['item']) abort(400,'No item selected');
         return $this->pdfView('pdfs.reports.inventory', $d)->download('inventory-'.$d['item']->name.'.pdf');
+    }
+
+    // ── Project Report ────────────────────────────────────────────────────
+
+    private function projectData(Request $request): ?array
+    {
+        $projectId = $request->input('project_id');
+        if (!$projectId) return null;
+        $project = Project::with([
+            'floors.apartments.contract.invoices',
+            'floors.apartments.materials.inventoryItem',
+            'floors.apartments.additionalCosts',
+            'inventoryUsages.inventoryItem',
+            'additionalCosts',
+        ])->find($projectId);
+        if (!$project) return null;
+
+        $apartments         = $project->floors->flatMap(fn($f) => $f->apartments);
+        $projectMaterialsCost = $project->inventoryUsages->sum(fn($u) =>
+            (float)$u->quantity_needed * (float)($u->inventoryItem->price ?? 0));
+        $apartmentMaterialsCost = $apartments->sum(fn($apt) =>
+            $apt->materials->sum(fn($m) =>
+                (float)$m->quantity_needed * (float)($m->inventoryItem->price ?? 0)));
+
+        $projCosts          = $project->additionalCosts;
+        $projCostsExpected  = (float)$projCosts->sum('expected_amount');
+        $projCostsActual    = (float)$projCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
+        $aptCostsExpected   = (float)$apartments->sum(fn($a) => $a->additionalCosts->sum('expected_amount'));
+        $aptCostsActual     = (float)$apartments->sum(fn($a) => $a->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0));
+
+        $contracts          = $apartments->map(fn($a) => $a->contract)->filter();
+        $paidInvoicesTotal  = (float)$contracts->sum(fn($c) => $c->invoices->where('status','paid')->sum('amount'));
+        $downPaymentsTotal  = (float)$contracts->sum('down_payment');
+        $totalRevenue       = $paidInvoicesTotal + $downPaymentsTotal;
+        $totalCost          = $projectMaterialsCost + $apartmentMaterialsCost + $projCostsActual + $aptCostsActual;
+        $profit             = $totalRevenue - $totalCost;
+
+        return compact('project','apartments','projCosts',
+            'projectMaterialsCost','apartmentMaterialsCost',
+            'projCostsExpected','projCostsActual','aptCostsExpected','aptCostsActual',
+            'paidInvoicesTotal','downPaymentsTotal','totalRevenue','totalCost','profit');
+    }
+
+    private function projectExcel(Request $request)
+    {
+        $d = $this->projectData($request);
+        if (!$d) abort(400, 'project_id required');
+        $rows = [['--- PROJECT MATERIALS ---'],['Item','Qty','Unit Price','Line Cost']];
+        foreach ($d['project']->inventoryUsages as $u) {
+            $rows[] = [$u->inventoryItem->name??'—', $u->quantity_needed,
+                number_format($u->inventoryItem->price??0,2,'.',''),
+                number_format((float)$u->quantity_needed*(float)($u->inventoryItem->price??0),2,'.','')];
+        }
+        $rows[] = []; $rows[] = ['--- PROJECT ADDITIONAL COSTS ---'];
+        $rows[] = ['Description','Category','Expected','Actual','Status'];
+        foreach ($d['projCosts'] as $c) {
+            $rows[] = [$c->description, $c->category??'—',
+                number_format($c->expected_amount,2,'.',''),
+                $c->isSettled() ? number_format($c->actual_amount,2,'.',''): '—',
+                $c->isSettled() ? 'Settled' : 'Pending'];
+        }
+        $rows[] = []; $rows[] = ['--- APARTMENTS ---'];
+        $rows[] = ['Unit','Floor','Status','Total Cost','Collected','Profit'];
+        foreach ($d['apartments'] as $apt) {
+            $mat  = $apt->materials->sum(fn($m) => (float)$m->quantity_needed*(float)($m->inventoryItem->price??0));
+            $cost = $mat + $apt->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
+            $coll = (float)($apt->contract?->invoices->where('status','paid')->sum('amount')??0)
+                  + (float)($apt->contract?->down_payment??0);
+            $rows[] = ['Unit '.$apt->unit_number, 'Floor '.$apt->floor->floor_number,
+                ucfirst($apt->status),
+                number_format($cost,2,'.',''), number_format($coll,2,'.',''), number_format($coll-$cost,2,'.','')];
+        }
+        $totals = [
+            ['Total Revenue','','','','',number_format($d['totalRevenue'],2,'.','')],
+            ['Total Cost',   '','','','',number_format($d['totalCost'],2,'.','')],
+            ['Net Profit/Loss','','','','',number_format($d['profit'],2,'.','')],
+        ];
+        return $this->csvResponse('project-'.$d['project']->name.'.csv',
+            ['Item / Description','Category / Floor','Expected / Unit Price','Actual / Line Cost','Status','Total'],
+            $rows, $totals);
+    }
+
+    private function projectPdf(Request $request)
+    {
+        $d = $this->projectData($request);
+        if (!$d) abort(400,'project_id required');
+        return $this->pdfView('pdfs.reports.project', $d)
+            ->download('project-'.$d['project']->name.'.pdf');
+    }
+
+    // ── Apartment Report ──────────────────────────────────────────────────
+
+    private function apartmentData(Request $request): ?array
+    {
+        $apartmentId = $request->input('apartment_id');
+        if (!$apartmentId) return null;
+        $apartment = Apartment::with([
+            'project','floor','contract.invoices','contract.client',
+            'materials.inventoryItem','additionalCosts',
+        ])->find($apartmentId);
+        if (!$apartment) return null;
+
+        $contract     = $apartment->contract;
+        $invoices     = $contract?->invoices ?? collect();
+        $paidInvoices = $invoices->where('status','paid');
+        $materialsCost = $apartment->materials->sum(fn($m) =>
+            (float)$m->quantity_needed * (float)($m->inventoryItem->price ?? 0));
+        $costsExpected = (float)$apartment->additionalCosts->sum('expected_amount');
+        $costsActual   = (float)$apartment->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
+        $paidAmount    = (float)$paidInvoices->sum('amount');
+        $downPayment   = (float)($contract?->down_payment ?? 0);
+        $totalRevenue  = $paidAmount + $downPayment;
+        $totalCost     = $materialsCost + $costsActual;
+        $profit        = $totalRevenue - $totalCost;
+
+        return compact('apartment','contract','invoices','paidInvoices',
+            'materialsCost','costsExpected','costsActual',
+            'paidAmount','downPayment','totalRevenue','totalCost','profit');
+    }
+
+    private function apartmentExcel(Request $request)
+    {
+        $d = $this->apartmentData($request);
+        if (!$d) abort(400,'apartment_id required');
+        $apt  = $d['apartment'];
+        $rows = [['--- INVOICES ---'],['Invoice #','Issue Date','Due Date','Amount','Status','Paid At']];
+        foreach ($d['invoices']->sortBy('issue_date') as $inv) {
+            $rows[] = [$inv->invoice_number??$inv->id, $inv->issue_date, $inv->due_date,
+                number_format($inv->amount,2,'.',''), ucfirst($inv->status),
+                $inv->paid_at ? \Carbon\Carbon::parse($inv->paid_at)->format('Y-m-d') : '—'];
+        }
+        $rows[] = []; $rows[] = ['--- MATERIALS ---'];
+        $rows[] = ['Item','Qty','Unit Price','Line Cost'];
+        foreach ($apt->materials as $m) {
+            $rows[] = [$m->inventoryItem->name??'—', $m->quantity_needed,
+                number_format($m->inventoryItem->price??0,2,'.',''),
+                number_format((float)$m->quantity_needed*(float)($m->inventoryItem->price??0),2,'.','')];
+        }
+        $rows[] = []; $rows[] = ['--- ADDITIONAL COSTS ---'];
+        $rows[] = ['Description','Category','Expected','Actual','Status'];
+        foreach ($apt->additionalCosts as $c) {
+            $rows[] = [$c->description, $c->category??'—',
+                number_format($c->expected_amount,2,'.',''),
+                $c->isSettled() ? number_format($c->actual_amount,2,'.',''): '—',
+                $c->isSettled() ? 'Settled' : 'Pending'];
+        }
+        $totals = [
+            ['Total Revenue','','',number_format($d['totalRevenue'],2,'.','')],
+            ['Total Cost',   '','',number_format($d['totalCost'],2,'.','')],
+            ['Net Profit/Loss','','',number_format($d['profit'],2,'.','')],
+        ];
+        return $this->csvResponse('unit-'.$apt->unit_number.'-'.$apt->project->name.'.csv',
+            ['Description / Item','Category / Floor','Expected / Unit Price','Amount'],
+            $rows, $totals);
+    }
+
+    private function apartmentPdf(Request $request)
+    {
+        $d = $this->apartmentData($request);
+        if (!$d) abort(400,'apartment_id required');
+        $apt = $d['apartment'];
+        return $this->pdfView('pdfs.reports.apartment', $d)
+            ->download('unit-'.$apt->unit_number.'-'.$apt->project->name.'.pdf');
     }
 
 }
