@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/css/confirmModal.css">
     {{-- page specific --}}
     <link rel="stylesheet" href="/css/existingClients.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <body class="app-shell">

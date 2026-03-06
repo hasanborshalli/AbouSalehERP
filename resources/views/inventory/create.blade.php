@@ -14,6 +14,7 @@
 
     {{-- page specific --}}
     <link rel="stylesheet" href="/css/addItem.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <body class="app-shell">
@@ -39,6 +40,13 @@
                         </a>
                     </header>
 
+                    <style>
+                        .form-error {
+                            color: #dc2626;
+                            font-size: 12px;
+                            margin: 2px 0 0;
+                        }
+                    </style>
                     <form class="add-item__form" action="{{ route('inventory.create-item') }}" method="post"
                         enctype="multipart/form-data">
                         @csrf
@@ -56,12 +64,14 @@
                                 <label class="add-item__label" for="item_name">Item name</label>
                                 <input class="add-item__input" id="item_name" name="item_name" type="text"
                                     placeholder="Enter item name" required value="{{ old('item_name') }}" />
+                                @error('item_name')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
 
                             <div class="add-item__field">
                                 <label class="add-item__label" for="item_price">Item price</label>
                                 <input class="add-item__input" id="item_price" name="item_price" type="number"
                                     step="0.01" min="0" placeholder="0.00" required value="{{ old('item_price') }}" />
+                                @error('item_price')<p class="form-error">{{ $message }}</p>@enderror
                                 <small style="opacity:.7;">(Use as selling price if this is a sale item, otherwise keep
                                     it as your default price.)</small>
                             </div>
@@ -77,12 +87,14 @@
                                         External</option>
                                     <option value="sale" {{ old('item_type')==='sale' ? 'selected' : '' }}>Sale</option>
                                 </select>
+                                @error('item_type')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
 
                             <div class="add-item__field">
                                 <label class="add-item__label" for="item_unit">Unit</label>
                                 <input class="add-item__input" id="item_unit" name="item_unit" type="text"
                                     placeholder="Ex: Kg-L-Pcs" required value="{{ old('item_unit') }}" />
+                                @error('item_unit')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
 
                             <div class="add-item__field">
@@ -107,6 +119,7 @@
                                 <input class="add-item__input" id="purchase_unit_cost" name="purchase_unit_cost"
                                     type="number" step="0.01" min="0" placeholder="0.00"
                                     value="{{ old('purchase_unit_cost') }}" />
+                                @error('purchase_unit_cost')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
 
                             <div class="add-item__field">

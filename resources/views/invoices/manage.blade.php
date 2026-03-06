@@ -17,6 +17,7 @@
 
     {{-- page specific --}}
     <link rel="stylesheet" href="/css/invoicesManage.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <body class="app-shell">

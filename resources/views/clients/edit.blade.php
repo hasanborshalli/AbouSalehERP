@@ -14,6 +14,7 @@
 
     {{-- reuse add client styles --}}
     <link rel="stylesheet" href="/css/addClient.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <body class="app-shell">
