@@ -33,7 +33,6 @@
         </main>
     </div>
     @stack('scripts')
-    <script src="/js/workerNavSearch.js"></script>
 </body>
 
 </html>

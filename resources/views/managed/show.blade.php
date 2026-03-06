@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,78 +13,82 @@
     <link rel="stylesheet" href="/css/managed.css">
     <link rel="stylesheet" href="/css/responsive.css">
 </head>
+
 <body class="app-shell">
-<input class="app-shell__toggle" type="checkbox" id="sidebarToggle" />
-<aside class="app-shell__sidebar"><x-sidebar /></aside>
-<div class="app-shell__main">
-    <x-navbar />
-    <main class="dashboard-content">
-        <div class="mp">
+    <input class="app-shell__toggle" type="checkbox" id="sidebarToggle" />
+    <aside class="app-shell__sidebar">
+        <x-sidebar />
+    </aside>
+    <div class="app-shell__main">
+        <x-navbar />
+        <main class="dashboard-content">
+            <div class="mp">
 
-            @if(session('success'))<div class="alert alert--success">{{ session('success') }}</div>@endif
-            @if(session('error'))<div class="alert alert--error">{{ session('error') }}</div>@endif
+                @if(session('success'))<div class="alert alert--success">{{ session('success') }}</div>@endif
+                @if(session('error'))<div class="alert alert--error">{{ session('error') }}</div>@endif
 
-            {{-- Hero --}}
-            <div class="mp-hero">
-                <div>
-                    <p class="mp-hero__address">{{ $property->address }}</p>
-                    <p class="mp-hero__meta">
-                        {{ $property->city }}{{ $property->area ? ' · '.$property->area : '' }}
-                        @if($property->bedrooms) · {{ $property->bedrooms }} bed @endif
-                        @if($property->bathrooms) · {{ $property->bathrooms }} bath @endif
-                        @if($property->area_sqm) · {{ number_format($property->area_sqm,0) }} m² @endif
-                        · Owner: {{ $property->owner_name }} ({{ $property->owner_phone }})
-                        &nbsp;
-                        <span class="badge badge-{{ $property->type }}" style="vertical-align:middle;">{{ ucfirst($property->type) }}</span>
-                        @php $badge = $property->statusBadge(); @endphp
-                        <span class="badge badge-{{ $property->status }}" style="vertical-align:middle; color:{{ $badge['color'] }}">{{ $badge['label'] }}</span>
-                    </p>
-                </div>
-                <div class="mp-hero__actions">
-                    <a href="{{ route('managed.agreement.pdf', $property) }}" target="_blank">📄 Agreement PDF</a>
-                    <a href="{{ route('managed.edit', $property) }}">✏️ Edit</a>
-                    @if(!in_array($property->status, ['sold','terminated']))
-                    <form method="POST" action="{{ route('managed.terminate', $property) }}" style="display:inline;"
-                        onsubmit="return confirm('Terminate this agreement?')">
-                        @csrf @method('PATCH')
-                        <button class="danger-btn" type="submit">⛔ Terminate</button>
-                    </form>
-                    @endif
-                    <a href="{{ route('managed.index') }}" style="opacity:.7;">← Back</a>
-                </div>
-            </div>
-
-            {{-- ═══════════════════════════════════════════════
-                 FLIP SECTION
-            ════════════════════════════════════════════════ --}}
-            @if($property->isFlip())
-
-            {{-- Profit summary if sold --}}
-            @if($property->sale)
-            @php
-            $profit = $flipProfit;
-            $isLoss = $profit < 0;
-            @endphp
-            <div class="profit-box {{ $isLoss ? 'loss' : '' }}">
-                <p class="profit-box__title">{{ $isLoss ? '📉 Net Loss' : '📈 Net Profit Breakdown' }}</p>
-                <div class="profit-box__rows">
-                    <div class="profit-box__row">
-                        <span>Sale Price (collected from buyer)</span>
-                        <span class="money-green">${{ number_format($property->sale->sale_price, 2) }}</span>
+                {{-- Hero --}}
+                <div class="mp-hero">
+                    <div>
+                        <p class="mp-hero__address">{{ $property->address }}</p>
+                        <p class="mp-hero__meta">
+                            {{ $property->city }}{{ $property->area ? ' · '.$property->area : '' }}
+                            @if($property->bedrooms) · {{ $property->bedrooms }} bed @endif
+                            @if($property->bathrooms) · {{ $property->bathrooms }} bath @endif
+                            @if($property->area_sqm) · {{ number_format($property->area_sqm,0) }} m² @endif
+                            · Owner: {{ $property->owner_name }} ({{ $property->owner_phone }})
+                            &nbsp;
+                            <span class="badge badge-{{ $property->type }}" style="vertical-align:middle;">{{
+                                ucfirst($property->type) }}</span>
+                            @php $badge = $property->statusBadge(); @endphp
+                            <span class="badge badge-{{ $property->status }}"
+                                style="vertical-align:middle; color:{{ $badge['color'] }}">{{ $badge['label'] }}</span>
+                        </p>
                     </div>
-                    <div class="profit-box__row">
-                        <span>— Owner Payout</span>
-                        <span class="money-red">-${{ number_format($property->sale->owner_payout_amount, 2) }}</span>
-                    </div>
-                    <div class="profit-box__row">
-                        <span>— Total Renovation Expenses</span>
-                        <span class="money-red">-${{ number_format($totalExpenses, 2) }}</span>
-                    </div>
-                    <div class="profit-box__row total">
-                        <span>Company Net {{ $isLoss ? 'Loss' : 'Profit' }}</span>
-                        <span>{{ $isLoss ? '-' : '' }}${{ number_format(abs($profit), 2) }}</span>
+                    <div class="mp-hero__actions">
+                        <a href="{{ route('managed.agreement.pdf', $property) }}" target="_blank">📄 Agreement PDF</a>
+                        <a href="{{ route('managed.edit', $property) }}">✏️ Edit</a>
+                        @if(!in_array($property->status, ['sold','terminated']))
+                        <form method="POST" action="{{ route('managed.terminate', $property) }}" style="display:inline;"
+                            onsubmit="return confirm('Terminate this agreement?')">
+                            @csrf @method('PATCH')
+                            <button class="danger-btn" type="submit">⛔ Terminate</button>
+                        </form>
+                        @endif
+                        <a href="{{ route('managed.index') }}" style="opacity:.7;">← Back</a>
                     </div>
                 </div>
+
+                {{-- ═══════════════════════════════════════════════
+                FLIP SECTION
+                ════════════════════════════════════════════════ --}}
+                @if($property->isFlip())
+
+                {{-- Profit summary if sold --}}
+                @if($property->sale)
+                @php
+                $profit = $flipProfit;
+                $isLoss = $profit < 0; @endphp <div class="profit-box {{ $isLoss ? 'loss' : '' }}">
+                    <p class="profit-box__title">{{ $isLoss ? '📉 Net Loss' : '📈 Net Profit Breakdown' }}</p>
+                    <div class="profit-box__rows">
+                        <div class="profit-box__row">
+                            <span>Sale Price (collected from buyer)</span>
+                            <span class="money-green">${{ number_format($property->sale->sale_price, 2) }}</span>
+                        </div>
+                        <div class="profit-box__row">
+                            <span>— Owner Payout</span>
+                            <span class="money-red">-${{ number_format($property->sale->owner_payout_amount, 2)
+                                }}</span>
+                        </div>
+                        <div class="profit-box__row">
+                            <span>— Total Renovation Expenses</span>
+                            <span class="money-red">-${{ number_format($totalExpenses, 2) }}</span>
+                        </div>
+                        <div class="profit-box__row total">
+                            <span>Company Net {{ $isLoss ? 'Loss' : 'Profit' }}</span>
+                            <span>{{ $isLoss ? '-' : '' }}${{ number_format(abs($profit), 2) }}</span>
+                        </div>
+                    </div>
             </div>
             @endif
 
@@ -99,7 +104,8 @@
                 </div>
                 <div class="kpi">
                     <p class="kpi__label">Listing Price</p>
-                    <p class="kpi__value">${{ $property->agreed_listing_price ? number_format($property->agreed_listing_price, 0) : '—' }}</p>
+                    <p class="kpi__value">${{ $property->agreed_listing_price ?
+                        number_format($property->agreed_listing_price, 0) : '—' }}</p>
                 </div>
                 @if($property->sale)
                 <div class="kpi" style="border-color:rgba(5,150,105,.2);background:rgba(5,150,105,.04);">
@@ -129,55 +135,123 @@
                     @if(!in_array($property->status, ['sold','terminated']))
                     <div class="mp-form-panel" id="expense-form" style="display:none;">
                         <h4>Record Renovation Expense</h4>
+                        <div
+                            style="display:flex;gap:0;border:1px solid #d1d5db;border-radius:8px;overflow:hidden;max-width:340px;margin-bottom:14px;">
+                            <label id="lbl_cash" onclick="setExpenseMode('cash')"
+                                style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;cursor:pointer;background:#0b2545;color:#fff;">
+                                💵 Cash
+                            </label>
+                            <label id="lbl_inv" onclick="setExpenseMode('inventory')"
+                                style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;cursor:pointer;background:#f9fafb;color:#6b7280;">
+                                📦 Inventory
+                            </label>
+                        </div>
                         <form method="POST" action="{{ route('managed.expenses.store', $property) }}">
                             @csrf
-                            <div class="mp-form-grid">
-                                <div class="mp-form-field">
-                                    <label>Description *</label>
-                                    <input name="description" type="text" placeholder="e.g. Painting all rooms"
-                                        value="{{ old('description') }}" required />
-                                    @error('description')<span class="form-error">{{ $message }}</span>@enderror
+                            <input type="hidden" name="expense_mode" id="expense_mode_field" value="cash">
+
+                            {{-- Inventory fields --}}
+                            <div id="inv-fields" style="display:none;">
+                                <div class="mp-form-grid">
+                                    <div class="mp-form-field" style="grid-column:1/-1;">
+                                        <label>Inventory Item *</label>
+                                        <select name="inventory_item_id" id="inv_item_select"
+                                            onchange="updateInvPreview()">
+                                            <option value="">-- Select item --</option>
+                                            @foreach(\App\Models\InventoryItem::where('is_out_of_stock',false)->orderBy('name')->get()
+                                            as $invItem)
+                                            <option value="{{ $invItem->id }}" data-price="{{ $invItem->price }}"
+                                                data-unit="{{ $invItem->unit }}" data-stock="{{ $invItem->quantity }}">
+                                                {{ $invItem->name }} — Stock: {{ number_format($invItem->quantity) }} {{
+                                                $invItem->unit }} @ ${{ number_format($invItem->price,2) }}/{{
+                                                $invItem->unit }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Quantity Used *</label>
+                                        <input name="quantity_used" id="inv_qty" type="number" step="0.01" min="0.01"
+                                            oninput="updateInvPreview()" />
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Date *</label>
+                                        <input name="expense_date" type="date" value="{{ date('Y-m-d') }}" />
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Note</label>
+                                        <input name="description" type="text"
+                                            placeholder="e.g. Paint for living room" />
+                                    </div>
                                 </div>
-                                <div class="mp-form-field">
-                                    <label>Category</label>
-                                    <select name="category">
-                                        <option value="">— Select —</option>
-                                        <option value="painting" {{ old('category')==='painting'?'selected':'' }}>Painting</option>
-                                        <option value="plumbing" {{ old('category')==='plumbing'?'selected':'' }}>Plumbing</option>
-                                        <option value="electrical" {{ old('category')==='electrical'?'selected':'' }}>Electrical</option>
-                                        <option value="flooring" {{ old('category')==='flooring'?'selected':'' }}>Flooring</option>
-                                        <option value="carpentry" {{ old('category')==='carpentry'?'selected':'' }}>Carpentry</option>
-                                        <option value="cleaning" {{ old('category')==='cleaning'?'selected':'' }}>Cleaning</option>
-                                        <option value="hvac" {{ old('category')==='hvac'?'selected':'' }}>HVAC</option>
-                                        <option value="materials" {{ old('category')==='materials'?'selected':'' }}>Materials</option>
-                                        <option value="other" {{ old('category')==='other'?'selected':'' }}>Other</option>
-                                    </select>
-                                </div>
-                                <div class="mp-form-field">
-                                    <label>Amount ($) *</label>
-                                    <input name="amount" type="number" step="0.01" min="0.01"
-                                        placeholder="1500.00" value="{{ old('amount') }}" required />
-                                    @error('amount')<span class="form-error">{{ $message }}</span>@enderror
-                                </div>
-                                <div class="mp-form-field">
-                                    <label>Date *</label>
-                                    <input name="expense_date" type="date"
-                                        value="{{ old('expense_date', date('Y-m-d')) }}" required />
-                                </div>
-                                <div class="mp-form-field">
-                                    <label>Vendor / Contractor</label>
-                                    <input name="vendor_name" type="text" placeholder="Vendor name"
-                                        value="{{ old('vendor_name') }}" />
-                                </div>
-                                <div class="mp-form-field">
-                                    <label>Notes</label>
-                                    <input name="notes" type="text" placeholder="Optional note"
-                                        value="{{ old('notes') }}" />
+                                <div id="inv-preview"
+                                    style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:13px;color:#1e40af;">
+                                    Cost: <strong id="inv-cost">--</strong> &nbsp;·&nbsp; Stock after: <strong
+                                        id="inv-remaining">--</strong>
                                 </div>
                             </div>
-                            <div style="display:flex;gap:10px;">
-                                <button type="submit" class="btn-add">Save Expense</button>
-                                <button type="button" class="btn-outline" onclick="togglePanel('expense-form')">Cancel</button>
+
+                            {{-- Cash fields --}}
+                            <div id="cash-fields">
+                                <div class="mp-form-grid">
+                                    <div class="mp-form-field">
+                                        <label>Description *</label>
+                                        <input name="description" type="text" placeholder="e.g. Painting all rooms"
+                                            value="{{ old('description') }}" required />
+                                        @error('description')<span class="form-error">{{ $message }}</span>@enderror
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Category</label>
+                                        <select name="category">
+                                            <option value="">— Select —</option>
+                                            <option value="painting" {{ old('category')==='painting' ?'selected':'' }}>
+                                                Painting</option>
+                                            <option value="plumbing" {{ old('category')==='plumbing' ?'selected':'' }}>
+                                                Plumbing</option>
+                                            <option value="electrical" {{ old('category')==='electrical' ?'selected':''
+                                                }}>Electrical</option>
+                                            <option value="flooring" {{ old('category')==='flooring' ?'selected':'' }}>
+                                                Flooring</option>
+                                            <option value="carpentry" {{ old('category')==='carpentry' ?'selected':''
+                                                }}>Carpentry</option>
+                                            <option value="cleaning" {{ old('category')==='cleaning' ?'selected':'' }}>
+                                                Cleaning</option>
+                                            <option value="hvac" {{ old('category')==='hvac' ?'selected':'' }}>HVAC
+                                            </option>
+                                            <option value="materials" {{ old('category')==='materials' ?'selected':''
+                                                }}>Materials</option>
+                                            <option value="other" {{ old('category')==='other' ?'selected':'' }}>Other
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Amount ($) *</label>
+                                        <input name="amount" type="number" step="0.01" min="0.01" placeholder="1500.00"
+                                            value="{{ old('amount') }}" required />
+                                        @error('amount')<span class="form-error">{{ $message }}</span>@enderror
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Date *</label>
+                                        <input name="expense_date" type="date"
+                                            value="{{ old('expense_date', date('Y-m-d')) }}" required />
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Vendor / Contractor</label>
+                                        <input name="vendor_name" type="text" placeholder="Vendor name"
+                                            value="{{ old('vendor_name') }}" />
+                                    </div>
+                                    <div class="mp-form-field">
+                                        <label>Notes</label>
+                                        <input name="notes" type="text" placeholder="Optional note"
+                                            value="{{ old('notes') }}" />
+                                    </div>
+                                </div>
+                            </div>{{-- end cash-fields --}}
+
+                            <div style="display:flex;gap:10px;margin-top:8px;">
+                                <button type="submit" class="btn-add">Save</button>
+                                <button type="button" class="btn-outline"
+                                    onclick="togglePanel('expense-form')">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -279,21 +353,22 @@
                                 </div>
                                 <div class="mp-form-field">
                                     <label>Sale Date *</label>
-                                    <input name="sale_date" type="date"
-                                        value="{{ old('sale_date', date('Y-m-d')) }}" required />
+                                    <input name="sale_date" type="date" value="{{ old('sale_date', date('Y-m-d')) }}"
+                                        required />
                                 </div>
                                 <div class="mp-form-field">
                                     <label>Notes</label>
-                                    <input name="notes" type="text" placeholder="Optional"
-                                        value="{{ old('notes') }}" />
+                                    <input name="notes" type="text" placeholder="Optional" value="{{ old('notes') }}" />
                                 </div>
                             </div>
                             <p style="font-size:12px;color:#6b7280;margin:0 0 12px;">
-                                ℹ️ Owner payout will automatically be set to <strong>${{ number_format($property->owner_asking_price, 2) }}</strong> (owner asking price).
+                                ℹ️ Owner payout will automatically be set to <strong>${{
+                                    number_format($property->owner_asking_price, 2) }}</strong> (owner asking price).
                             </p>
                             <div style="display:flex;gap:10px;">
                                 <button type="submit" class="btn-add green">Confirm Sale</button>
-                                <button type="button" class="btn-outline" onclick="togglePanel('sale-form')">Cancel</button>
+                                <button type="button" class="btn-outline"
+                                    onclick="togglePanel('sale-form')">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -322,7 +397,8 @@
                                     <span class="money-red">${{ number_format($sale->owner_payout_amount, 2) }}</span>
                                     &nbsp;
                                     @if($sale->owner_paid_at)
-                                    <span class="badge badge-sold">✓ Paid {{ $sale->owner_paid_at->format('d M Y') }}</span>
+                                    <span class="badge badge-sold">✓ Paid {{ $sale->owner_paid_at->format('d M Y')
+                                        }}</span>
                                     @else
                                     <span class="badge badge-pending">Pending</span>
                                     <form method="POST" action="{{ route('managed.sale.payout', $property) }}"
@@ -354,7 +430,7 @@
 
 
             {{-- ═══════════════════════════════════════════════
-                 RENTAL SECTION
+            RENTAL SECTION
             ════════════════════════════════════════════════ --}}
             @if($property->isRental())
 
@@ -403,7 +479,8 @@
                             </div>
                             <div style="display:flex;gap:10px;">
                                 <button type="submit" class="btn-add">Save</button>
-                                <button type="button" class="btn-outline" onclick="togglePanel('expense-form')">Cancel</button>
+                                <button type="button" class="btn-outline"
+                                    onclick="togglePanel('expense-form')">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -414,7 +491,14 @@
                     @else
                     <table class="mp-table">
                         <thead>
-                            <tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th class="num">Amount</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
                         </thead>
                         <tbody>
                             @foreach($property->expenses->sortByDesc('expense_date') as $exp)
@@ -426,7 +510,8 @@
                                 <td>{{ $exp->isVoided() ? '⊘ Voided' : '✓' }}</td>
                                 <td>
                                     @if(!$exp->isVoided())
-                                    <form method="POST" action="{{ route('managed.expenses.destroy', [$property, $exp]) }}"
+                                    <form method="POST"
+                                        action="{{ route('managed.expenses.destroy', [$property, $exp]) }}"
                                         onsubmit="return confirm('Void this expense?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="action-btn red">Void</button>
@@ -504,15 +589,15 @@
                                     <label>Monthly Rent ($) *</label>
                                     <input name="monthly_rent" type="number" step="0.01" min="0"
                                         placeholder="{{ $property->agreed_rent_price ?? '1500' }}"
-                                        value="{{ $property->agreed_rent_price }}" required
-                                        id="rent-input" oninput="calcRental()" />
+                                        value="{{ $property->agreed_rent_price }}" required id="rent-input"
+                                        oninput="calcRental()" />
                                 </div>
                                 <div class="mp-form-field">
                                     <label>Company Commission (%) *</label>
                                     <input name="company_commission_pct" type="number" step="0.01" min="0" max="100"
                                         placeholder="{{ $property->company_commission_pct ?? '10' }}"
-                                        value="{{ $property->company_commission_pct }}" required
-                                        id="pct-input" oninput="calcRental()" />
+                                        value="{{ $property->company_commission_pct }}" required id="pct-input"
+                                        oninput="calcRental()" />
                                 </div>
                                 <div class="mp-form-field">
                                     <label>Security Deposit ($)</label>
@@ -525,19 +610,21 @@
                                 </div>
                                 <div class="mp-form-field">
                                     <label>End Date *</label>
-                                    <input name="end_date" type="date" required
-                                        id="end-input" oninput="calcRental()" />
+                                    <input name="end_date" type="date" required id="end-input" oninput="calcRental()" />
                                 </div>
                             </div>
-                            <div id="rental-preview" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; margin:12px 0; font-size:13px; color:#1e40af;">
+                            <div id="rental-preview"
+                                style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; margin:12px 0; font-size:13px; color:#1e40af;">
                                 Tenant pays: <strong id="pr-rent">—</strong>/mo &nbsp;·&nbsp;
                                 Owner receives: <strong id="pr-owner">—</strong>/mo &nbsp;·&nbsp;
                                 Company keeps: <strong id="pr-comm">—</strong>/mo &nbsp;·&nbsp;
-                                <span id="pr-months">—</span> months = <strong id="pr-total">—</strong> total payments generated
+                                <span id="pr-months">—</span> months = <strong id="pr-total">—</strong> total payments
+                                generated
                             </div>
                             <div style="display:flex;gap:10px;">
                                 <button type="submit" class="btn-add green">Create Contract</button>
-                                <button type="button" class="btn-outline" onclick="togglePanel('rental-form')">Cancel</button>
+                                <button type="button" class="btn-outline"
+                                    onclick="togglePanel('rental-form')">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -550,18 +637,23 @@
                     $collectedPmts = $rental->payments->where('status','collected');
                     @endphp
                     <div style="border:1px solid #e5e7eb; border-radius:10px; margin-bottom:16px; overflow:hidden;">
-                        <div style="background:#fafafa; padding:14px 16px; border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div
+                            style="background:#fafafa; padding:14px 16px; border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                             <div>
                                 <strong>{{ $rental->tenant_name }}</strong>
                                 @if($rental->tenant_phone) · {{ $rental->tenant_phone }} @endif
-                                <span class="badge badge-{{ $rental->status }}" style="margin-left:8px;">{{ ucfirst($rental->status) }}</span>
+                                <span class="badge badge-{{ $rental->status }}" style="margin-left:8px;">{{
+                                    ucfirst($rental->status) }}</span>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center;">
                                 <span style="font-size:12px; color:#6b7280;">
-                                    {{ $rental->start_date->format('d M Y') }} → {{ $rental->end_date->format('d M Y') }}
+                                    {{ $rental->start_date->format('d M Y') }} → {{ $rental->end_date->format('d M Y')
+                                    }}
                                 </span>
                                 @if($rental->pdf_path)
-                                <a class="action-btn blue" href="{{ route('managed.rentals.contract.pdf', [$property, $rental]) }}" target="_blank">📄 Contract</a>
+                                <a class="action-btn blue"
+                                    href="{{ route('managed.rentals.contract.pdf', [$property, $rental]) }}"
+                                    target="_blank">📄 Contract</a>
                                 @endif
                                 @if($rental->status === 'active')
                                 <form method="POST" action="{{ route('managed.rentals.end', [$property, $rental]) }}"
@@ -576,14 +668,21 @@
                         {{-- Rental KPI mini row --}}
                         <div style="display:flex; gap:0; border-bottom:1px solid #f3f4f6;">
                             @foreach([
-                                ['label'=>'Monthly Rent', 'val'=>'$'.number_format($rental->monthly_rent,2), 'color'=>'inherit'],
-                                ['label'=>'Owner Share/mo', 'val'=>'$'.number_format($rental->owner_monthly_share,2), 'color'=>'#dc2626'],
-                                ['label'=>'Commission/mo', 'val'=>'$'.number_format($rental->company_monthly_commission,2), 'color'=>'#2563eb'],
-                                ['label'=>'Deposit', 'val'=>'$'.number_format($rental->deposit_amount,2), 'color'=>'inherit'],
+                            ['label'=>'Monthly Rent', 'val'=>'$'.number_format($rental->monthly_rent,2),
+                            'color'=>'inherit'],
+                            ['label'=>'Owner Share/mo', 'val'=>'$'.number_format($rental->owner_monthly_share,2),
+                            'color'=>'#dc2626'],
+                            ['label'=>'Commission/mo', 'val'=>'$'.number_format($rental->company_monthly_commission,2),
+                            'color'=>'#2563eb'],
+                            ['label'=>'Deposit', 'val'=>'$'.number_format($rental->deposit_amount,2),
+                            'color'=>'inherit'],
                             ] as $k)
                             <div style="flex:1; padding:10px 14px; border-right:1px solid #f3f4f6;">
-                                <p style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin:0 0 2px;">{{ $k['label'] }}</p>
-                                <p style="font-size:15px;font-weight:800;margin:0;color:{{ $k['color'] }};">{{ $k['val'] }}</p>
+                                <p
+                                    style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin:0 0 2px;">
+                                    {{ $k['label'] }}</p>
+                                <p style="font-size:15px;font-weight:800;margin:0;color:{{ $k['color'] }};">{{ $k['val']
+                                    }}</p>
                             </div>
                             @endforeach
                         </div>
@@ -608,17 +707,20 @@
                                         <td>{{ $pmt->due_date->format('M Y') }}</td>
                                         <td class="num">${{ number_format($pmt->amount_due, 2) }}</td>
                                         <td class="num money-red">${{ number_format($pmt->owner_share, 2) }}</td>
-                                        <td class="num money-blue">${{ number_format($pmt->company_commission, 2) }}</td>
+                                        <td class="num money-blue">${{ number_format($pmt->company_commission, 2) }}
+                                        </td>
                                         <td>
                                             @if($pmt->collected_at)
-                                            <span style="color:#059669;font-weight:600;">✓ {{ $pmt->collected_at->format('d M') }}</span>
+                                            <span style="color:#059669;font-weight:600;">✓ {{
+                                                $pmt->collected_at->format('d M') }}</span>
                                             @else
                                             <span style="color:#9ca3af;">Pending</span>
                                             @endif
                                         </td>
                                         <td>
                                             @if($pmt->owner_paid_at)
-                                            <span style="color:#059669;font-weight:600;">✓ {{ $pmt->owner_paid_at->format('d M') }}</span>
+                                            <span style="color:#059669;font-weight:600;">✓ {{
+                                                $pmt->owner_paid_at->format('d M') }}</span>
                                             @else
                                             <span style="color:#9ca3af;">—</span>
                                             @endif
@@ -629,14 +731,16 @@
                                                 action="{{ route('managed.rentals.payments.collect', [$property, $rental, $pmt]) }}"
                                                 style="display:inline;">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="action-btn green" style="font-size:11px;">Collect</button>
+                                                <button type="submit" class="action-btn green"
+                                                    style="font-size:11px;">Collect</button>
                                             </form>
                                             @elseif($pmt->status === 'collected')
                                             <form method="POST"
                                                 action="{{ route('managed.rentals.payments.payout', [$property, $rental, $pmt]) }}"
                                                 style="display:inline;">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="action-btn blue" style="font-size:11px;">Pay Owner</button>
+                                                <button type="submit" class="action-btn blue"
+                                                    style="font-size:11px;">Pay Owner</button>
                                             </form>
                                             @elseif($pmt->status === 'owner_paid')
                                             <span style="font-size:11px;color:#059669;font-weight:700;">✓ Done</span>
@@ -648,9 +752,12 @@
                                 <tfoot>
                                     <tr>
                                         <td>Total</td>
-                                        <td class="num">${{ number_format($rental->payments->sum('amount_due'),2) }}</td>
-                                        <td class="num money-red">${{ number_format($rental->payments->sum('owner_share'),2) }}</td>
-                                        <td class="num money-blue">${{ number_format($rental->payments->sum('company_commission'),2) }}</td>
+                                        <td class="num">${{ number_format($rental->payments->sum('amount_due'),2) }}
+                                        </td>
+                                        <td class="num money-red">${{
+                                            number_format($rental->payments->sum('owner_share'),2) }}</td>
+                                        <td class="num money-blue">${{
+                                            number_format($rental->payments->sum('company_commission'),2) }}</td>
                                         <td colspan="3"></td>
                                     </tr>
                                 </tfoot>
@@ -665,13 +772,13 @@
 
             @endif {{-- end rental --}}
 
-        </div>
+    </div>
     </main>
     <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
-</div>
+    </div>
 
-<script>
-function togglePanel(id) {
+    <script>
+        function togglePanel(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
@@ -704,6 +811,52 @@ function calcRental() {
         document.getElementById('pr-total').textContent = months + ' entries';
     }
 }
-</script>
+
+function setExpenseMode(mode) {
+    document.getElementById('expense_mode_field').value = mode;
+    const cashFields = document.getElementById('cash-fields');
+    const invFields  = document.getElementById('inv-fields');
+    const lblCash    = document.getElementById('lbl_cash');
+    const lblInv     = document.getElementById('lbl_inv');
+
+    if (mode === 'cash') {
+        cashFields.style.display = 'block';
+        invFields.style.display  = 'none';
+        lblCash.style.background = '#0b2545'; lblCash.style.color = '#fff';
+        lblInv.style.background  = '#f9fafb'; lblInv.style.color  = '#6b7280';
+    } else {
+        cashFields.style.display = 'none';
+        invFields.style.display  = 'block';
+        lblCash.style.background = '#f9fafb'; lblCash.style.color = '#6b7280';
+        lblInv.style.background  = '#0b2545'; lblInv.style.color  = '#fff';
+    }
+
+    // Disable inputs in hidden section so browser validation ignores them
+    cashFields.querySelectorAll('input, select, textarea').forEach(el => {
+        el.disabled = (mode !== 'cash');
+    });
+    invFields.querySelectorAll('input, select, textarea').forEach(el => {
+        el.disabled = (mode !== 'inventory');
+    });
+}
+
+function updateInvPreview() {
+    const sel   = document.getElementById('inv_item_select');
+    const qty   = parseFloat(document.getElementById('inv_qty')?.value) || 0;
+    const opt   = sel?.options[sel.selectedIndex];
+    const price = parseFloat(opt?.dataset?.price) || 0;
+    const stock = parseFloat(opt?.dataset?.stock) || 0;
+    const unit  = opt?.dataset?.unit || '';
+    const prev  = document.getElementById('inv-preview');
+
+    if (!sel?.value || !qty) { if (prev) prev.style.display = 'none'; return; }
+
+    document.getElementById('inv-cost').textContent      = '$' + (price * qty).toFixed(2);
+    document.getElementById('inv-remaining').textContent = (stock - qty).toFixed(2) + ' ' + unit;
+    if (prev) prev.style.display = 'block';
+}
+
+    </script>
 </body>
+
 </html>

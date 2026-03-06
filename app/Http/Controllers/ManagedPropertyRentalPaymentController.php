@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 
 class ManagedPropertyRentalPaymentController extends Controller
 {
-    /** Step 1: Mark rent as collected from tenant */
     public function markCollected(
         Request $request,
         ManagedProperty $property,
@@ -21,10 +20,7 @@ class ManagedPropertyRentalPaymentController extends Controller
     ) {
         if ($rental->managed_property_id !== $property->id) abort(403);
         if ($payment->managed_property_rental_id !== $rental->id) abort(403);
-
-        if ($payment->status !== 'pending') {
-            return back()->with('error', 'This payment is already collected.');
-        }
+        if ($payment->status !== 'pending') return back()->with('error', 'Payment already collected.');
 
         $data = $request->validate([
             'amount_collected' => ['nullable', 'numeric', 'min:0'],
@@ -40,7 +36,6 @@ class ManagedPropertyRentalPaymentController extends Controller
                 'status'           => 'collected',
                 'notes'            => $data['notes'] ?? $payment->notes,
             ]);
-
             $cash->postRentalPaymentCollected($payment, auth()->id());
         });
 
@@ -48,7 +43,6 @@ class ManagedPropertyRentalPaymentController extends Controller
             ->with('success', 'Rent collected: $' . number_format($amountCollected, 2));
     }
 
-    /** Step 2: Mark owner share as paid out */
     public function markOwnerPaid(
         Request $request,
         ManagedProperty $property,
@@ -58,10 +52,7 @@ class ManagedPropertyRentalPaymentController extends Controller
     ) {
         if ($rental->managed_property_id !== $property->id) abort(403);
         if ($payment->managed_property_rental_id !== $rental->id) abort(403);
-
-        if ($payment->status !== 'collected') {
-            return back()->with('error', 'Rent must be collected before paying out to owner.');
-        }
+        if ($payment->status !== 'collected') return back()->with('error', 'Rent must be collected first.');
 
         DB::transaction(function () use ($payment, $cash) {
             $payment->update([
@@ -69,7 +60,6 @@ class ManagedPropertyRentalPaymentController extends Controller
                 'owner_paid_at'     => now(),
                 'status'            => 'owner_paid',
             ]);
-
             $cash->postRentalOwnerPayout($payment, auth()->id());
         });
 

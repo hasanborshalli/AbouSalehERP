@@ -12,7 +12,6 @@ use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
 use App\Models\Project;
 use App\Models\User;
-
 use App\Services\CashAccountingService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -119,7 +118,6 @@ $end   = Carbon::now()->endOfMonth();
             'filteredCredit', 'filteredDebit', 'sourceTypes'
         ));
     }
-
      public function inventoryPage(){
         $items = InventoryItem::orderBy('created_at', 'desc')->take(4)->get();
 
@@ -264,7 +262,6 @@ $end   = Carbon::now()->endOfMonth();
 
     return view('apartments.project', compact('project', 'stats'));
 }
-
     public function existingProjectsPage(){
         $projects = Project::query()
         ->leftJoin('apartments', 'apartments.project_id', '=', 'projects.id')
@@ -356,15 +353,28 @@ $end   = Carbon::now()->endOfMonth();
             ->take(20)
             ->get();
 
+        $managedLedger = \App\Models\LedgerEntry::whereIn('source_type', [
+                'managed_property_expense',
+                'managed_property_expense_void',
+                'managed_property_sale',
+                'managed_property_owner_payout',
+                'managed_rental_payment',
+                'managed_rental_owner_payout',
+            ])
+            ->orderByDesc('posted_at')
+            ->take(50)
+            ->get();
+
         return view('accounting.overview', [
-            'labels'       => $summary['labels'],
-            'revenues'     => $summary['revenues'],
-            'expenses'     => $summary['expenses'],
-            'net'          => $summary['net'],
-            'purchases'    => $purchases,
-            'opExpenses'   => $opExpenses,
-            'revenuesRows' => $revenuesRows,
-            'savingsRows'  => $savingsRows,
+            'labels'        => $summary['labels'],
+            'revenues'      => $summary['revenues'],
+            'expenses'      => $summary['expenses'],
+            'net'           => $summary['net'],
+            'purchases'     => $purchases,
+            'opExpenses'    => $opExpenses,
+            'revenuesRows'  => $revenuesRows,
+            'savingsRows'   => $savingsRows,
+            'managedLedger' => $managedLedger,
         ]);
     }
     public function accountingPurchasesPage()
@@ -380,7 +390,6 @@ $end   = Carbon::now()->endOfMonth();
     })->values()->toJson();
     return view('accounting.purchases', compact('items', 'itemsJson'));
 }
-
 public function accountingExpensesPage()
 {
     // you can also load categories from DB later if you want

@@ -212,7 +212,7 @@ Route::middleware('role:owner,admin')->prefix('reports')->name('reports.')->grou
     Route::get('/worker-payments',     [ReportsController::class, 'workerPayments'])->name('worker-payments');
     Route::get('/operating-expenses',  [ReportsController::class, 'operatingExpenses'])->name('operating-expenses');
     Route::get('/inventory',           [ReportsController::class, 'inventoryReport'])->name('inventory');
-
+        Route::get('/managed-properties', [ReportsController::class, 'managedProperties'])->name('managed-properties');
     // Exports
     Route::get('/export/{type}/excel', [App\Http\Controllers\ReportExportController::class, 'excel'])->name('export.excel');
     Route::get('/export/{type}/pdf',   [App\Http\Controllers\ReportExportController::class, 'pdf'])->name('export.pdf');

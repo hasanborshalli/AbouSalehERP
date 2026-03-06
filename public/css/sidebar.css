@@ -156,3 +156,72 @@
         pointer-events: auto;
     }
 }
+/* ── Sidebar nav link text — bigger font ─────────────────────── */
+/* ================================================================
+   APPEND TO: public/css/sidebar.css
+   ================================================================ */
+
+/* -- Bigger link text ------------------------------------------- */
+.app-sidebar__link,
+.app-sidebar__link span {
+    font-size: 15px;
+}
+
+/* -- Nav scroll wrapper ----------------------------------------- */
+.app-sidebar__nav-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* -- The nav itself scrolls ------------------------------------- */
+.app-sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.app-sidebar__nav::-webkit-scrollbar {
+    width: 4px;
+}
+.app-sidebar__nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.app-sidebar__nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+/* -- Gradient fade + bouncing arrow scroll hint ----------------- */
+.app-sidebar__scroll-hint {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: linear-gradient(to bottom, transparent, rgba(11, 37, 69, 0.95));
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    opacity: 1;
+}
+.app-sidebar__scroll-hint span {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    animation: bounceDown 1.6s ease-in-out infinite;
+}
+@keyframes bounceDown {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(5px);
+    }
+}

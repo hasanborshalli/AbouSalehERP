@@ -44,7 +44,6 @@
     </div>
 
     @stack('scripts')
-    <script src="/js/clientNavSearch.js"></script>
 </body>
 
 </html>

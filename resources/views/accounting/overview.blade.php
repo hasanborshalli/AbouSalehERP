@@ -474,6 +474,77 @@
                         </table>
                     </div>
                 </section>
+
+                {{-- ── Managed Properties Transactions ─────────────────── --}}
+                <section class="dashboard-card" style="padding:18px;">
+                    <header
+                        style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h3 style="margin:0;">🏠 Managed Property Transactions</h3>
+                            <p style="margin:6px 0 0; opacity:.7;">Renovation expenses, sale proceeds, owner payouts and
+                                rental collections.</p>
+                        </div>
+                        <a class="clients-index__add-btn" href="{{ route('managed.index') }}">View All Properties</a>
+                    </header>
+                    <div class="table-scroll" style="margin-top:12px;">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                            <thead>
+                                <tr style="text-align:left; background:rgba(0,0,0,.04);">
+                                    <th style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.08);">Date</th>
+                                    <th style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.08);">Description
+                                    </th>
+                                    <th style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.08);">Type</th>
+                                    <th
+                                        style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.08); text-align:right;">
+                                        Amount</th>
+                                    <th style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.08);">Flow</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($managedLedger as $entry)
+                                @php
+                                $typeLabels = [
+                                'managed_property_expense' => 'Renovation Cost',
+                                'managed_property_expense_void' => 'Expense Voided',
+                                'managed_property_sale' => 'Sale Income',
+                                'managed_property_owner_payout' => 'Owner Payout',
+                                'managed_rental_payment' => 'Rent Collected',
+                                'managed_rental_owner_payout' => 'Rental Owner Payout',
+                                ];
+                                $label = $typeLabels[$entry->source_type] ?? $entry->source_type;
+                                $isIn = $entry->direction === 'in';
+                                @endphp
+                                <tr onmouseover="this.style.background='rgba(0,0,0,.02)'"
+                                    onmouseout="this.style.background=''">
+                                    <td
+                                        style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.05); white-space:nowrap; font-size:12px;">
+                                        {{ $entry->posted_at->format('d M Y') }}</td>
+                                    <td
+                                        style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.05); font-weight:600; font-size:12px;">
+                                        {{ Str::limit($entry->description, 60) }}</td>
+                                    <td style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.05);">
+                                        <span
+                                            style="background:{{ $isIn ? 'rgba(5,150,105,.1)' : 'rgba(220,38,38,.08)' }}; color:{{ $isIn ? '#047857' : '#b91c1c' }}; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;">{{
+                                            $label }}</span>
+                                    </td>
+                                    <td
+                                        style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.05); text-align:right; font-weight:700; color:{{ $isIn ? '#059669' : '#dc2626' }};">
+                                        {{ $isIn ? '+' : '-' }}${{ number_format($entry->amount, 2) }}</td>
+                                    <td
+                                        style="padding:8px 10px; border-bottom:1px solid rgba(0,0,0,.05); font-size:18px; text-align:center;">
+                                        {{ $isIn ? '↓' : '↑' }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" style="padding:24px; text-align:center; color:#9ca3af;">No managed
+                                        property transactions yet.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
             </section>
         </main>
 

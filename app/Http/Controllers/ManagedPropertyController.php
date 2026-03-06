@@ -4,13 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\ManagedProperty;
-use App\Models\ManagedPropertyExpense;
-use App\Models\ManagedPropertySale;
-use App\Models\ManagedPropertyRental;
-use App\Services\CashAccountingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -73,6 +68,7 @@ class ManagedPropertyController extends Controller
 
         // Generate owner agreement PDF
         $this->generateAgreementPdf($property);
+        $this->sendAgreementEmail($property);
 
         $this->audit('Create', 'Managed Property', "Created managed property: {$property->address}");
 
@@ -148,6 +144,7 @@ class ManagedPropertyController extends Controller
 
         $property->update($validated);
         $this->regenerateAgreementPdf($property);
+        $this->sendAgreementEmail($property);
 
         $this->audit('Update', 'Managed Property', "Updated managed property: {$property->address}");
 
@@ -244,5 +241,16 @@ class ManagedPropertyController extends Controller
         $audit->save();
         $audit->record = 'MP-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
+    }
+
+    private function sendAgreementEmail(ManagedProperty $property): void
+    {
+        if (!$property->owner_email) return;
+        try {
+            \Illuminate\Support\Facades\Mail::to($property->owner_email)
+                ->queue(new \App\Mail\ManagedPropertyAgreementMail($property));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Agreement email failed: ' . $e->getMessage());
+        }
     }
 }

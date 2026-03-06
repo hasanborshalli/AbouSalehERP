@@ -90,6 +90,17 @@
                     </a>
                 </div>
 
+                <div class="rpt-group-label">Managed Properties</div>
+                <div class="rpt-cards-grid" style="grid-template-columns:repeat(1,1fr);">
+                    <a class="rpt-card" href="{{ route('reports.managed-properties') }}">
+                        <div class="rpt-card__icon">🏠</div>
+                        <div class="rpt-card__name">Managed Properties Report</div>
+                        <div class="rpt-card__desc">Flip profit &amp; loss, rental commission income, renovation
+                            expenses, pending payouts and overdue rent payments.</div>
+                        <div class="rpt-card__arrow">View report →</div>
+                    </a>
+                </div>
+
             </div>
         </main>
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>

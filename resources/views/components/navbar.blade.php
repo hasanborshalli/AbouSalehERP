@@ -72,4 +72,10 @@ $isClient = $u?->role === 'client';
             </div>
         </div>
     </div>
+    {{-- Nav search: role injected here so navSearch.js is role-aware.
+    This is the ONE place navSearch.js is loaded — remove any per-page includes. --}}
+    <script>
+        window.NAV_ROLE="{{ auth()->user()?->role ?? 'admin' }}";
+    </script>
+    <script src="/js/navSearch.js" defer></script>
 </header>

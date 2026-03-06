@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Apartment;
 use App\Models\InventoryItem;
-use App\Models\InventoryPurchase;
-use App\Models\ApartmentMaterial;
-use App\Models\ProjectInventoryItem;
 use App\Models\Invoice;
 use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
@@ -485,5 +482,83 @@ class ReportsController extends Controller
             'summary','grandTotalCost','grandUsageCost'
         ));
     }
+  public function managedProperties(Request $request)
+    {
+        $properties = \App\Models\ManagedProperty::with([
+            'activeExpenses',
+            'sale',
+            'rentals.payments',
+        ])->latest()->get();
 
+        // ── Summary stats ─────────────────────────────────────────
+        $flipProps   = $properties->where('type', 'flip');
+        $rentalProps = $properties->where('type', 'rental');
+
+        // Flip totals
+        $flipTotalExpenses     = 0;
+        $flipTotalSaleIncome   = 0;
+        $flipTotalOwnerPayout  = 0;
+        $flipTotalProfit       = 0;
+        foreach ($flipProps as $p) {
+            $exp  = $p->totalExpenses();
+            $flipTotalExpenses += $exp;
+            if ($p->sale) {
+                $saleIncome  = (float)$p->sale->sale_price;
+                $ownerPayout = (float)$p->sale->owner_payout_amount;
+                $flipTotalSaleIncome  += $saleIncome;
+                $flipTotalOwnerPayout += $ownerPayout;
+                $flipTotalProfit      += $saleIncome - $ownerPayout - $exp;
+            }
+        }
+
+        // Rental totals
+        $rentalTotalCollected  = 0;
+        $rentalTotalOwnerPaid  = 0;
+        $rentalTotalCommission = 0;
+        $rentalTotalExpenses   = 0;
+        foreach ($rentalProps as $p) {
+            $rentalTotalExpenses  += $p->totalExpenses();
+            $allPayments = $p->rentals->flatMap->payments;
+            $rentalTotalCollected  += $allPayments->whereNotNull('collected_at')->sum('amount_collected');
+            $rentalTotalOwnerPaid  += $allPayments->whereNotNull('owner_paid_at')->sum('owner_paid_amount');
+            $rentalTotalCommission += $allPayments->where('status','owner_paid')->sum('company_commission');
+        }
+
+        // Pending items across all types
+        $pendingRentalPayments = \App\Models\ManagedPropertyRentalPayment::where('status','pending')
+            ->where('due_date', '<=', now()->toDateString())
+            ->with('rental.property')
+            ->orderBy('due_date')
+            ->get();
+
+        $pendingOwnerPayouts = \App\Models\ManagedPropertySale::whereNull('owner_paid_at')
+            ->with('property')
+            ->get();
+
+        // Date range filter for the report
+        $dateFrom = $request->input('date_from', now()->startOfYear()->toDateString());
+        $dateTo   = $request->input('date_to',   now()->toDateString());
+
+        // Month-by-month rental commission (for chart)
+        $months = collect();
+        $cursor = \Carbon\Carbon::parse($dateFrom)->startOfMonth();
+        $end    = \Carbon\Carbon::parse($dateTo)->endOfMonth();
+        while ($cursor->lte($end)) {
+            $m   = $cursor->format('Y-m');
+            $comm = \App\Models\ManagedPropertyRentalPayment::where('status','owner_paid')
+                ->whereBetween('owner_paid_at', [$cursor->copy()->startOfMonth(), $cursor->copy()->endOfMonth()])
+                ->sum('company_commission');
+            $months->push(['label' => $cursor->format('M Y'), 'commission' => (float)$comm]);
+            $cursor->addMonth();
+        }
+
+        return view('reports.managed-properties', compact(
+            'properties',
+            'flipProps', 'rentalProps',
+            'flipTotalExpenses', 'flipTotalSaleIncome', 'flipTotalOwnerPayout', 'flipTotalProfit',
+            'rentalTotalCollected', 'rentalTotalOwnerPaid', 'rentalTotalCommission', 'rentalTotalExpenses',
+            'pendingRentalPayments', 'pendingOwnerPayouts',
+            'months', 'dateFrom', 'dateTo'
+        ));
+    }
 }

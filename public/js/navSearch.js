@@ -1,256 +1,486 @@
+/**
+ * navSearch.js — Unified nav search for all portals
+ * Styles injected inline — works regardless of external CSS state.
+ * Role injected by navbar.blade: window.NAV_ROLE
+ * Bell toggle also lives here.
+ */
 (function () {
-    const input = document.getElementById("navSearchInput");
-    const results = document.getElementById("navSearchResults");
+    /* ── Inject styles once ──────────────────────────────────────────── */
+    var STYLE_ID = "nav-search-styles";
+    if (!document.getElementById(STYLE_ID)) {
+        var style = document.createElement("style");
+        style.id = STYLE_ID;
+        style.textContent = [
+            /* Results container */
+            "#navSearchResults {",
+            "  position: absolute;",
+            "  top: calc(100% + 6px);",
+            "  left: 0;",
+            "  right: 0;",
+            "  background: #fff;",
+            "  border: 1px solid #e5e7eb;",
+            "  border-radius: 10px;",
+            "  box-shadow: 0 8px 24px rgba(0,0,0,.12);",
+            "  z-index: 9999;",
+            "  max-height: 360px;",
+            "  overflow-y: auto;",
+            "  padding: 6px;",
+            "}",
+            /* Each result row */
+            "a.nav-search-item {",
+            "  display: flex;",
+            "  align-items: center;",
+            "  justify-content: space-between;",
+            "  gap: 12px;",
+            "  padding: 10px 14px;",
+            "  border-radius: 7px;",
+            "  text-decoration: none;",
+            "  color: inherit;",
+            "  transition: background .1s;",
+            "}",
+            "a.nav-search-item:hover,",
+            "a.nav-search-item.is-active {",
+            "  background: #f3f4f6;",
+            "}",
+            ".nav-search-title {",
+            "  font-size: 14px;",
+            "  font-weight: 600;",
+            "  color: #111827;",
+            "  white-space: nowrap;",
+            "}",
+            ".nav-search-title mark {",
+            "  background: #fef08a;",
+            "  color: #111827;",
+            "  border-radius: 2px;",
+            "  padding: 0 1px;",
+            "}",
+            ".nav-search-desc {",
+            "  font-size: 12px;",
+            "  color: #9ca3af;",
+            "  white-space: nowrap;",
+            "  overflow: hidden;",
+            "  text-overflow: ellipsis;",
+            "}",
+            ".nav-search-empty {",
+            "  padding: 16px;",
+            "  text-align: center;",
+            "  font-size: 13px;",
+            "  color: #9ca3af;",
+            "}",
+        ].join("\n");
+        document.head.appendChild(style);
+    }
+
+    /* ── Page catalogue ──────────────────────────────────────────────── */
+    var PAGES = {
+        owner: [
+            {
+                title: "Dashboard",
+                url: "/dashboard",
+                desc: "Overview, stats, charts",
+            },
+            {
+                title: "Inventory",
+                url: "/inventory",
+                desc: "Stock levels and items",
+            },
+            {
+                title: "Stock Control",
+                url: "/inventory/stock-control",
+                desc: "Adjust stock levels",
+            },
+            {
+                title: "Add Inventory Item",
+                url: "/inventory/add-item",
+                desc: "Create a new inventory item",
+            },
+            {
+                title: "Stock Info",
+                url: "/inventory/stock-info",
+                desc: "Item details and quantities",
+            },
+            {
+                title: "Clients",
+                url: "/clients",
+                desc: "Manage clients and contracts",
+            },
+            {
+                title: "Add Client",
+                url: "/clients/add-client",
+                desc: "Create a new client",
+            },
+            {
+                title: "Existing Clients",
+                url: "/clients/existing-clients",
+                desc: "All registered clients",
+            },
+            {
+                title: "Invoices",
+                url: "/invoices",
+                desc: "Client invoices and payments",
+            },
+            {
+                title: "Apartments",
+                url: "/apartments",
+                desc: "Manage apartments and units",
+            },
+            {
+                title: "Existing Projects",
+                url: "/apartments/existing-projects",
+                desc: "All real estate projects",
+            },
+            {
+                title: "Create Project",
+                url: "/apartments/create-project",
+                desc: "Add a new building project",
+            },
+            {
+                title: "Accounting",
+                url: "/accounting",
+                desc: "Cash flow, expenses, revenue",
+            },
+            {
+                title: "Record Purchase",
+                url: "/accounting/purchases",
+                desc: "Log an inventory purchase",
+            },
+            {
+                title: "Record Expense",
+                url: "/accounting/expenses",
+                desc: "Log an operating expense",
+            },
+            {
+                title: "Ledger",
+                url: "/accounting/ledger",
+                desc: "Full journal of all entries",
+            },
+            {
+                title: "Reports",
+                url: "/reports",
+                desc: "Profit, cost and sales reports",
+            },
+            {
+                title: "Project Report",
+                url: "/reports/project",
+                desc: "Cost and revenue per project",
+            },
+            {
+                title: "Apartment Report",
+                url: "/reports/apartment",
+                desc: "Cost and profit per unit",
+            },
+            {
+                title: "Profit & Loss",
+                url: "/reports/pl",
+                desc: "Revenue vs expenses by month",
+            },
+            {
+                title: "Sales Pipeline",
+                url: "/reports/sales-pipeline",
+                desc: "Unit status and pricing",
+            },
+            {
+                title: "Outstanding Invoices",
+                url: "/reports/outstanding-invoices",
+                desc: "Overdue and unpaid invoices",
+            },
+            {
+                title: "Worker Payments Report",
+                url: "/reports/worker-payments",
+                desc: "Contractor payment history",
+            },
+            {
+                title: "Operating Expenses Report",
+                url: "/reports/operating-expenses",
+                desc: "Office costs by category",
+            },
+            {
+                title: "Inventory Report",
+                url: "/reports/inventory",
+                desc: "Stock usage and purchases",
+            },
+            {
+                title: "Managed Properties Report",
+                url: "/reports/managed-properties",
+                desc: "Flip profit and rental commission",
+            },
+            {
+                title: "Workers",
+                url: "/workers",
+                desc: "Contractors and payment schedules",
+            },
+            {
+                title: "Add Worker",
+                url: "/workers/create",
+                desc: "Create a new worker account",
+            },
+            {
+                title: "Managed Properties",
+                url: "/managed",
+                desc: "Flip and rental property management",
+            },
+            {
+                title: "Settings",
+                url: "/settings",
+                desc: "Company settings and employees",
+            },
+        ],
+
+        client: [
+            {
+                title: "My Contracts",
+                url: "/client/contracts",
+                desc: "View your contracts",
+            },
+            {
+                title: "Contract Overview",
+                url: "/client/contracts/overview",
+                desc: "Contract summary and details",
+            },
+            {
+                title: "Contract Manager",
+                url: "/client/contracts/manager",
+                desc: "Manage your contract",
+            },
+            {
+                title: "Contract Documents",
+                url: "/client/contracts/documents",
+                desc: "Download contract PDFs",
+            },
+            {
+                title: "Construction Progress",
+                url: "/client/contracts/progress",
+                desc: "Build stages and milestones",
+            },
+            {
+                title: "My Invoices",
+                url: "/client/invoices",
+                desc: "View your invoices",
+            },
+            {
+                title: "Invoice List",
+                url: "/client/invoices/list",
+                desc: "All your invoices",
+            },
+            {
+                title: "Receipts",
+                url: "/client/invoices/receipts",
+                desc: "Paid invoice receipts",
+            },
+            {
+                title: "Download Center",
+                url: "/client/invoices/download-center",
+                desc: "Download all invoices as PDF",
+            },
+            {
+                title: "Payment History",
+                url: "/client/invoices/payments",
+                desc: "Paid amounts and dates",
+            },
+            {
+                title: "Notifications",
+                url: "/client/notifications",
+                desc: "Your alerts and messages",
+            },
+            {
+                title: "Settings",
+                url: "/client/settings",
+                desc: "Profile, password and avatar",
+            },
+        ],
+
+        worker: [
+            { title: "Home", url: "/worker/home", desc: "Your dashboard" },
+            {
+                title: "My Contracts",
+                url: "/worker/contracts",
+                desc: "Work scope and agreements",
+            },
+            {
+                title: "My Payments",
+                url: "/worker/payments",
+                desc: "Salary and installments",
+            },
+            {
+                title: "Settings",
+                url: "/worker/settings",
+                desc: "Profile, password and avatar",
+            },
+        ],
+    };
+
+    PAGES.admin = PAGES.owner;
+
+    /* ── Pre-index ───────────────────────────────────────────────────── */
+    var role = (window.NAV_ROLE || "admin").toLowerCase();
+    var rawList = PAGES[role] || PAGES.admin;
+
+    var index = rawList.map(function (p) {
+        return {
+            title: p.title,
+            url: p.url,
+            desc: p.desc,
+            haystack: (p.title + " " + p.desc).toLowerCase(),
+        };
+    });
+
+    /* ── DOM ─────────────────────────────────────────────────────────── */
+    var input = document.getElementById("navSearchInput");
+    var results = document.getElementById("navSearchResults");
+
+    /* ── Bell toggle ─────────────────────────────────────────────────── */
+    var bellBtn = document.getElementById("notifBellBtn");
+    var bellMenu = document.getElementById("notifBellMenu");
+    if (bellBtn && bellMenu) {
+        bellBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            bellMenu.style.display =
+                bellMenu.style.display === "block" ? "none" : "block";
+        });
+        document.addEventListener("click", function () {
+            bellMenu.style.display = "none";
+        });
+    }
+
     if (!input || !results) return;
 
-    // ✅ Add your app routes here
-    const pages = [
-        // Core
-        {
-            label: "Dashboard",
-            keywords: "home main dashboard",
-            url: "/dashboard",
-        },
-        { label: "Logout", keywords: "logout sign out", url: "/logout" },
-
-        // Inventory (owner/admin)
-        {
-            label: "Inventory Overview",
-            keywords: "inventory items overview",
-            url: "/inventory",
-        },
-        {
-            label: "Stock Control",
-            keywords: "inventory stock control",
-            url: "/inventory/stock-control",
-        },
-        {
-            label: "Add Item",
-            keywords: "inventory add item create",
-            url: "/inventory/add-item",
-        },
-        {
-            label: "Stock Info",
-            keywords: "inventory stock info",
-            url: "/inventory/stock-info",
-        },
-
-        // Clients (owner/admin)
-        {
-            label: "Clients Overview",
-            keywords: "clients overview",
-            url: "/clients",
-        },
-        {
-            label: "Add Client",
-            keywords: "clients add create new",
-            url: "/clients/add-client",
-        },
-        {
-            label: "Existing Clients",
-            keywords: "clients existing list",
-            url: "/clients/existing-clients",
-        },
-
-        // Invoices (owner/admin)
-        {
-            label: "Invoices",
-            keywords: "invoices overview payments",
-            url: "/invoices",
-        },
-
-        // Apartments / Projects (owner/admin)
-        {
-            label: "Apartments Overview",
-            keywords: "apartments overview units",
-            url: "/apartments",
-        },
-        {
-            label: "Existing Projects",
-            keywords: "apartments projects existing",
-            url: "/apartments/existing-projects",
-        },
-        {
-            label: "Create Project",
-            keywords: "apartments projects create new",
-            url: "/apartments/create-project",
-        },
-        {
-            label: "Accounting Overview",
-            keywords:
-                "accounting overview cash basis finance profit net revenue expenses",
-            url: "/accounting",
-        },
-        {
-            label: "Record Purchase",
-            keywords:
-                "accounting purchase record restock inventory buy supplier vendor",
-            url: "/accounting/purchases",
-        },
-        {
-            label: "Record Expense",
-            keywords:
-                "accounting expense record operating costs utilities rent salary",
-            url: "/accounting/expenses",
-        },
-        // Settings
-        { label: "Settings", keywords: "settings overview", url: "/settings" },
-        {
-            label: "Export Data (Owner)",
-            keywords: "settings export backup zip",
-            url: "/settings/export",
-        },
-
-        // Employees (mostly modals, but keep as “actions” so user can find them)
-        // Note: there is no GET page for these routes; they submit forms. We'll link to Settings as the entry point.
-        {
-            label: "Invite Employee (Owner)",
-            keywords: "employees invite add create user team",
-            url: "/settings",
-        },
-        {
-            label: "Edit Employee (Owner)",
-            keywords: "employees edit update team",
-            url: "/settings",
-        },
-        {
-            label: "Reset / Edit Password (Owner/Admin)",
-            keywords: "password reset change edit manage",
-            url: "/settings",
-        },
-        {
-            label: "Edit Avatar",
-            keywords: "avatar profile photo change",
-            url: "/settings",
-        },
-    ];
-
-    let activeIndex = -1;
-    let visibleItems = [];
-
-    function openResults() {
-        results.hidden = false;
-    }
-    function closeResults() {
-        results.hidden = true;
-        results.innerHTML = "";
-        activeIndex = -1;
-        visibleItems = [];
-    }
-
-    function scoreMatch(q, p) {
-        const hay = (p.label + " " + p.keywords).toLowerCase();
-        if (hay.includes(q)) return 2;
-        // basic token match
-        const tokens = q.split(/\s+/).filter(Boolean);
-        let hits = 0;
-        tokens.forEach((t) => {
-            if (hay.includes(t)) hits++;
-        });
-        return hits ? 1 : 0;
-    }
-
-    function render(list, q) {
-        results.innerHTML = "";
-        if (!list.length) {
-            results.innerHTML = `<div class="nav-search-item" style="cursor:default;opacity:.6;">No results</div>`;
-            openResults();
+    /* ── Search ──────────────────────────────────────────────────────── */
+    function search(raw) {
+        var q = raw.trim().toLowerCase();
+        if (!q) {
+            hide();
             return;
         }
 
-        list.forEach((p, idx) => {
-            const row = document.createElement("div");
-            row.className =
-                "nav-search-item" + (idx === activeIndex ? " is-active" : "");
-            row.innerHTML = `
-              <span>${p.label}</span>
-              <span class="nav-search-kbd">↵</span>
-            `;
-            row.addEventListener("click", () => (window.location.href = p.url));
-            results.appendChild(row);
-        });
+        var terms = q.split(/\s+/);
+        var matched = [];
 
-        openResults();
+        for (var i = 0; i < index.length; i++) {
+            var entry = index[i];
+            var hit = true;
+            for (var j = 0; j < terms.length; j++) {
+                if (entry.haystack.indexOf(terms[j]) === -1) {
+                    hit = false;
+                    break;
+                }
+            }
+            if (hit) {
+                matched.push(entry);
+                if (matched.length === 8) break;
+            }
+        }
+
+        render(matched, terms[0]);
     }
 
-    function updateActive() {
-        const rows = results.querySelectorAll(".nav-search-item");
-        rows.forEach((r, i) =>
-            r.classList.toggle("is-active", i === activeIndex),
-        );
-        // keep active in view
-        const active = rows[activeIndex];
-        if (active) active.scrollIntoView({ block: "nearest" });
+    /* ── Render ──────────────────────────────────────────────────────── */
+    function render(matched, firstTerm) {
+        if (!matched.length) {
+            results.innerHTML =
+                '<div class="nav-search-empty">No pages found</div>';
+            results.hidden = false;
+            activeIdx = -1;
+            return;
+        }
+
+        var html = "";
+        for (var i = 0; i < matched.length; i++) {
+            var m = matched[i];
+            var lbl = esc(m.title);
+
+            var lo = m.title.toLowerCase();
+            var at = lo.indexOf(firstTerm);
+            if (at !== -1) {
+                lbl =
+                    esc(m.title.slice(0, at)) +
+                    "<mark>" +
+                    esc(m.title.slice(at, at + firstTerm.length)) +
+                    "</mark>" +
+                    esc(m.title.slice(at + firstTerm.length));
+            }
+
+            html +=
+                '<a class="nav-search-item" href="' +
+                m.url +
+                '">' +
+                '<span class="nav-search-title">' +
+                lbl +
+                "</span>" +
+                '<span class="nav-search-desc">' +
+                esc(m.desc) +
+                "</span>" +
+                "</a>";
+        }
+
+        results.innerHTML = html;
+        results.hidden = false;
+        activeIdx = -1;
     }
 
-    input.addEventListener("input", () => {
-        const q = input.value.trim().toLowerCase();
-        if (!q) return closeResults();
+    function hide() {
+        results.hidden = true;
+        results.innerHTML = "";
+        activeIdx = -1;
+    }
 
-        visibleItems = pages
-            .map((p) => ({ p, s: scoreMatch(q, p) }))
-            .filter((x) => x.s > 0)
-            .sort((a, b) => b.s - a.s || a.p.label.localeCompare(b.p.label))
-            .slice(0, 10)
-            .map((x) => x.p);
+    function esc(s) {
+        return s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
 
-        activeIndex = 0;
-        render(visibleItems, q);
-        updateActive();
-    });
+    /* ── Keyboard ────────────────────────────────────────────────────── */
+    var activeIdx = -1;
+    var debounceId = null;
 
-    input.addEventListener("keydown", (e) => {
-        if (results.hidden) return;
-
+    input.addEventListener("keydown", function (e) {
+        var items = results.querySelectorAll(".nav-search-item");
         if (e.key === "ArrowDown") {
             e.preventDefault();
-            activeIndex = Math.min(activeIndex + 1, visibleItems.length - 1);
-            updateActive();
+            activeIdx = Math.min(activeIdx + 1, items.length - 1);
+            applyActive(items);
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            activeIndex = Math.max(activeIndex - 1, 0);
-            updateActive();
+            activeIdx = Math.max(activeIdx - 1, 0);
+            applyActive(items);
         } else if (e.key === "Enter") {
-            e.preventDefault();
-            const item = visibleItems[activeIndex];
-            if (item) window.location.href = item.url;
+            var target =
+                activeIdx >= 0
+                    ? items[activeIdx]
+                    : results.querySelector(".nav-search-item");
+            if (target) {
+                e.preventDefault();
+                window.location.href = target.href;
+            }
         } else if (e.key === "Escape") {
-            closeResults();
+            hide();
             input.blur();
         }
     });
 
-    // close dropdown when clicking outside
-    document.addEventListener("click", (e) => {
-        const inside = e.target.closest(".app-navbar__search");
-        if (!inside) closeResults();
+    function applyActive(items) {
+        for (var i = 0; i < items.length; i++) {
+            items[i].classList.toggle("is-active", i === activeIdx);
+        }
+        if (items[activeIdx])
+            items[activeIdx].scrollIntoView({ block: "nearest" });
+    }
+
+    input.addEventListener("input", function () {
+        var val = this.value;
+        clearTimeout(debounceId);
+        debounceId = setTimeout(function () {
+            search(val);
+        }, 150);
     });
 
-    // Optional: Ctrl+K / Cmd+K focuses search
-    document.addEventListener("keydown", (e) => {
-        const isK = e.key.toLowerCase() === "k";
-        if ((e.ctrlKey || e.metaKey) && isK) {
-            e.preventDefault();
-            input.focus();
-            input.select();
-        }
+    input.addEventListener("focus", function () {
+        if (this.value.trim()) search(this.value);
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!input.contains(e.target) && !results.contains(e.target)) hide();
     });
 })();
-document.addEventListener("DOMContentLoaded", () => {
-    const btn = document.getElementById("notifBellBtn");
-    const menu = document.getElementById("notifBellMenu");
-    if (!btn || !menu) return;
-
-    btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        menu.style.display = menu.style.display === "none" ? "block" : "none";
-    });
-
-    document.addEventListener("click", () => {
-        menu.style.display = "none";
-    });
-
-    menu.addEventListener("click", (e) => {
-        e.stopPropagation(); // keep it open when clicking inside
-    });
-});
