@@ -65,15 +65,18 @@ class CashAccountingService
     }
 
     /**
-     * IN-KIND PAYMENT:
-     * When an invoice is settled with inventory items instead of cash,
-     * we still post revenue (the value of goods received = sale value),
-     * and record each inventory item as "received in payment" with stock deducted.
+     * IN-KIND PAYMENT (Invoice):
+     * Client pays an invoice by delivering inventory items to the company.
+     * - Stock INCREASES (we receive the items)
+     * - Revenue is posted (apartment payment received, non-cash)
+     * - No cash movement
      *
-     * Items array: [['inventory_item_id'=>X, 'quantity_used'=>Y, 'unit_price'=>Z, 'total_value'=>W], ...]
+     * $inKindPayment: the already-saved InKindPayment model with items loaded
      */
-    public function postInvoicePaidInKind(Invoice $invoice, array $items, ?int $userId = null): void
+    public function postInvoicePaidInKind(\App\Models\InKindPayment $inKindPayment, ?int $userId = null): void
     {
+        $invoice = $inKindPayment->invoice;
+
         // Avoid double-posting
         $exists = LedgerEntry::where('source_type', 'invoice')
             ->where('source_id', $invoice->invoice_number)
@@ -81,54 +84,93 @@ class CashAccountingService
 
         if ($exists) return;
 
-        $totalPaid = (float)$invoice->amount + (float)$invoice->late_fee_amount;
+        $invoiceTotal = (float)$invoice->amount + (float)$invoice->late_fee_amount;
 
-        DB::transaction(function () use ($invoice, $items, $totalPaid, $userId) {
-            // 1. Post revenue entry (in-kind)
+        DB::transaction(function () use ($inKindPayment, $invoice, $invoiceTotal, $userId) {
+            // 1. Post revenue for invoice (in-kind, no cash)
             LedgerEntry::create([
                 'posted_at'   => now(),
                 'account_id'  => $this->revenueAccount()->id,
-                'amount'      => $totalPaid,
+                'amount'      => $invoiceTotal,
                 'direction'   => 'in',
-                'description' => 'Invoice paid (in-kind): #' . $invoice->invoice_number,
+                'description' => 'Invoice paid (in-kind items received): #' . $invoice->invoice_number,
                 'source_type' => 'invoice',
                 'source_id'   => $invoice->invoice_number,
                 'user_id'     => $userId,
             ]);
 
-            // 2. Deduct inventory stock + create invoice_inventory_payment records
-            foreach ($items as $row) {
-                $item = InventoryItem::lockForUpdate()->findOrFail($row['inventory_item_id']);
+            // 2. Increase stock for each item received
+            foreach ($inKindPayment->items as $line) {
+                $item = InventoryItem::lockForUpdate()->findOrFail($line->inventory_item_id);
 
-                $qtyUsed   = (float)$row['quantity_used'];
-                $unitPrice = (float)$row['unit_price'];
-                $rowValue  = round($unitPrice * $qtyUsed, 2);
-
-                // Deduct stock
-                $item->quantity      = max(0, (float)$item->quantity - $qtyUsed);
-                $item->is_out_of_stock = ($item->quantity <= 0);
+                $item->quantity        = (float)$item->quantity + (float)$line->quantity;
+                $item->is_out_of_stock = false;
                 $item->save();
 
-                // Record the in-kind payment line
-                \App\Models\InvoiceInventoryPayment::create([
-                    'invoice_id'          => $invoice->id,
-                    'inventory_item_id'   => $item->id,
-                    'quantity_used'       => $qtyUsed,
-                    'unit_price'          => $unitPrice,
-                    'total_value'         => $rowValue,
-                    'notes'               => $row['notes'] ?? null,
-                    'created_by'          => $userId,
-                ]);
-
-                // Also post an inventory-received ledger line for transparency
+                // Ledger: record inventory received (as asset / negative expense)
                 LedgerEntry::create([
                     'posted_at'   => now(),
                     'account_id'  => $this->purchasesAccount()->id,
-                    'amount'      => $rowValue,
+                    'amount'      => round((float)$line->total_value, 2),
                     'direction'   => 'in',
-                    'description' => "In-kind payment received: {$item->name} × {$qtyUsed} {$item->unit} — Invoice #{$invoice->invoice_number}",
-                    'source_type' => 'invoice_in_kind',
-                    'source_id'   => $invoice->id,
+                    'description' => "In-kind received: {$item->name} × {$line->quantity} {$item->unit} (Invoice #{$invoice->invoice_number})",
+                    'source_type' => 'in_kind_payment',
+                    'source_id'   => $inKindPayment->id,
+                    'user_id'     => $userId,
+                ]);
+            }
+        });
+    }
+
+    /**
+     * IN-KIND PAYMENT (Full Contract):
+     * Client pays for entire apartment with inventory items.
+     * - Stock INCREASES for each item
+     * - Revenue posted equal to contract final_price
+     * - No cash
+     */
+    public function postContractInKindPayment(\App\Models\InKindPayment $inKindPayment, ?int $userId = null): void
+    {
+        $contract = $inKindPayment->contract;
+
+        $exists = LedgerEntry::where('source_type', 'in_kind_contract')
+            ->where('source_id', $inKindPayment->id)
+            ->exists();
+
+        if ($exists) return;
+
+        DB::transaction(function () use ($inKindPayment, $contract, $userId) {
+            // Revenue for full contract price
+            LedgerEntry::create([
+                'posted_at'   => \Carbon\Carbon::parse($inKindPayment->payment_date)->startOfDay(),
+                'account_id'  => $this->revenueAccount()->id,
+                'amount'      => round((float)$contract->final_price, 2),
+                'direction'   => 'in',
+                'description' => 'Apartment sold (in-kind payment): ' .
+                                 ($contract->apartment->unit_number ?? 'Unit') .
+                                 ' — ' . ($contract->project->name ?? '') .
+                                 ' — Client: ' . ($contract->client->name ?? ''),
+                'source_type' => 'in_kind_contract',
+                'source_id'   => $inKindPayment->id,
+                'user_id'     => $userId,
+            ]);
+
+            // Increase stock for each item received
+            foreach ($inKindPayment->items as $line) {
+                $item = InventoryItem::lockForUpdate()->findOrFail($line->inventory_item_id);
+
+                $item->quantity        = (float)$item->quantity + (float)$line->quantity;
+                $item->is_out_of_stock = false;
+                $item->save();
+
+                LedgerEntry::create([
+                    'posted_at'   => \Carbon\Carbon::parse($inKindPayment->payment_date)->startOfDay(),
+                    'account_id'  => $this->purchasesAccount()->id,
+                    'amount'      => round((float)$line->total_value, 2),
+                    'direction'   => 'in',
+                    'description' => "In-kind received: {$item->name} × {$line->quantity} {$item->unit} (Contract #{$contract->id})",
+                    'source_type' => 'in_kind_contract_item',
+                    'source_id'   => $inKindPayment->id,
                     'user_id'     => $userId,
                 ]);
             }

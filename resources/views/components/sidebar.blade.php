@@ -18,36 +18,39 @@
             <a class="app-sidebar__link {{ activeRoute('inventory*') }}" href="{{ route('inventory.overview') }}">
                 <span>Inventory</span>
             </a>
+            @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
+            <a class="app-sidebar__link {{ activeRoute('workers*') }}" href="{{ route('workers.index') }}">
+                <span>Workers</span>
+            </a>
+            @endif
             <a class="app-sidebar__link {{ activeRoute('clients*') }}" href="{{ route('clients.overview') }}">
                 <span>Clients</span>
             </a>
+            <a class="app-sidebar__link {{ activeRoute('apartments*') }}" href="{{ route('apartments.overview') }}">
+                <span>Apartments</span>
+            </a>
+            @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
+            <a class="app-sidebar__link {{ activeRoute('managed*') }}" href="{{ route('managed.index') }}">
+                <span>Managed Props</span>
+            </a>
+            @endif
             <a class="app-sidebar__link {{ activeRoute('invoices*') }}" href="{{ route('invoices.overview') }}">
                 <span>Invoices</span>
             </a>
             <a class="app-sidebar__link {{ activeRoute('accounting*') }}" href="{{ route('accounting.overview') }}">
                 <span>Accounting</span>
             </a>
-            <a class="app-sidebar__link {{ activeRoute('apartments*') }}" href="{{ route('apartments.overview') }}">
-                <span>Apartments</span>
-            </a>
-            <a class="app-sidebar__link {{ activeRoute('settings*') }}" href="{{ route('settings.overview') }}">
-                <span>Settings</span>
-            </a>
+
             @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
             <a class="app-sidebar__link {{ activeRoute('reports*') }}" href="{{ route('reports.index') }}">
                 <span>Reports</span>
             </a>
             @endif
-            @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
-            <a class="app-sidebar__link {{ activeRoute('workers*') }}" href="{{ route('workers.index') }}">
-                <span>Workers</span>
+
+
+            <a class="app-sidebar__link {{ activeRoute('settings*') }}" href="{{ route('settings.overview') }}">
+                <span>Settings</span>
             </a>
-            @endif
-            @if(auth()->user()->role === 'owner' || auth()->user()->role === 'admin')
-            <a class="app-sidebar__link {{ activeRoute('managed*') }}" href="{{ route('managed.index') }}">
-                <span>Managed Props</span>
-            </a>
-            @endif
         </nav>
 
         <div class="app-sidebar__scroll-hint" id="scrollHint" aria-hidden="true">

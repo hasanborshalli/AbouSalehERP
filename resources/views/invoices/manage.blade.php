@@ -236,26 +236,59 @@
                     {{-- IN-KIND SECTION --}}
                     <div id="inKindSection" style="display:none;">
                         <p class="confirm-modal__text">
-                            Client pays with <strong>inventory items</strong>. Select items and quantities whose
-                            total value equals the invoice amount.
+                            Client pays by <strong>delivering inventory items</strong> to the company.
+                            Items will be <strong>added to stock</strong>. Enter any amount — you agree the deal
+                            face-to-face.
                         </p>
 
-                        <div class="inkind-summary">
-                            <span>Invoice amount: <strong id="inkindInvoiceTotal">—</strong></span>
-                            <span>Items total: <strong id="inkindItemsTotal">$0.00</strong></span>
-                            <span id="inkindDiffWrap">Remaining: <strong id="inkindDiff">—</strong></span>
-                        </div>
-
                         <div id="inkindRows">
-                            {{-- Item rows are injected by JS --}}
+                            {{-- Item rows injected by JS --}}
                         </div>
 
                         <button type="button" class="inv-modal__add-row-btn" id="addInKindRowBtn">
                             + Add item
                         </button>
+
+                        <div class="inkind-summary">
+                            <span>Items total value: <strong id="inkindItemsTotal">$0.00</strong></span>
+                        </div>
+
+                        <div class="inv-modal__field" style="margin-top:10px;">
+                            <label class="inv-modal__label">Notes (optional)</label>
+                            <input type="text" class="inv-modal__input" id="inkindPaymentNotes"
+                                placeholder="e.g. 10 tons steel rebar received at warehouse">
+                        </div>
+                    </div>
+
+                    {{-- CONFIRMATION STEP (shown instead of above before final submit) --}}
+                    <div id="inkindConfirmStep" style="display:none;">
+                        <div class="inkind-confirm-header">📋 Please confirm the following items:</div>
+                        <table class="inkind-confirm-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Unit Price</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inkindConfirmBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align:right; font-weight:700;">Total value:</td>
+                                    <td id="inkindConfirmTotal" style="font-weight:700;"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <p class="inkind-confirm-note">These items will be <strong>added to stock</strong>. This action
+                            cannot be undone.</p>
                     </div>
 
                     <div class="confirm-modal__actions">
+                        <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="inkindBackBtn"
+                            style="display:none;">
+                            ← Back
+                        </button>
                         <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="paidCancelBtn">
                             Cancel
                         </button>

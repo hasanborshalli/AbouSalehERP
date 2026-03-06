@@ -2,10 +2,8 @@
     const tbody = document.getElementById("invTbody");
     const search = document.getElementById("invSearch");
     const statusFilter = document.getElementById("invStatus");
-
     const detailsTitle = document.getElementById("invDetailsTitle");
     const detailsBody = document.getElementById("invDetailsBody");
-
     const token = document
         .querySelector('meta[name="csrf-token"]')
         ?.getAttribute("content");
@@ -21,6 +19,7 @@
     const paidDate = document.getElementById("paidDate");
     const paidCancel = document.getElementById("paidCancelBtn");
     const paidConfirm = document.getElementById("paidConfirmBtn");
+    const inkindBack = document.getElementById("inkindBackBtn");
 
     // In-kind elements
     const typeCashBtn = document.getElementById("typeCashBtn");
@@ -29,46 +28,43 @@
     const inKindSection = document.getElementById("inKindSection");
     const inkindRows = document.getElementById("inkindRows");
     const addRowBtn = document.getElementById("addInKindRowBtn");
-    const inkindInvTotal = document.getElementById("inkindInvoiceTotal");
     const inkindItemsTotal = document.getElementById("inkindItemsTotal");
-    const inkindDiff = document.getElementById("inkindDiff");
-    const inkindDiffWrap = document.getElementById("inkindDiffWrap");
+    const inkindPaymentNotes = document.getElementById("inkindPaymentNotes");
+
+    // Confirmation step elements
+    const inkindConfirmStep = document.getElementById("inkindConfirmStep");
+    const inkindConfirmBody = document.getElementById("inkindConfirmBody");
+    const inkindConfirmTotal = document.getElementById("inkindConfirmTotal");
 
     if (!tbody) return;
 
     let currentRow = null;
-    let inventoryItems = []; // loaded once on first in-kind open
-    let paymentMode = "cash"; // "cash" or "in_kind"
-    let currentInvoiceAmount = 0;
+    let inventoryItems = [];
+    let paymentMode = "cash";
+    let confirmStep = false; // are we showing the confirmation step?
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-
+    // ── Helpers ─────────────────────────────────────────────────────────
     function money(v) {
-        const n = Number(v || 0);
         return (
             "$" +
-            n.toLocaleString(undefined, {
+            Number(v || 0).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             })
         );
     }
 
-    function openModal(modal) {
-        if (!modal) return;
-        modal.classList.add("is-open");
-        modal.setAttribute("aria-hidden", "false");
+    function openModal(m) {
+        m?.classList.add("is-open");
+        m?.setAttribute("aria-hidden", "false");
     }
-
-    function closeModal(modal) {
-        if (!modal) return;
-        modal.classList.remove("is-open");
-        modal.setAttribute("aria-hidden", "true");
+    function closeModal(m) {
+        m?.classList.remove("is-open");
+        m?.setAttribute("aria-hidden", "true");
     }
 
     [editModal, paidModal].forEach((m) => {
-        if (!m) return;
-        m.addEventListener("click", (e) => {
+        m?.addEventListener("click", (e) => {
             if (e.target.classList.contains("confirm-modal__backdrop"))
                 closeModal(m);
         });
@@ -77,8 +73,7 @@
     editCancel?.addEventListener("click", () => closeModal(editModal));
     paidCancel?.addEventListener("click", () => closeModal(paidModal));
 
-    // ── Filtering ─────────────────────────────────────────────────────────
-
+    // ── Filtering ─────────────────────────────────────────────────────
     function rowMatches(tr) {
         const q = (search?.value || "").trim().toLowerCase();
         const st = (statusFilter?.value || "all").toLowerCase();
@@ -96,100 +91,65 @@
             (st === "all" || tr.dataset.status === st)
         );
     }
-
     function applyFilters() {
-        [...tbody.querySelectorAll("tr")].forEach((tr) => {
-            tr.style.display = rowMatches(tr) ? "" : "none";
-        });
+        [...tbody.querySelectorAll("tr")].forEach(
+            (tr) => (tr.style.display = rowMatches(tr) ? "" : "none"),
+        );
     }
-
     search?.addEventListener("input", applyFilters);
     statusFilter?.addEventListener("change", applyFilters);
 
-    // ── Details panel ─────────────────────────────────────────────────────
-
+    // ── Details panel ─────────────────────────────────────────────────
     function renderDetails(tr) {
         const d = tr.dataset;
-        const baseAmount = Number(d.amount || 0);
-        const lateFee = Number(d.lateFee || 0);
-        const totalDue = baseAmount + lateFee;
+        const base = Number(d.amount || 0),
+            late = Number(d.lateFee || 0),
+            total = base + late;
         const isLate = (d.status || "").toLowerCase() === "overdue";
-        const receiptPdfUrl = d.receiptPdf ? "/storage/" + d.receiptPdf : null;
         const isPaid = (d.status || "").toLowerCase() === "paid";
-        const isInKind = (d.paymentType || "cash") === "in_kind";
+        const receiptUrl = d.receiptPdf ? "/storage/" + d.receiptPdf : null;
+        const contractUrl = d.contractPdf ? "/storage/" + d.contractPdf : null;
+        const invoiceUrl = d.invoicePdf ? "/storage/" + d.invoicePdf : null;
 
-        detailsTitle.textContent = d.invoiceNumber
-            ? d.invoiceNumber
-            : "Invoice";
-
-        const contractPdfUrl = d.contractPdf
-            ? "/storage/" + d.contractPdf
-            : null;
-        const invoicePdfUrl = d.invoicePdf ? "/storage/" + d.invoicePdf : null;
-
+        detailsTitle.textContent = d.invoiceNumber || "Invoice";
         detailsBody.innerHTML = `
-      <div class="invoices__block">
-        <div class="invoices__block-title">Invoice</div>
-        <div class="invoices__kv"><span>Invoice #</span><strong>${d.invoiceNumber || "-"}</strong></div>
-        <div class="invoices__kv"><span>Status</span><strong>${(d.status || "-").toUpperCase()}</strong></div>
-        ${isPaid ? `<div class="invoices__kv"><span>Payment type</span><strong>${isInKind ? "📦 In-Kind (Inventory)" : "💵 Cash"}</strong></div>` : ""}
-        <div class="invoices__kv"><span>Issue date</span><strong>${d.issue || "-"}</strong></div>
-        <div class="invoices__kv"><span>Due date</span><strong>${d.due || "-"}</strong></div>
-        <div class="invoices__kv"><span>Base amount</span><strong>${money(baseAmount)}</strong></div>
-${
-    isLate && lateFee > 0
-        ? `<div class="invoices__kv"><span>Late fee</span><strong>${money(lateFee)}</strong></div>
-       <div class="invoices__kv"><span>Total due</span><strong>${money(totalDue)}</strong></div>`
-        : `<div class="invoices__kv"><span>Total due</span><strong>${money(baseAmount)}</strong></div>`
-}
-      </div>
-
-      <div class="invoices__block">
-        <div class="invoices__block-title">Client</div>
-        <div class="invoices__kv"><span>Name</span><strong>${d.client || "-"}</strong></div>
-        <div class="invoices__kv"><span>Phone</span><strong>${d.phone || "-"}</strong></div>
-        <div class="invoices__kv"><span>Email</span><strong>${d.email || "-"}</strong></div>
-      </div>
-
-      <div class="invoices__block">
-        <div class="invoices__block-title">Contract</div>
-        <div class="invoices__kv"><span>Contract ID</span><strong>#${d.contractId || "-"}</strong></div>
-        <div class="invoices__kv"><span>Project</span><strong>${d.project || "-"}</strong></div>
-        <div class="invoices__kv"><span>Unit</span><strong>${d.unit || "-"}</strong></div>
-        <div class="invoices__kv"><span>Contract date</span><strong>${d.contractDate || "-"}</strong></div>
-        <div class="invoices__kv"><span>Payment start</span><strong>${d.paymentStart || "-"}</strong></div>
-      </div>
-
-      <div class="invoices__block">
-        <div class="invoices__block-title">Downloads</div>
-        <div class="invoices__kv">
-          <span>Contract PDF</span>
-          <strong>${contractPdfUrl ? `<a href="${contractPdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}</strong>
-        </div>
-        <div class="invoices__kv">
-          <span>Invoice PDF</span>
-          <strong>${invoicePdfUrl ? `<a href="${invoicePdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}</strong>
-        </div>
-        <div class="invoices__kv">
-          <span>Receipt PDF</span>
-          <strong>
+          <div class="invoices__block">
+            <div class="invoices__block-title">Invoice</div>
+            <div class="invoices__kv"><span>Invoice #</span><strong>${d.invoiceNumber || "-"}</strong></div>
+            <div class="invoices__kv"><span>Status</span><strong>${(d.status || "-").toUpperCase()}</strong></div>
+            <div class="invoices__kv"><span>Issue date</span><strong>${d.issue || "-"}</strong></div>
+            <div class="invoices__kv"><span>Due date</span><strong>${d.due || "-"}</strong></div>
+            <div class="invoices__kv"><span>Base amount</span><strong>${money(base)}</strong></div>
             ${
-                isPaid
-                    ? receiptPdfUrl
-                        ? `<a href="${receiptPdfUrl}" target="_blank" rel="noopener">Download</a>`
-                        : "—"
-                    : "Available after payment"
+                isLate && late > 0
+                    ? `<div class="invoices__kv"><span>Late fee</span><strong>${money(late)}</strong></div>
+                 <div class="invoices__kv"><span>Total due</span><strong>${money(total)}</strong></div>`
+                    : `<div class="invoices__kv"><span>Total due</span><strong>${money(base)}</strong></div>`
             }
-          </strong>
-        </div>
-      </div>
-    `;
+          </div>
+          <div class="invoices__block">
+            <div class="invoices__block-title">Client</div>
+            <div class="invoices__kv"><span>Name</span><strong>${d.client || "-"}</strong></div>
+            <div class="invoices__kv"><span>Phone</span><strong>${d.phone || "-"}</strong></div>
+            <div class="invoices__kv"><span>Email</span><strong>${d.email || "-"}</strong></div>
+          </div>
+          <div class="invoices__block">
+            <div class="invoices__block-title">Contract</div>
+            <div class="invoices__kv"><span>Contract ID</span><strong>#${d.contractId || "-"}</strong></div>
+            <div class="invoices__kv"><span>Project</span><strong>${d.project || "-"}</strong></div>
+            <div class="invoices__kv"><span>Unit</span><strong>${d.unit || "-"}</strong></div>
+          </div>
+          <div class="invoices__block">
+            <div class="invoices__block-title">Downloads</div>
+            <div class="invoices__kv"><span>Contract PDF</span><strong>${contractUrl ? `<a href="${contractUrl}" target="_blank">Download</a>` : "—"}</strong></div>
+            <div class="invoices__kv"><span>Invoice PDF</span><strong>${invoiceUrl ? `<a href="${invoiceUrl}" target="_blank">Download</a>` : "—"}</strong></div>
+            <div class="invoices__kv"><span>Receipt PDF</span><strong>${isPaid ? (receiptUrl ? `<a href="${receiptUrl}" target="_blank">Download</a>` : "—") : "Available after payment"}</strong></div>
+          </div>`;
     }
 
-    // ── In-Kind logic ─────────────────────────────────────────────────────
-
+    // ── Inventory items loader ────────────────────────────────────────
     async function loadInventoryItems() {
-        if (inventoryItems.length > 0) return; // cached
+        if (inventoryItems.length > 0) return;
         try {
             const res = await fetch("/invoices/inventory-items", {
                 headers: { Accept: "application/json", "X-CSRF-TOKEN": token },
@@ -200,7 +160,8 @@ ${
         }
     }
 
-    function buildItemSelect(selectedId = null) {
+    // ── Build one item row in the in-kind form ────────────────────────
+    function buildItemSelect() {
         const sel = document.createElement("select");
         sel.className = "inv-modal__input inkind-item-select";
         sel.innerHTML = `<option value="">— select item —</option>`;
@@ -210,8 +171,8 @@ ${
             opt.dataset.price = it.price;
             opt.dataset.stock = it.quantity;
             opt.dataset.unit = it.unit || "";
+            opt.dataset.name = it.name;
             opt.textContent = `${it.name} (${money(it.price)}/${it.unit || "unit"}, stock: ${it.quantity})`;
-            if (selectedId && it.id == selectedId) opt.selected = true;
             sel.appendChild(opt);
         });
         return sel;
@@ -229,12 +190,12 @@ ${
         qtyInput.placeholder = "Qty";
         qtyInput.className = "inv-modal__input inkind-qty";
 
+        const stockInfo = document.createElement("span");
+        stockInfo.className = "inkind-stock-info";
+
         const rowValue = document.createElement("span");
         rowValue.className = "inkind-row-value";
         rowValue.textContent = "$0.00";
-
-        const stockInfo = document.createElement("span");
-        stockInfo.className = "inkind-stock-info";
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
@@ -249,19 +210,15 @@ ${
             const opt = select.options[select.selectedIndex];
             const price = parseFloat(opt?.dataset.price || 0);
             const qty = parseFloat(qtyInput.value || 0);
-            const val = price * qty;
-            rowValue.textContent = money(val);
+            rowValue.textContent = money(price * qty);
             recalcTotal();
         }
 
         select.addEventListener("change", () => {
             const opt = select.options[select.selectedIndex];
-            const stock = opt?.dataset.stock;
-            const unit = opt?.dataset.unit || "";
             stockInfo.textContent = opt?.value
-                ? `Available: ${stock} ${unit}`
+                ? `Current stock: ${opt.dataset.stock} ${opt.dataset.unit}`
                 : "";
-            qtyInput.max = stock || "";
             recalcRow();
         });
         qtyInput.addEventListener("input", recalcRow);
@@ -286,35 +243,30 @@ ${
             );
             total += price * qty;
         });
-
-        inkindItemsTotal.textContent = money(total);
-        const diff = currentInvoiceAmount - total;
-        inkindDiff.textContent = money(Math.abs(diff));
-
-        if (Math.abs(diff) <= 1) {
-            inkindDiff.style.color = "#22c55e";
-            inkindDiffWrap.querySelector("strong").previousSibling?.remove?.();
-            inkindDiffWrap.firstChild.textContent =
-                diff > 0 ? "Remaining: " : diff < 0 ? "Over by: " : "✓ Exact: ";
-        } else {
-            inkindDiff.style.color = diff > 0 ? "#ef4444" : "#f97316";
-            inkindDiffWrap.firstChild.textContent =
-                diff > 0 ? "Remaining: " : "Over by: ";
-        }
+        if (inkindItemsTotal) inkindItemsTotal.textContent = money(total);
     }
 
     function switchPaymentMode(mode) {
         paymentMode = mode;
+        confirmStep = false;
         if (mode === "cash") {
-            cashSection.style.display = "";
-            inKindSection.style.display = "none";
-            typeCashBtn.classList.add("inv-modal__type-btn--active");
-            typeInKindBtn.classList.remove("inv-modal__type-btn--active");
+            cashSection?.style && (cashSection.style.display = "");
+            inKindSection?.style && (inKindSection.style.display = "none");
+            inkindConfirmStep?.style &&
+                (inkindConfirmStep.style.display = "none");
+            typeCashBtn?.classList.add("inv-modal__type-btn--active");
+            typeInKindBtn?.classList.remove("inv-modal__type-btn--active");
+            if (inkindBack) inkindBack.style.display = "none";
+            if (paidConfirm) paidConfirm.textContent = "Confirm";
         } else {
-            cashSection.style.display = "none";
-            inKindSection.style.display = "";
-            typeCashBtn.classList.remove("inv-modal__type-btn--active");
-            typeInKindBtn.classList.add("inv-modal__type-btn--active");
+            cashSection?.style && (cashSection.style.display = "none");
+            inKindSection?.style && (inKindSection.style.display = "");
+            inkindConfirmStep?.style &&
+                (inkindConfirmStep.style.display = "none");
+            typeCashBtn?.classList.remove("inv-modal__type-btn--active");
+            typeInKindBtn?.classList.add("inv-modal__type-btn--active");
+            if (inkindBack) inkindBack.style.display = "none";
+            if (paidConfirm) paidConfirm.textContent = "Review & Confirm →";
         }
     }
 
@@ -322,15 +274,21 @@ ${
     typeInKindBtn?.addEventListener("click", async () => {
         await loadInventoryItems();
         switchPaymentMode("in_kind");
-        // Add a first row automatically if none exist
         if (inkindRows.querySelectorAll(".inkind-row").length === 0)
             addInKindRow();
     });
-
     addRowBtn?.addEventListener("click", addInKindRow);
 
-    // ── API helpers ────────────────────────────────────────────────────────
+    // Back button: go from confirmation step back to item entry
+    inkindBack?.addEventListener("click", () => {
+        confirmStep = false;
+        inKindSection.style.display = "";
+        inkindConfirmStep.style.display = "none";
+        inkindBack.style.display = "none";
+        if (paidConfirm) paidConfirm.textContent = "Review & Confirm →";
+    });
 
+    // ── API patch ──────────────────────────────────────────────────────
     async function apiPatch(url, payload) {
         const res = await fetch(url, {
             method: "PATCH",
@@ -341,33 +299,25 @@ ${
             },
             body: JSON.stringify(payload || {}),
         });
-
         if (!res.ok) {
             let msg = "Request failed.";
             try {
-                const data = await res.json();
-                msg =
-                    data.message || data.errors
-                        ? data.message || Object.values(data.errors)[0]?.[0]
-                        : msg;
+                const d = await res.json();
+                msg = d.message || msg;
             } catch (_) {}
             throw new Error(msg);
         }
         return res.json().catch(() => ({}));
     }
 
-    // ── Row state updates ─────────────────────────────────────────────────
-
-    function setRowStatus(tr, status, paymentType) {
+    // ── Row state updates ──────────────────────────────────────────────
+    function setRowStatus(tr, status) {
         tr.dataset.status = status;
-        tr.dataset.paymentType = paymentType || "cash";
-
         const pill = tr.querySelector(".invoices__status");
         if (pill) {
             pill.className = `invoices__status invoices__status--${status}`;
             pill.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         }
-
         if (status === "paid") {
             tr.querySelector(".invoices__icon-btn--paid")?.remove();
             tr.querySelector(".invoices__icon-btn--edit")?.remove();
@@ -382,14 +332,12 @@ ${
         if (tds[4]) tds[4].textContent = due || "-";
     }
 
-    // ── Table click handler ────────────────────────────────────────────────
-
+    // ── Table click ────────────────────────────────────────────────────
     tbody.addEventListener("click", (e) => {
+        const tr = e.target.closest("tr");
         const viewBtn = e.target.closest(".invoices__btn--view");
         const editBtn = e.target.closest(".invoices__icon-btn--edit");
         const paidBtn = e.target.closest(".invoices__icon-btn--paid");
-
-        const tr = e.target.closest("tr");
         if (!tr) return;
 
         if (viewBtn) {
@@ -407,110 +355,139 @@ ${
 
         if (paidBtn) {
             currentRow = tr;
-            // Reset modal state
+            confirmStep = false;
             switchPaymentMode("cash");
-            paidDate.value = "";
-            inkindRows.innerHTML = "";
-            // Set invoice total display
-            const amt = parseFloat(tr.dataset.amount || 0);
-            const late = parseFloat(tr.dataset.lateFee || 0);
-            currentInvoiceAmount = amt + late;
-            if (inkindInvTotal)
-                inkindInvTotal.textContent = money(currentInvoiceAmount);
-            if (inkindItemsTotal) inkindItemsTotal.textContent = "$0.00";
-            if (inkindDiff)
-                inkindDiff.textContent = money(currentInvoiceAmount);
+            if (paidDate) paidDate.value = "";
+            if (inkindRows) inkindRows.innerHTML = "";
+            if (inkindPaymentNotes) inkindPaymentNotes.value = "";
             openModal(paidModal);
-            return;
         }
     });
 
-    // ── Edit dates save ────────────────────────────────────────────────────
-
+    // ── Edit save ──────────────────────────────────────────────────────
     editSave?.addEventListener("click", async () => {
         if (!currentRow) return;
-        const invoiceId = currentRow.dataset.id;
-        const issue_date = editIssue.value || null;
-        const due_date = editDue.value || null;
-
         try {
             editSave.disabled = true;
-            await apiPatch(`/invoices/${invoiceId}/dates`, {
-                issue_date,
-                due_date,
+            await apiPatch(`/invoices/${currentRow.dataset.id}/dates`, {
+                issue_date: editIssue.value || null,
+                due_date: editDue.value || null,
             });
-            setRowDates(currentRow, issue_date, due_date);
+            setRowDates(currentRow, editIssue.value, editDue.value);
             renderDetails(currentRow);
             closeModal(editModal);
         } catch (err) {
-            alert(err.message || "Failed to update dates.");
+            alert(err.message || "Failed.");
         } finally {
             editSave.disabled = false;
         }
     });
 
-    // ── Mark paid confirm ─────────────────────────────────────────────────
-
+    // ── Confirm button (handles both review step and final submit) ────
     paidConfirm?.addEventListener("click", async () => {
         if (!currentRow) return;
-        const invoiceId = currentRow.dataset.id;
 
-        try {
-            paidConfirm.disabled = true;
+        // ── IN-KIND: STEP 1 → show confirmation table ─────────────────
+        if (paymentMode === "in_kind" && !confirmStep) {
+            const rows = inkindRows.querySelectorAll(".inkind-row");
+            const items = [];
 
-            if (paymentMode === "in_kind") {
-                // Collect items
-                const itemRows = inkindRows.querySelectorAll(".inkind-row");
-                const items = [];
-
-                for (const row of itemRows) {
-                    const sel = row.querySelector(".inkind-item-select");
-                    const qty = row.querySelector(".inkind-qty");
-                    const itemId = sel?.value;
-                    const qtyVal = parseFloat(qty?.value || 0);
-
-                    if (!itemId) {
-                        alert(
-                            "Please select an item for every row, or remove empty rows.",
-                        );
-                        paidConfirm.disabled = false;
-                        return;
-                    }
-                    if (!qtyVal || qtyVal <= 0) {
-                        alert("Please enter a valid quantity for every item.");
-                        paidConfirm.disabled = false;
-                        return;
-                    }
-
-                    items.push({
-                        inventory_item_id: parseInt(itemId),
-                        quantity_used: qtyVal,
-                    });
-                }
-
-                if (items.length === 0) {
-                    alert("Please add at least one inventory item.");
-                    paidConfirm.disabled = false;
+            for (const row of rows) {
+                const sel = row.querySelector(".inkind-item-select");
+                const qty = row.querySelector(".inkind-qty");
+                const itemId = sel?.value;
+                const qtyVal = parseFloat(qty?.value || 0);
+                if (!itemId) {
+                    alert(
+                        "Please select an item for every row, or remove empty rows.",
+                    );
                     return;
                 }
-
-                await apiPatch(`/invoices/${invoiceId}/mark-paid`, {
-                    payment_type: "in_kind",
-                    items,
+                if (!qtyVal || qtyVal <= 0) {
+                    alert("Please enter a valid quantity for every item.");
+                    return;
+                }
+                const opt = sel.options[sel.selectedIndex];
+                items.push({
+                    id: parseInt(itemId),
+                    name: opt.dataset.name || "Item",
+                    price: parseFloat(opt.dataset.price || 0),
+                    qty: qtyVal,
+                    unit: opt.dataset.unit || "",
                 });
-
-                setRowStatus(currentRow, "paid", "in_kind");
-            } else {
-                const paid_at = paidDate.value || null;
-                const resp = await apiPatch(
-                    `/invoices/${invoiceId}/mark-paid`,
-                    { paid_at, payment_type: "cash" },
-                );
-                setRowStatus(currentRow, "paid", "cash");
-                if (resp?.receipt_path)
-                    currentRow.dataset.receiptPdf = resp.receipt_path;
             }
 
+            if (items.length === 0) {
+                alert("Please add at least one item.");
+                return;
+            }
+
+            // Build confirmation table
+            let totalVal = 0;
+            inkindConfirmBody.innerHTML = "";
+            items.forEach((it) => {
+                const val = it.price * it.qty;
+                totalVal += val;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${it.name}</td><td>${it.qty} ${it.unit}</td><td>${money(it.price)}</td><td>${money(val)}</td>`;
+                inkindConfirmBody.appendChild(tr);
+            });
+            inkindConfirmTotal.textContent = money(totalVal);
+
+            // Switch to confirmation view
+            inKindSection.style.display = "none";
+            inkindConfirmStep.style.display = "";
+            inkindBack.style.display = "";
+            paidConfirm.textContent = "✓ Yes, confirm & add to stock";
+            confirmStep = true;
+            return;
+        }
+
+        // ── IN-KIND: STEP 2 → actually submit ─────────────────────────
+        if (paymentMode === "in_kind" && confirmStep) {
+            const rows = inkindRows.querySelectorAll(".inkind-row");
+            const items = [];
+            for (const row of rows) {
+                const sel = row.querySelector(".inkind-item-select");
+                const qty = row.querySelector(".inkind-qty");
+                items.push({
+                    inventory_item_id: parseInt(sel.value),
+                    quantity: parseFloat(qty.value),
+                    notes: null,
+                });
+            }
+
+            try {
+                paidConfirm.disabled = true;
+                await apiPatch(`/invoices/${currentRow.dataset.id}/mark-paid`, {
+                    payment_type: "in_kind",
+                    items,
+                    payment_notes: inkindPaymentNotes?.value || null,
+                });
+                setRowStatus(currentRow, "paid");
+                renderDetails(currentRow);
+                closeModal(paidModal);
+            } catch (err) {
+                alert(err.message || "Failed to mark as paid.");
+            } finally {
+                paidConfirm.disabled = false;
+            }
+            return;
+        }
+
+        // ── CASH ───────────────────────────────────────────────────────
+        try {
+            paidConfirm.disabled = true;
+            const resp = await apiPatch(
+                `/invoices/${currentRow.dataset.id}/mark-paid`,
+                {
+                    payment_type: "cash",
+                    paid_at: paidDate?.value || null,
+                },
+            );
+            setRowStatus(currentRow, "paid");
+            if (resp?.receipt_path)
+                currentRow.dataset.receiptPdf = resp.receipt_path;
             renderDetails(currentRow);
             closeModal(paidModal);
         } catch (err) {

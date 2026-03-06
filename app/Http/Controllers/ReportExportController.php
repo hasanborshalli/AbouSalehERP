@@ -8,6 +8,7 @@ use App\Models\InventoryItem;
 use App\Models\InventoryPurchase;
 use App\Models\ApartmentMaterial;
 use App\Models\ProjectInventoryItem;
+use App\Models\InKindPaymentItem;
 use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
 use App\Models\Project;
@@ -331,7 +332,20 @@ class ReportExportController extends Controller
         $apartmentUsages = $item ? ApartmentMaterial::with('apartment.project','apartment.floor')->where('inventory_item_id',$itemId)->get() : collect();
         $avgCost = $totalPurchased > 0 ? $totalPurchaseCost / $totalPurchased : (float)($item?->price ?? 0);
 
-        return compact('item','purchases','projectUsages','apartmentUsages','totalPurchaseCost','totalPurchased','avgCost');
+        // In-kind receipts (items received from clients as payment)
+        $inKindQ = $item ? InKindPaymentItem::with([
+                'payment.contract.client',
+                'payment.contract.apartment',
+                'payment.invoice',
+            ])->where('inventory_item_id', $itemId) : null;
+        if ($inKindQ && $request->date_from) $inKindQ->whereHas('payment', fn($q) => $q->whereDate('payment_date', '>=', $request->date_from));
+        if ($inKindQ && $request->date_to)   $inKindQ->whereHas('payment', fn($q) => $q->whereDate('payment_date', '<=', $request->date_to));
+        $inKindReceipts   = $inKindQ ? $inKindQ->orderByDesc('created_at')->get() : collect();
+        $totalInKindQty   = (float) $inKindReceipts->sum('quantity');
+        $totalInKindValue = (float) $inKindReceipts->sum('total_value');
+
+        return compact('item','purchases','projectUsages','apartmentUsages','totalPurchaseCost','totalPurchased','avgCost',
+                       'inKindReceipts','totalInKindQty','totalInKindValue');
     }
 
     private function inventoryExcel(Request $request)
@@ -356,7 +370,41 @@ class ReportExportController extends Controller
         foreach ($d['apartmentUsages'] as $au) {
             $rows[] = [$au->apartment?->project?->name??'—','Unit '.($au->apartment?->unit_number??'?'),'Floor '.($au->apartment?->floor?->floor_number??'?'),number_format($au->quantity_needed,1),number_format($au->quantity_needed*$d['avgCost'],2,'.','')];
         }
-        $totals = [['Total Cost Paid','','','','',$d['totalPurchaseCost']]];
+        $rows[] = [];
+        $rows[] = ['--- IN-KIND RECEIPTS (from clients) ---'];
+        $rows[] = ['Date','Client','Apartment','Invoice/Contract','Qty Received','Unit Price','Total Value'];
+        foreach ($d['inKindReceipts'] as $ik) {
+            $ikContract = $ik->payment?->contract;
+            $rows[] = [
+                $ik->payment?->payment_date?->format('Y-m-d') ?? '—',
+                $ikContract?->client?->name ?? '—',
+                $ikContract?->apartment ? 'Unit '.$ikContract->apartment->unit_number : '—',
+                $ik->payment?->invoice ? '#'.$ik->payment->invoice->invoice_number : 'Contract #'.($ikContract?->id ?? '—'),
+                number_format($ik->quantity, 3, '.', ''),
+                number_format($ik->unit_price_snapshot, 2, '.', ''),
+                number_format($ik->total_value, 2, '.', ''),
+            ];
+        }
+        $rows[] = [];
+        $rows[] = ['--- IN-KIND RECEIVED FROM CLIENTS ---'];
+        $rows[] = ['Date','Client','Apartment','Invoice/Contract','Qty Received','Unit Price','Total Value'];
+        foreach ($d['inKindReceipts'] as $ik) {
+            $ikContract = $ik->payment?->contract;
+            $ikInvoice  = $ik->payment?->invoice;
+            $rows[] = [
+                $ik->payment?->payment_date?->format('Y-m-d') ?? '—',
+                $ikContract?->client?->name ?? '—',
+                $ikContract?->apartment ? 'Unit '.$ikContract->apartment->unit_number : '—',
+                $ikInvoice ? '#'.$ikInvoice->invoice_number : 'Contract #'.($ikContract?->id ?? '—'),
+                number_format($ik->quantity, 3, '.', ''),
+                number_format($ik->unit_price_snapshot, 2, '.', ''),
+                number_format($ik->total_value, 2, '.', ''),
+            ];
+        }
+        $totals = [
+            ['Total Cost Paid','','','','',$d['totalPurchaseCost']],
+            ['Total In-Kind Received','','',number_format($d['totalInKindQty'],3,'.',''),'',number_format($d['totalInKindValue'],2,'.','')],
+        ];
         return $this->csvResponse('inventory-'.$d['item']->name.'.csv',['Type/Date','Vendor/Project','Ref/Unit','Qty','Unit Cost','Total'],array_merge([['Item: '.$d['item']->name]],$rows),$totals);
     }
 

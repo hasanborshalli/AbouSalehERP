@@ -300,6 +300,42 @@
             <div>{{ $contract->notes }}</div>
         </div>
         @endif
+
+        @if($contract->payment_type === 'in_kind')
+        <div class="notes" style="border-left:3px solid #1e3a5f; margin-top:12px;">
+            <div style="font-weight:800; margin-bottom:6px; color:#1e3a5f;">⚠ In-Kind Payment Agreement</div>
+            <div>This contract is settled by delivery of inventory items (in-kind) instead of cash payments.
+                No installment invoices will be issued. Items agreed upon are listed below.</div>
+            @if($contract->in_kind_notes)
+            <div style="margin-top:6px;"><strong>Details:</strong> {{ $contract->in_kind_notes }}</div>
+            @endif
+        </div>
+
+        {{-- Load the in-kind payment items if available --}}
+        @php $ikp = $contract->inKindPayments()->with('items.inventoryItem')->first(); @endphp
+        @if($ikp && $ikp->items->count())
+        <table class="money" style="margin-top:10px;">
+            <tr>
+                <th style="width:40%">Item</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total Value</th>
+            </tr>
+            @foreach($ikp->items as $line)
+            <tr>
+                <td>{{ $line->inventoryItem->name ?? '—' }}</td>
+                <td>{{ $line->quantity }} {{ $line->inventoryItem->unit ?? '' }}</td>
+                <td>USD ${{ number_format($line->unit_price_snapshot, 2) }}</td>
+                <td>USD ${{ number_format($line->total_value, 2) }}</td>
+            </tr>
+            @endforeach
+            <tr class="final">
+                <th colspan="3">Estimated Total Value</th>
+                <td>USD ${{ number_format($ikp->total_estimated_value, 2) }}</td>
+            </tr>
+        </table>
+        @endif
+        @endif
     </div>
 
     <div class="sp-12"></div>

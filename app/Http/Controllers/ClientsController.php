@@ -8,7 +8,11 @@ use App\Models\AuditLog;
 use App\Models\ClientProfile;
 use App\Models\Contract;
 use App\Models\Invoice;
+use App\Models\InKindPayment;
+use App\Models\InKindPaymentItem;
+use App\Models\InventoryItem;
 use App\Models\User;
+use App\Services\CashAccountingService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,26 +57,45 @@ class ClientsController extends Controller
                 'required',
                 'integer',
                 Rule::exists('apartments', 'id')
-                    ->whereNull('deleted_at'), // if apartments soft delete
+                    ->whereNull('deleted_at'),
             ],
 
             'contract_date' => ['required', 'date'],
-            'payment_start_date' => ['required', 'date', 'after_or_equal:contract_date'],
+            'payment_start_date' => ['required_if:payment_type,cash', 'nullable', 'date', 'after_or_equal:contract_date'],
 
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'down_payment' => ['required', 'numeric', 'min:0'],
+            'down_payment' => ['required_if:payment_type,cash', 'nullable', 'numeric', 'min:0'],
 
-            'installment_months' => ['required', 'integer', 'min:1', 'max:600'],
-            'installment_amount' => ['required', 'numeric', 'min:0'],
+            'installment_months' => ['required_if:payment_type,cash', 'nullable', 'integer', 'min:1', 'max:600'],
+            'installment_amount' => ['required_if:payment_type,cash', 'nullable', 'numeric', 'min:0'],
 
             'late_fee' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
+
+            'payment_type'  => ['required', 'in:cash,in_kind'],
+            'in_kind_notes' => ['nullable', 'string', 'max:2000'],
         ]);
+
+        // Validate in-kind items if payment type is in_kind
+        $inKindItems = [];
+        if ($request->input('payment_type') === 'in_kind') {
+            $ikValidated = $request->validate([
+                'items'                     => ['required', 'array', 'min:1'],
+                'items.*.inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+                'items.*.quantity'          => ['required', 'numeric', 'min:0.001'],
+                'items.*.notes'             => ['nullable', 'string', 'max:255'],
+            ]);
+            $inKindItems = $ikValidated['items'];
+        }
 
         $apartment = Apartment::with(['floor.project'])->findOrFail($contractFields['apartment_id']);
         $contractFields['project_id']=$apartment->project_id;
         $contractFields['created_by']=auth()->id();
         $totalPrice = (float) $apartment->price_total; // or price_total if that’s your column
+        // For in-kind contracts payment_start_date is irrelevant but column is NOT NULL
+        if ($contractFields['payment_type'] === 'in_kind') {
+            $contractFields['payment_start_date'] = $contractFields['contract_date'];
+        }
         $contractFields['total_price']=$totalPrice;
         $discount   = (float) ($contractFields['discount'] ?? 0);
 
@@ -88,36 +111,45 @@ class ClientsController extends Controller
         ->withInput()
         ->with(['error' => 'This apartment is already sold.']);
         }
-        $down = (float) $contractFields['down_payment'];
-        $months = (int) $contractFields['installment_months'];
-        $inst = (float) $contractFields['installment_amount'];
-        $monthly = (float) $request->installment_amount;
-        $totalPlanned = $down + ($months * $inst);
 
-        if ($totalPlanned > $contractFields['final_price'] + 0.00001) {
-            return back()->withInput()->with([
-                'error' => 'Total payments exceed the final price.',
-            ]);
+        if ($contractFields['payment_type'] === 'cash') {
+            $down         = (float) ($contractFields['down_payment'] ?? 0);
+            $months       = (int)   ($contractFields['installment_months'] ?? 0);
+            $inst         = (float) ($contractFields['installment_amount'] ?? 0);
+            $monthly      = (float) $request->installment_amount;
+            $totalPlanned = $down + ($months * $inst);
+
+            if ($totalPlanned > $contractFields['final_price'] + 0.00001) {
+                return back()->withInput()->with([
+                    'error' => 'Total payments exceed the final price.',
+                ]);
+            }
+        } else {
+            $months  = 0;
+            $monthly = 0;
         }
         
         $user = null;
 $contract = null;
 $invoiceIds = [];
+$inKindPaymentId = null;
 
-// IMPORTANT: define $clientFields (see section 1)
-$clientFields = []; // <-- replace with your real validate(...) if needed
+$clientFields = [];
 
 DB::transaction(function () use (
     &$user,
     &$contract,
     &$invoiceIds,
+    &$inKindPaymentId,
     $userFields,
     $clientFields,
     $contractFields,
     $apartment,
     $months,
     $rawPassword,
-    $monthly
+    $monthly,
+    $inKindItems,
+    $request
 ) {
     // 1) Create user + profile
     $user = User::create($userFields);
@@ -132,7 +164,104 @@ DB::transaction(function () use (
     // 3) Reserve apartment
     $apartment->update(['status' => 'reserved']);
 
-    // 4) Create invoices in DB ONLY (NO PDF generation here)
+    // ── IN-KIND: record items, increase stock, mark sold ─────────────────
+    if ($contract->payment_type === 'in_kind') {
+        $totalValue = 0;
+
+        $inKindPayment = InKindPayment::create([
+            'contract_id'           => $contract->id,
+            'invoice_id'            => null,
+            'payment_date'          => $contractFields['contract_date'],
+            'notes'                 => $contractFields['in_kind_notes'] ?? null,
+            'created_by'            => auth()->id(),
+            'total_estimated_value' => 0,
+        ]);
+
+        foreach ($inKindItems as $row) {
+            $item      = InventoryItem::lockForUpdate()->findOrFail($row['inventory_item_id']);
+            $qty       = (float)$row['quantity'];
+            $unitPrice = (float)$item->price;
+            $rowVal    = round($unitPrice * $qty, 2);
+            $totalValue += $rowVal;
+
+            InKindPaymentItem::create([
+                'in_kind_payment_id'  => $inKindPayment->id,
+                'inventory_item_id'   => $item->id,
+                'quantity'            => $qty,
+                'unit_price_snapshot' => $unitPrice,
+                'total_value'         => $rowVal,
+                'notes'               => $row['notes'] ?? null,
+            ]);
+
+            // INCREASE stock
+            $item->quantity        = (float)$item->quantity + $qty;
+            $item->is_out_of_stock = false;
+            $item->save();
+        }
+
+        $inKindPayment->update(['total_estimated_value' => $totalValue]);
+        $inKindPaymentId = $inKindPayment->id;
+
+        // Mark apartment sold immediately for in-kind (full payment at once)
+        $apartment->update(['status' => 'sold']);
+
+        // Post ledger
+        $inKindPayment->load('items');
+        app(\App\Services\CashAccountingService::class)
+            ->postContractInKindPayment($inKindPayment, auth()->id());
+
+        // No invoices for in-kind
+        if (Schema::hasColumn('contracts', 'processing_status')) {
+            $contract->update([
+                'processing_status' => 'queued',
+                'processing_progress' => 0,
+                'processing_error' => null,
+            ]);
+        }
+
+        DB::afterCommit(function () use ($contract, $user, $rawPassword, $inKindPaymentId) {
+            Mail::to($user->email)->queue(
+                new ClientCredentialsMail($user, $rawPassword, null)
+            );
+
+            Bus::batch([new GenerateContractPdfJob($contract->id)])
+                ->name("Contract {$contract->id} docs")
+                ->then(function () use ($contract) {
+                    $contract->refresh();
+                    if (Schema::hasColumn('contracts', 'processing_status')) {
+                        $contract->update([
+                            'processing_status'      => 'done',
+                            'processing_progress'    => 100,
+                            'processing_finished_at' => now(),
+                        ]);
+                    }
+                })
+                ->catch(function (\Throwable $e) use ($contract) {
+                    if (Schema::hasColumn('contracts', 'processing_status')) {
+                        $contract->update([
+                            'processing_status'      => 'failed',
+                            'processing_error'       => $e->getMessage(),
+                            'processing_finished_at' => now(),
+                        ]);
+                    }
+                })
+                ->dispatch();
+
+            // Generate in-kind receipt after contract PDF
+            \App\Jobs\GenerateInKindReceiptJob::dispatch($inKindPaymentId, auth()->id());
+
+            if (Schema::hasColumn('contracts', 'processing_status')) {
+                $contract->update([
+                    'processing_status'      => 'processing',
+                    'processing_started_at'  => now(),
+                ]);
+            }
+        });
+
+        return; // exit transaction closure early — cash path below
+    }
+
+    // ── CASH: 4) Create invoices ──────────────────────────────────────────
     $start = Carbon::parse($contract->payment_start_date)->startOfDay();
 
     for ($i = 0; $i < $months; $i++) {
@@ -140,12 +269,11 @@ DB::transaction(function () use (
         $dueDate = $issueDate->copy()->addDays(7);
 
         $invoiceNumber = sprintf(
-  "INV-%06d-%s-%03d",
-  $contract->id,
-  $issueDate->format('Ym'),
-  $i + 1
-);
-
+            "INV-%06d-%s-%03d",
+            $contract->id,
+            $issueDate->format('Ym'),
+            $i + 1
+        );
 
         $inv = Invoice::create([
             'contract_id' => $contract->id,
@@ -154,13 +282,12 @@ DB::transaction(function () use (
             'due_date' => $dueDate->toDateString(),
             'amount' => $monthly,
             'status' => 'pending',
-           
         ]);
 
         $invoiceIds[] = $inv->id;
     }
 
-    // 5) Optional: mark contract processing state if you added the columns
+    // 5) Optional: mark contract processing state
     if (Schema::hasColumn('contracts', 'processing_status')) {
         $contract->update([
             'processing_status' => 'queued',
@@ -172,7 +299,6 @@ DB::transaction(function () use (
     // 6) Dispatch jobs AFTER COMMIT
     DB::afterCommit(function () use ($contract, $user, $invoiceIds, $rawPassword) {
 
-    // ✅ Choice A: send credentials immediately (no attachment)
     Mail::to($user->email)->queue(
         new ClientCredentialsMail($user, $rawPassword, null)
     );
@@ -187,7 +313,6 @@ DB::transaction(function () use (
     Bus::batch($jobs)
         ->name("Contract {$contract->id} docs")
         ->then(function () use ($contract) {
-            // optional: update status when done
             $contract->refresh();
 
             if (Schema::hasColumn('contracts', 'processing_status')) {

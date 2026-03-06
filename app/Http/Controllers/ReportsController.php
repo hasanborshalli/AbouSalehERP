@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Apartment;
 use App\Models\InventoryItem;
+use App\Models\InKindPaymentItem;
 use App\Models\Invoice;
 use App\Models\LedgerEntry;
 use App\Models\OperatingExpense;
@@ -407,10 +408,13 @@ class ReportsController extends Controller
         $purchases = collect();
         $projectUsages = collect();
         $apartmentUsages = collect();
+        $inKindReceipts = collect();
         $totalPurchased = 0;
         $totalPurchaseCost = 0;
         $totalQuantityUsed = 0;
         $totalUsageCost = 0;
+        $totalInKindQty = 0;
+        $totalInKindValue = 0;
 
         if ($itemId) {
             $item = InventoryItem::withTrashed()->findOrFail($itemId);
@@ -439,6 +443,19 @@ class ReportsController extends Controller
 
             $avgCost = $totalPurchased > 0 ? $totalPurchaseCost / $totalPurchased : (float) $item->price;
             $totalUsageCost = $totalQuantityUsed * $avgCost;
+
+            // In-kind receipts: items received from clients as payment
+            $inKindReceiptsQ = InKindPaymentItem::with([
+                    'payment.contract.client',
+                    'payment.contract.apartment',
+                    'payment.invoice',
+                ])
+                ->where('inventory_item_id', $itemId);
+            if ($dateFrom) $inKindReceiptsQ->whereHas('payment', fn($q) => $q->whereDate('payment_date', '>=', $dateFrom));
+            if ($dateTo)   $inKindReceiptsQ->whereHas('payment', fn($q) => $q->whereDate('payment_date', '<=', $dateTo));
+            $inKindReceipts     = $inKindReceiptsQ->orderByDesc('created_at')->get();
+            $totalInKindQty     = (float) $inKindReceipts->sum('quantity');
+            $totalInKindValue   = (float) $inKindReceipts->sum('total_value');
         }
 
         // Summary table — all items with purchase totals
@@ -457,6 +474,8 @@ class ReportsController extends Controller
                 $qtyUsed = $qtyUsedProj + $qtyUsedApt;
                 $avgCost = $qtyBought > 0 ? $purchased / $qtyBought : (float) $i->price;
                 $usageCost = $qtyUsed * $avgCost;
+                $qtyInKind  = (float) \App\Models\InKindPaymentItem::where('inventory_item_id',$i->id)->sum('quantity');
+                $valInKind  = (float) \App\Models\InKindPaymentItem::where('inventory_item_id',$i->id)->sum('total_value');
                 return (object)[
                     'id'            => $i->id,
                     'name'          => $i->name,
@@ -467,6 +486,8 @@ class ReportsController extends Controller
                     'total_cost'    => $purchased,
                     'qty_used'      => $qtyUsed,
                     'usage_cost'    => $usageCost,
+                    'qty_in_kind'   => $qtyInKind,
+                    'val_in_kind'   => $valInKind,
                     'deleted_at'    => $i->deleted_at,
                 ];
             });
@@ -479,6 +500,7 @@ class ReportsController extends Controller
             'purchases','projectUsages','apartmentUsages',
             'totalPurchased','totalPurchaseCost',
             'totalQuantityUsed','totalUsageCost',
+            'inKindReceipts','totalInKindQty','totalInKindValue',
             'summary','grandTotalCost','grandUsageCost'
         ));
     }

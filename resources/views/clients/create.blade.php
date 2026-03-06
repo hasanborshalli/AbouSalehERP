@@ -48,6 +48,20 @@
                             <button class="alert__close" onclick="this.parentElement.remove()">✕</button>
                         </div>
                         @endif
+                        @if ($errors->any())
+                        <div class="alert alert--error" data-alert>
+                            <span class="alert__icon">X</span>
+                            <span class="alert__text">
+                                Please fix the following errors:
+                                <ul style="margin:6px 0 0 16px; padding:0;">
+                                    @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </span>
+                            <button class="alert__close" onclick="this.parentElement.remove()">✕</button>
+                        </div>
+                        @endif
                         {{-- Client info --}}
                         <section class="add-client__section" aria-label="Client information">
                             <h3 class="add-client__section-title">Client information</h3>
@@ -209,8 +223,60 @@
                         </section>
 
 
-                        {{-- Payment plan --}}
-                        <section class="add-client__section" aria-label="Payment plan">
+                        {{-- Payment Type --}}
+                        <section class="add-client__section" aria-label="Payment type">
+                            <h3 class="add-client__section-title">Payment type</h3>
+
+                            <div class="add-client__type-toggle">
+                                <label class="add-client__type-option">
+                                    <input type="radio" name="payment_type" value="cash" id="typeCash" checked>
+                                    <span class="add-client__type-card" id="typeCashCard">
+                                        <span class="add-client__type-icon">💵</span>
+                                        <span class="add-client__type-label">Cash / Installments</span>
+                                        <span class="add-client__type-desc">Client pays by cash, bank transfer, or
+                                            monthly installments</span>
+                                    </span>
+                                </label>
+
+                                <label class="add-client__type-option">
+                                    <input type="radio" name="payment_type" value="in_kind" id="typeInKind">
+                                    <span class="add-client__type-card" id="typeInKindCard">
+                                        <span class="add-client__type-icon">📦</span>
+                                        <span class="add-client__type-label">In-Kind (Inventory Items)</span>
+                                        <span class="add-client__type-desc">Client pays by delivering inventory items
+                                            (e.g. steel, cement)</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </section>
+
+                        {{-- In-Kind Items Section (shown when in_kind selected) --}}
+                        <section class="add-client__section" id="inKindSection" style="display:none;"
+                            aria-label="In-kind items">
+                            <h3 class="add-client__section-title">Items to be received from client</h3>
+
+                            <div class="add-client__field add-client__field--wide" style="margin-bottom:16px;">
+                                <label class="add-client__label" for="in_kind_notes">In-kind agreement notes
+                                    (optional)</label>
+                                <textarea class="add-client__textarea" id="in_kind_notes" name="in_kind_notes" rows="2"
+                                    placeholder="Describe the in-kind agreement (e.g. 10 tons of steel rebar grade 60)">{{ old('in_kind_notes') }}</textarea>
+                            </div>
+
+                            <div id="ikItemsContainer">
+                                {{-- rows injected by JS --}}
+                            </div>
+
+                            <button type="button" class="add-client__add-item-btn" id="addIkItemBtn">
+                                + Add item
+                            </button>
+
+                            <div class="add-client__ik-total">
+                                Total estimated value: <strong id="ikTotalDisplay">$0.00</strong>
+                            </div>
+                        </section>
+
+                        {{-- Payment plan (hidden for in-kind) --}}
+                        <section class="add-client__section" id="cashPaymentSection" aria-label="Payment plan">
                             <h3 class="add-client__section-title">Payment plan</h3>
 
                             <div class="add-client__grid">

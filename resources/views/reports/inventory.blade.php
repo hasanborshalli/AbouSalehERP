@@ -61,7 +61,7 @@
                 </div>
 
                 {{-- KPIs --}}
-                <div class="rpt-kpis">
+                <div class="rpt-kpis rpt-kpis--inventory">
                     <div class="lkpi lkpi--red">
                         <div class="lkpi__label">Total Purchased</div>
                         <div class="lkpi__val">{{ number_format($totalPurchased) }} {{ $item->unit }}</div>
@@ -87,6 +87,12 @@
                         <div class="lkpi__label">In Stock</div>
                         <div class="lkpi__val">{{ number_format($item->quantity) }} {{ $item->unit }}</div>
                         <div class="lkpi__sub">current inventory</div>
+                    </div>
+                    <div class="lkpi lkpi--blue">
+                        <div class="lkpi__label">Received (In-Kind)</div>
+                        <div class="lkpi__val">{{ number_format($totalInKindQty, 1) }} {{ $item->unit }}</div>
+                        <div class="lkpi__sub">${{ number_format($totalInKindValue, 2) }} est. value · {{
+                            $inKindReceipts->count() }} receipt(s)</div>
                     </div>
                     <div class="lkpi">
                         <div class="lkpi__label">Current Price</div>
@@ -141,51 +147,65 @@
                             <div class="section-card__head">
                                 <h3>📋 All Items Summary</h3>
                             </div>
-                            <table class="rpt-table">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th class="num">Qty Bought</th>
-                                        <th class="num">Cost Paid</th>
-                                        <th class="num">Qty Used</th>
-                                        <th class="num">Usage Cost</th>
-                                        <th class="num">In Stock</th>
-                                        <th class="num">Unit Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($summary as $row)
-                                    <tr>
-                                        <td>
-                                            <a href="{{ route('reports.inventory') }}?item_id={{ $row->id }}"
-                                                style="font-weight:600;color:rgba(42,127,176,.9);text-decoration:none;">{{
-                                                $row->name }}</a>
-                                            @if($row->deleted_at) <span
-                                                class="chip chip--red chip--square">Deleted</span>@endif
-                                        </td>
-                                        <td class="num">{{ number_format($row->qty_bought) }} {{ $row->unit }}</td>
-                                        <td class="num val-red">${{ number_format($row->total_cost,2) }}</td>
-                                        <td class="num val-amber">{{ number_format($row->qty_used,1) }} {{ $row->unit }}
-                                        </td>
-                                        <td class="num val-amber">${{ number_format($row->usage_cost,2) }}</td>
-                                        <td class="num {{ $row->qty_in_stock>0?'val-green':'val-red' }}">{{
-                                            number_format($row->qty_in_stock) }}</td>
-                                        <td class="num">${{ number_format($row->current_price,2) }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot>
-                                    <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
-                                        <td>Total ({{ $summary->count() }} items)</td>
-                                        <td class="num">—</td>
-                                        <td class="num val-red">${{ number_format($grandTotalCost,2) }}</td>
-                                        <td class="num">—</td>
-                                        <td class="num val-amber">${{ number_format($grandUsageCost,2) }}</td>
-                                        <td class="num">—</td>
-                                        <td class="num">—</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th class="num">Qty Bought</th>
+                                            <th class="num">Cost Paid</th>
+                                            <th class="num">Qty Used</th>
+                                            <th class="num">Usage Cost</th>
+                                            <th class="num" style="color:#2563eb;">Received (In-Kind)</th>
+                                            <th class="num">In Stock</th>
+                                            <th class="num">Unit Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($summary as $row)
+                                        <tr>
+                                            <td>
+                                                <a href="{{ route('reports.inventory') }}?item_id={{ $row->id }}"
+                                                    style="font-weight:600;color:rgba(42,127,176,.9);text-decoration:none;">{{
+                                                    $row->name }}</a>
+                                                @if($row->deleted_at) <span
+                                                    class="chip chip--red chip--square">Deleted</span>@endif
+                                            </td>
+                                            <td class="num">{{ number_format($row->qty_bought) }} {{ $row->unit }}</td>
+                                            <td class="num val-red">${{ number_format($row->total_cost,2) }}</td>
+                                            <td class="num val-amber">{{ number_format($row->qty_used,1) }} {{
+                                                $row->unit }}
+                                            </td>
+                                            <td class="num val-amber">${{ number_format($row->usage_cost,2) }}</td>
+                                            <td class="num" style="color:#2563eb;">
+                                                @if(($row->qty_in_kind ?? 0) > 0)
+                                                {{ number_format($row->qty_in_kind,1) }} {{ $row->unit }}<br><small>${{
+                                                    number_format($row->val_in_kind,0) }}</small>
+                                                @else
+                                                —
+                                                @endif
+                                            </td>
+                                            <td class="num {{ $row->qty_in_stock>0?'val-green':'val-red' }}">{{
+                                                number_format($row->qty_in_stock) }}</td>
+                                            <td class="num">${{ number_format($row->current_price,2) }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
+                                            <td>Total ({{ $summary->count() }} items)</td>
+                                            <td class="num">—</td>
+                                            <td class="num val-red">${{ number_format($grandTotalCost,2) }}</td>
+                                            <td class="num">—</td>
+                                            <td class="num val-amber">${{ number_format($grandUsageCost,2) }}</td>
+                                            <td class="num" style="color:#2563eb;">${{
+                                                number_format($summary->sum('val_in_kind'),2) }}</td>
+                                            <td class="num">—</td>
+                                            <td class="num">—</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
 
                         @else
@@ -201,42 +221,46 @@
                             <div class="empty-state">No purchases recorded for this item{{ $dateFrom||$dateTo ? ' in
                                 this date range' : '' }}.</div>
                             @else
-                            <table class="rpt-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Vendor</th>
-                                        <th>Receipt Ref</th>
-                                        <th class="num">Qty</th>
-                                        <th class="num">Unit Cost</th>
-                                        <th class="num">Total Cost</th>
-                                        <th>Notes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($purchases as $pur)
-                                    <tr>
-                                        <td>{{ $pur->purchase_date->format('Y-m-d') }}</td>
-                                        <td>{{ $pur->vendor_name ?? '—' }}</td>
-                                        <td style="font-family:monospace;font-size:12px;">{{ $pur->receipt_ref ?? '—' }}
-                                        </td>
-                                        <td class="num">{{ number_format($pur->qty) }} {{ $item->unit }}</td>
-                                        <td class="num">${{ number_format($pur->unit_cost,2) }}</td>
-                                        <td class="num val-red">${{ number_format($pur->total_cost,2) }}</td>
-                                        <td style="color:rgba(0,0,0,.5);font-size:12px;">{{ $pur->notes ?? '—' }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot>
-                                    <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
-                                        <td colspan="3">Total</td>
-                                        <td class="num">{{ number_format($totalPurchased) }} {{ $item->unit }}</td>
-                                        <td class="num">—</td>
-                                        <td class="num val-red">${{ number_format($totalPurchaseCost,2) }}</td>
-                                        <td></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Vendor</th>
+                                            <th>Receipt Ref</th>
+                                            <th class="num">Qty</th>
+                                            <th class="num">Unit Cost</th>
+                                            <th class="num">Total Cost</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($purchases as $pur)
+                                        <tr>
+                                            <td>{{ $pur->purchase_date->format('Y-m-d') }}</td>
+                                            <td>{{ $pur->vendor_name ?? '—' }}</td>
+                                            <td style="font-family:monospace;font-size:12px;">{{ $pur->receipt_ref ??
+                                                '—' }}
+                                            </td>
+                                            <td class="num">{{ number_format($pur->qty) }} {{ $item->unit }}</td>
+                                            <td class="num">${{ number_format($pur->unit_cost,2) }}</td>
+                                            <td class="num val-red">${{ number_format($pur->total_cost,2) }}</td>
+                                            <td style="color:rgba(0,0,0,.5);font-size:12px;">{{ $pur->notes ?? '—' }}
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
+                                            <td colspan="3">Total</td>
+                                            <td class="num">{{ number_format($totalPurchased) }} {{ $item->unit }}</td>
+                                            <td class="num">—</td>
+                                            <td class="num val-red">${{ number_format($totalPurchaseCost,2) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                             @endif
                         </div>
 
@@ -248,31 +272,32 @@
                                 <span style="font-size:13px;font-weight:800;color:#d97706;">{{
                                     number_format($projectUsages->sum('quantity_needed'),1) }} {{ $item->unit }}</span>
                             </div>
-                            <table class="rpt-table">
-                                <thead>
-                                    <tr>
-                                        <th>Project</th>
-                                        <th class="num">Qty Assigned</th>
-                                        <th class="num">Est. Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($projectUsages as $pu)
-                                    @php
-                                    $avgCost = $totalPurchased>0 ? $totalPurchaseCost/$totalPurchased :
-                                    (float)$item->price;
-                                    $estCost = (float)$pu->quantity_needed * $avgCost;
-                                    @endphp
-                                    <tr>
-                                        <td style="font-weight:600;">{{ $pu->project->name ?? '—' }}</td>
-                                        <td class="num">{{ number_format($pu->quantity_needed,1) }} {{ $pu->unit }}</td>
-                                        <td class="num val-amber">{{ number_format($pu->quantity_needed,1) }} {{
-                                            $pu->unit }}</td>
-                                        <td class="num val-amber">${{ number_format($estCost,2) }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project</th>
+                                            <th class="num">Qty Assigned</th>
+                                            <th class="num">Est. Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($projectUsages as $pu)
+                                        @php
+                                        $avgCost = $totalPurchased>0 ? $totalPurchaseCost/$totalPurchased :
+                                        (float)$item->price;
+                                        $estCost = (float)$pu->quantity_needed * $avgCost;
+                                        @endphp
+                                        <tr>
+                                            <td style="font-weight:600;">{{ $pu->project->name ?? '—' }}</td>
+                                            <td class="num val-amber">{{ number_format($pu->quantity_needed,1) }} {{
+                                                $pu->unit }}</td>
+                                            <td class="num val-amber">${{ number_format($estCost,2) }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         @endif
 
@@ -285,34 +310,102 @@
                                     number_format($apartmentUsages->sum('quantity_needed'),1) }} {{ $item->unit
                                     }}</span>
                             </div>
-                            <table class="rpt-table">
-                                <thead>
-                                    <tr>
-                                        <th>Project</th>
-                                        <th>Apartment</th>
-                                        <th>Floor</th>
-                                        <th class="num">Qty Needed</th>
-                                        <th class="num">Est. Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($apartmentUsages as $au)
-                                    @php
-                                    $avgCost = $totalPurchased>0 ? $totalPurchaseCost/$totalPurchased :
-                                    (float)$item->price;
-                                    $estCost = (float)$au->quantity_needed * $avgCost;
-                                    @endphp
-                                    <tr>
-                                        <td>{{ $au->apartment?->project?->name ?? '—' }}</td>
-                                        <td style="font-weight:600;">Unit {{ $au->apartment?->unit_number ?? '—' }}</td>
-                                        <td>Floor {{ $au->apartment?->floor?->floor_number ?? '—' }}</td>
-                                        <td class="num val-amber">{{ number_format($au->quantity_needed,1) }} {{
-                                            $au->unit }}</td>
-                                        <td class="num val-amber">${{ number_format($estCost,2) }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project</th>
+                                            <th>Apartment</th>
+                                            <th>Floor</th>
+                                            <th class="num">Qty Needed</th>
+                                            <th class="num">Est. Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($apartmentUsages as $au)
+                                        @php
+                                        $avgCost = $totalPurchased>0 ? $totalPurchaseCost/$totalPurchased :
+                                        (float)$item->price;
+                                        $estCost = (float)$au->quantity_needed * $avgCost;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $au->apartment?->project?->name ?? '—' }}</td>
+                                            <td style="font-weight:600;">Unit {{ $au->apartment?->unit_number ?? '—' }}
+                                            </td>
+                                            <td>Floor {{ $au->apartment?->floor?->floor_number ?? '—' }}</td>
+                                            <td class="num val-amber">{{ number_format($au->quantity_needed,1) }} {{
+                                                $au->unit }}</td>
+                                            <td class="num val-amber">${{ number_format($estCost,2) }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- In-Kind Receipts --}}
+                        @if($inKindReceipts->isNotEmpty())
+                        <div class="section-card">
+                            <div class="section-card__head">
+                                <h3>📦 Received from Clients (In-Kind Payments)</h3>
+                                <span style="font-size:13px;font-weight:800;color:#2563eb;">{{
+                                    number_format($totalInKindQty,1) }} {{ $item->unit }} · ${{
+                                    number_format($totalInKindValue,2) }}</span>
+                            </div>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Client</th>
+                                            <th>Apartment</th>
+                                            <th>Invoice / Contract</th>
+                                            <th class="num">Qty Received</th>
+                                            <th class="num">Unit Price</th>
+                                            <th class="num">Total Value</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($inKindReceipts as $ik)
+                                        @php
+                                        $ikContract = $ik->payment?->contract;
+                                        $ikClient = $ikContract?->client;
+                                        $ikApt = $ikContract?->apartment;
+                                        $ikInvoice = $ik->payment?->invoice;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $ik->payment?->payment_date?->format('Y-m-d') ?? '—' }}</td>
+                                            <td style="font-weight:600;">{{ $ikClient?->name ?? '—' }}</td>
+                                            <td>{{ $ikApt ? 'Unit '.$ikApt->unit_number : '—' }}</td>
+                                            <td style="font-family:monospace;font-size:12px;">
+                                                {{ $ikInvoice ? '#'.$ikInvoice->invoice_number : 'Full contract
+                                                #'.($ikContract?->id ?? '—') }}
+                                            </td>
+                                            <td class="num val-green">{{ number_format($ik->quantity, 3) }} {{
+                                                $item->unit }}</td>
+                                            <td class="num">${{ number_format($ik->unit_price_snapshot, 2) }}</td>
+                                            <td class="num" style="font-weight:700;color:#2563eb;">${{
+                                                number_format($ik->total_value, 2) }}</td>
+                                            <td style="color:rgba(0,0,0,.5);font-size:12px;">{{ $ik->notes ?? '—' }}
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
+                                            <td colspan="4">Total</td>
+                                            <td class="num val-green">{{ number_format($totalInKindQty, 1) }} {{
+                                                $item->unit }}</td>
+                                            <td class="num">—</td>
+                                            <td class="num" style="color:#2563eb;">${{ number_format($totalInKindValue,
+                                                2) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                         @endif
 
