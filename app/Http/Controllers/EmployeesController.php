@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class EmployeesController extends Controller
 {
@@ -33,7 +32,7 @@ class EmployeesController extends Controller
 
         ]);
 
-        $rawPassword = Str::password(6);
+        $rawPassword = substr(str_shuffle(str_repeat('abcdefghijklmnopqrstuvwxyz', 4)), 0, 8);
         $fields['password'] = Hash::make($rawPassword);  
         $fields['created_by'] = auth()->id(); // Set the creator of the employee
         $fields['role']='admin';

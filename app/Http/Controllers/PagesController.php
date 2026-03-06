@@ -125,7 +125,7 @@ $end   = Carbon::now()->endOfMonth();
 
     $chartLabels = $items->pluck('name');
     $chartValues = $items->pluck('quantity');
-        return view('inventory', [
+        return view('inventory.overview', [
         'items' => $items,
         'chartLabels' => $chartLabels,
         'chartValues' => $chartValues,
@@ -133,17 +133,17 @@ $end   = Carbon::now()->endOfMonth();
     }
     public function stockControlPage(){
         $items = InventoryItem::latest()->paginate(15);
-        return view('stockControl', compact('items'));
+        return view('inventory.stock-control', compact('items'));
     }
     public function stockInfoPage(){
         $items = InventoryItem::latest()->paginate(15);
-        return view('stockInfo', compact('items'));
+        return view('inventory.stock-info', compact('items'));
     }
     public function addItemPage(){
-        return view('addItem');
+        return view('inventory.create');
     }
     public function editItemPage(InventoryItem $inventoryItem){
-        return view('editItem', compact('inventoryItem'));
+        return view('inventory.edit', compact('inventoryItem'));
     }
     public function clientPage(){
         $clients_count=ClientProfile::count();
@@ -151,12 +151,12 @@ $end   = Carbon::now()->endOfMonth();
             return $client->contract ? $client->contract->final_price : 0;
         });
         $existingClients=ClientProfile::orderBy('created_at','desc')->limit(7)->get();
-        return view('clients',compact('clients_count','existingClients','clients_volume'));
+        return view('clients.index',compact('clients_count','existingClients','clients_volume'));
     }
     public function addClientPage(){
                 $apartments=Apartment::where('status','available')->get();
 
-        return view('addClient',compact('apartments'));
+        return view('clients.create',compact('apartments'));
     }
     public function editClientPage(User $user){
            // Load what you need for the form
@@ -176,7 +176,7 @@ $end   = Carbon::now()->endOfMonth();
         ->whereIn('status', ['available', 'reserved']) // adjust to your statuses
         ->orderBy('unit_number')
         ->get();
-        return view('editClient', compact('user', 'contract', 'apartments'));
+        return view('clients.edit', compact('user', 'contract', 'apartments'));
     }
     public function existingClientsPage(){
         $clients=ClientProfile::with([
@@ -184,7 +184,7 @@ $end   = Carbon::now()->endOfMonth();
             'contract.apartment.project',
             'contract.invoices'
         ])->get();
-        return view('existingClients',compact('clients'));
+        return view('clients.existing',compact('clients'));
     }
     public function apartmentsPage(){
          $soldCount = Apartment::
@@ -198,7 +198,7 @@ $end   = Carbon::now()->endOfMonth();
         ->limit(8) // show only latest 8 in the widget
         ->get(['id', 'name']);
 
-        return view('apartments', compact(
+        return view('apartments.overview', compact(
         'soldCount',
         'notSoldCount',
         'projects'
@@ -209,7 +209,7 @@ $end   = Carbon::now()->endOfMonth();
         $itemsJson = $inventoryItems->map(function ($i) {
             return ['id' => $i->id, 'name' => $i->name, 'qty' => $i->quantity, 'unit' => $i->unit];
         })->values()->toJson();
-        return view('createProject', compact('inventoryItems', 'itemsJson'));
+        return view('apartments.create-project', compact('inventoryItems', 'itemsJson'));
     }
     public function editProjectPage(Project $project){
         $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit']);
@@ -238,7 +238,7 @@ $end   = Carbon::now()->endOfMonth();
             ];
         })
         ->all();
-        return view('editProject', compact('inventoryItems','project','existingFloors'));
+        return view('apartments.edit-project', compact('inventoryItems','project','existingFloors'));
     }
     public function projectPage(Project $project)
 {
@@ -247,8 +247,6 @@ $end   = Carbon::now()->endOfMonth();
         'manager',
         'floors.apartments',
         'inventoryItems', // pivot has quantity_needed, unit, quantity_used
-        'inventoryUsages.inventoryItem',
-        'additionalCosts',
     ]);
 
     // Flatten apartments from floors
@@ -264,17 +262,7 @@ $end   = Carbon::now()->endOfMonth();
         'available'  => $apartments->where('status', 'available')->count(),
     ];
 
-    $inventoryItems = InventoryItem::orderBy('name')->get(['id','name','unit','quantity','price']);
-
-    // Cost summaries for display
-    $projectMaterialsCost = $project->inventoryUsages->sum(fn($u) =>
-        (float)$u->quantity_needed * (float)($u->inventoryItem->price ?? 0));
-    $projCosts         = $project->additionalCosts;
-    $projCostsExpected = (float)$projCosts->sum('expected_amount');
-    $projCostsActual   = (float)$projCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
-
-    return view('project', compact('project', 'stats', 'inventoryItems',
-        'projectMaterialsCost', 'projCosts', 'projCostsExpected', 'projCostsActual'));
+    return view('apartments.project', compact('project', 'stats'));
 }
 
     public function existingProjectsPage(){
@@ -294,7 +282,7 @@ $end   = Carbon::now()->endOfMonth();
         ->orderByDesc('projects.created_at')
         ->get();
 
-    return view('existingProjects', compact('projects'));
+    return view('apartments.existing-projects', compact('projects'));
     }
     public function settingsPage(){
 
@@ -310,7 +298,7 @@ $end   = Carbon::now()->endOfMonth();
             ->orderBy('issue_date','asc') 
             ->get();
 
-        return view('invoicesManage', compact('invoices'));
+        return view('invoices.manage', compact('invoices'));
     }
     public function accountingPage(CashAccountingService $acct){
         $summary = $acct->lastMonthsSummary(6);
@@ -403,39 +391,4 @@ public function accountingExpensesPage()
 
     return view('accounting.expenses', compact('categories'));
 }
-
-    // ── Apartment Unit Detail Page ─────────────────────────────────────────
-    public function apartmentUnitPage(Apartment $apartment)
-    {
-        $apartment->load([
-            'project',
-            'floor',
-            'contract.invoices',
-            'contract.client',
-            'materials.inventoryItem',
-            'additionalCosts',
-        ]);
-
-        $inventoryItems = InventoryItem::orderBy('name')->get(['id','name','unit','quantity','price']);
-        $contract       = $apartment->contract;
-        $invoices       = $contract?->invoices ?? collect();
-        $paidInvoices   = $invoices->where('status','paid');
-
-        $materialsCost = $apartment->materials->sum(function ($m) {
-            return (float)$m->quantity_needed * (float)($m->inventoryItem->price ?? 0);
-        });
-        $costsExpected = (float)$apartment->additionalCosts->sum('expected_amount');
-        $costsActual   = (float)$apartment->additionalCosts->sum(fn($c) => $c->isSettled() ? (float)$c->actual_amount : 0.0);
-        $paidAmount    = (float)$paidInvoices->sum('amount');
-        $downPayment   = (float)($contract?->down_payment ?? 0);
-        $totalRevenue  = $paidAmount + $downPayment;
-        $totalCost     = $materialsCost + $costsActual;
-        $profit        = $totalRevenue - $totalCost;
-
-        return view('apartments-unit', compact(
-            'apartment','contract','invoices','paidInvoices',
-            'inventoryItems','materialsCost','costsExpected','costsActual',
-            'paidAmount','downPayment','totalRevenue','totalCost','profit'
-        ));
-    }
 }

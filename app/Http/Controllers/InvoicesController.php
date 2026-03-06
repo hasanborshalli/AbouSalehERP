@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Jobs\GenerateReceiptPdfJob;
 use App\Jobs\SendInvoiceReceiptMailJob;
 use Illuminate\Support\Facades\Bus;
+
 class InvoicesController extends Controller
 {
 
@@ -34,11 +35,10 @@ class InvoicesController extends Controller
             'due_date'   => $data['due_date'] ?? $invoice->due_date,
         ]);
 
-         // ✅ regenerate PDF now (same request)
-    GenerateInvoicePdfJob::dispatchSync($invoice->id);
-    $audit->details='Updating invoice date ('.$invoice->invoice_number.') succeeded';
-    $audit->save();
-    return response()->json(['message' => 'Dates updated + PDF regenerated']);
+        GenerateInvoicePdfJob::dispatchSync($invoice->id);
+        $audit->details='Updating invoice date ('.$invoice->invoice_number.') succeeded';
+        $audit->save();
+        return response()->json(['message' => 'Dates updated + PDF regenerated']);
     }
 
     public function markPaid(Request $request, Invoice $invoice, CashAccountingService $acct)
@@ -51,26 +51,45 @@ class InvoicesController extends Controller
         $audit->save();
         $audit->record='INV-'.str_pad(auth()->id(), 5, '0', STR_PAD_LEFT).'-'.$audit->id;
         $audit->save();
+
         $data = $request->validate([
             'paid_at' => ['nullable','date'],
         ]);
-        $invoice->status = 'paid';
 
-    $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : now();
-    $invoice->paid_at=$paidAt;
+        $invoice->status = 'paid';
+        $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : now();
+        $invoice->paid_at = $paidAt;
         $invoice->save();
-        
-        GenerateInvoicePdfJob::dispatch($invoice->id); 
-        // Cash-basis: post revenue now
-$acct->postInvoicePaid($invoice, $paidAt, auth()->id());
- // ✅ after commit: generate receipt PDF then email it
-    \DB::afterCommit(function () use ($invoice) {
-        Bus::chain([
-            new GenerateReceiptPdfJob($invoice->id, auth()->id()),
-            new SendInvoiceReceiptMailJob($invoice->id),
-        ])->dispatch();
-    });
-    $audit->details='Marking invoice ('.$invoice->invoice_number.') as paid succeeded';
+
+        GenerateInvoicePdfJob::dispatch($invoice->id);
+
+        // Cash-basis: post revenue
+        $acct->postInvoicePaid($invoice, $paidAt, auth()->id());
+
+        // ── When first invoice is paid → mark apartment as SOLD ──────────
+        $invoice->loadMissing('contract.apartment');
+        $contract  = $invoice->contract;
+        $apartment = $contract?->apartment;
+
+        if ($apartment && $apartment->status !== 'sold') {
+            $paidCount = $contract->invoices()
+                ->where('status', 'paid')
+                ->count();
+
+            if ($paidCount === 1) {
+                $apartment->update(['status' => 'sold']);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        \DB::afterCommit(function () use ($invoice) {
+            Bus::chain([
+                new GenerateReceiptPdfJob($invoice->id, auth()->id()),
+                new SendInvoiceReceiptMailJob($invoice->id),
+            ])->dispatch();
+        });
+
+        $audit->details='Marking invoice ('.$invoice->invoice_number.') as paid succeeded';
         $audit->save();
         return response()->json(['message' => 'Marked as paid']);
     }

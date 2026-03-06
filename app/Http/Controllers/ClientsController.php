@@ -43,7 +43,7 @@ class ClientsController extends Controller
         ]);
         $userFields['role']='client';
         $userFields['is_active']=true;
-        $rawPassword = Str::password(6);
+        $rawPassword = substr(str_shuffle(str_repeat('abcdefghijklmnopqrstuvwxyz', 4)), 0, 8);
         $userFields['password'] = Hash::make($rawPassword);
         $userFields['created_by']=auth()->id();
         

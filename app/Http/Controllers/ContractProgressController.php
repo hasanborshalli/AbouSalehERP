@@ -12,7 +12,7 @@ class ContractProgressController extends Controller
     {
         $items = $contract->progressItems()->get();
 
-        return view('progress-editor', compact('contract', 'items'));
+        return view('contracts.progress-editor', compact('contract', 'items'));
     }
 
     public function store(Request $request, Contract $contract)

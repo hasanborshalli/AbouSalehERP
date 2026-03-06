@@ -1,0 +1,229 @@
+/* ============================================================
+   responsive.css  –  place in public/css/responsive.css
+   and add <link rel="stylesheet" href="/css/responsive.css">
+   to every blade view (after all other stylesheets)
+   ============================================================ */
+
+/* ── App Shell ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .app-shell__sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 200;
+        width: 260px;
+    }
+
+    .app-shell__toggle:checked ~ .app-shell__sidebar {
+        transform: translateX(0);
+    }
+
+    .app-shell__main {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    .app-shell__overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 199;
+        cursor: pointer;
+    }
+
+    .app-shell__toggle:checked ~ .app-shell__main .app-shell__overlay {
+        display: block;
+    }
+}
+
+/* ── Navbar ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 12px;
+    }
+    .navbar__search {
+        display: none;
+    }
+    .navbar__title {
+        font-size: 14px;
+    }
+}
+
+/* ── Dashboard content ──────────────────────────────────────── */
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: 12px;
+    }
+}
+
+/* ── Generic cards & grids ───────────────────────────────────── */
+@media (max-width: 900px) {
+    .dashboard-card {
+        padding: 16px !important;
+    }
+
+    /* Any CSS grid with auto-fill columns */
+    [class*="__grid"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Two-column layout wrappers */
+    [class*="two-col"] {
+        display: block !important;
+    }
+    [class*="two-col"] > * {
+        width: 100% !important;
+        display: block !important;
+        margin-bottom: 16px;
+    }
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Horizontally scrollable tables on small screens */
+    .table-responsive-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        min-width: 540px;
+    }
+
+    /* For pages that don't use the wrapper class, add scroll on parent */
+    .dashboard-card table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ── Forms ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Stack form grids to single column */
+    .add-client__grid,
+    .add-item__grid,
+    .create-project__grid,
+    .cp-materials,
+    .cp-unit__grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Wide fields don't need special treatment on mobile */
+    [class*="__field--wide"] {
+        grid-column: span 1 !important;
+    }
+
+    /* Material rows stack vertically */
+    .cp-materials__row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .cp-materials__field--qty,
+    .cp-materials__field--unit,
+    .cp-materials__field--note {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+
+    /* Inputs and selects fill width */
+    .add-client__input,
+    .add-client__select,
+    .add-item__input,
+    .add-item__select,
+    .create-project__input,
+    .create-project__select,
+    .create-project__textarea {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* ── KPI rows ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Stack KPI cards */
+    .kpi-row,
+    [class*="__kpis"],
+    [class*="rpt-kpis"] {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-row,
+    [class*="__kpis"],
+    [class*="rpt-kpis"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── Project / Apartment report pages ───────────────────────── */
+@media (max-width: 900px) {
+    .rpt-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .rpt-two-col {
+        flex-direction: column !important;
+        gap: 16px;
+    }
+    .rpt-two-col > * {
+        width: 100% !important;
+    }
+}
+
+/* ── Workers / Clients list pages ───────────────────────────── */
+@media (max-width: 768px) {
+    .workers-header,
+    .clients-header,
+    [class*="__header"] {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* Action buttons in table cells */
+    td [class*="__btn"],
+    td button,
+    td a.btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+}
+
+/* ── Settings page employee cards ───────────────────────────── */
+@media (max-width: 768px) {
+    .settings-employees-grid,
+    [class*="__employees-grid"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── Floor & unit editor ─────────────────────────────────────── */
+@media (max-width: 768px) {
+    .cp-floor {
+        padding: 12px !important;
+    }
+
+    .cp-unit {
+        padding: 10px !important;
+    }
+
+    .cp-floor__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* ── Utility: hide on mobile ─────────────────────────────────── */
+@media (max-width: 480px) {
+    .hide-mobile {
+        display: none !important;
+    }
+}

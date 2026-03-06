@@ -14,6 +14,7 @@
 
     {{-- page specific --}}
     <link rel="stylesheet" href="/css/createProject.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <body class="app-shell">
@@ -109,112 +110,6 @@
                                         placeholder="Any notes about the project...">{{ old('notes', $project->notes) }}</textarea>
                                 </div>
                             </div>
-                        </section>
-
-                        {{-- ================= Project Materials (Inventory Items) ================= --}}
-                        <section class="create-project__section">
-                            <div class="create-project__section-row">
-                                <h3 class="create-project__section-title">Project materials (from inventory)</h3>
-                                <button type="button" class="create-project__mini-btn" id="cpAddMaterialBtn">
-                                    + Add item
-                                </button>
-                            </div>
-
-                            <p class="create-project__hint">
-                                Select inventory items required for this project and the quantity needed.
-                            </p>
-
-
-
-                            <div class="cp-materials" id="cpMaterials">
-                                <div class="cp-materials" id="cpMaterials">
-
-                                    @forelse ($project->inventoryItems as $pi)
-                                    <div class="cp-materials__row" data-row>
-                                        <div class="cp-materials__field">
-                                            <label class="cp-materials__label">Item</label>
-                                            <select class="cp-materials__select" name="materials[item_id][]" required>
-                                                <option value="" disabled>Select item</option>
-                                                @foreach($inventoryItems as $it)
-                                                <option value="{{ $it->id }}" data-unit="{{ $it->unit }}" {{ $it->id ==
-                                                    $pi->id ? 'selected' : '' }}>
-                                                    {{ $it->name }}
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div class="cp-materials__field cp-materials__field--qty">
-                                            <label class="cp-materials__label">Qty</label>
-                                            <input class="cp-materials__input" name="materials[qty][]" type="number"
-                                                step="0.01" min="0"
-                                                value="{{ old('materials.qty.' . $loop->index, $pi->pivot->quantity_needed) }}"
-                                                required>
-                                        </div>
-
-                                        <div class="cp-materials__field cp-materials__field--unit">
-                                            <label class="cp-materials__label">Unit</label>
-                                            <input class="cp-materials__input" name="materials[unit][]" type="text"
-                                                value="{{ $pi->pivot->unit }}" readonly>
-                                        </div>
-
-                                        <div class="cp-materials__field cp-materials__field--note">
-                                            <label class="cp-materials__label">Note (optional)</label>
-                                            <input class="cp-materials__input" name="materials[note][]" type="text">
-                                        </div>
-
-                                        <div class="cp-materials__actions">
-                                            <button type="button" class="cp-materials__remove" data-remove>✕</button>
-                                        </div>
-                                    </div>
-                                    @empty
-                                    {{-- If project has no materials yet, show one empty row --}}
-                                    @include('apartments.partials.material-row')
-                                    @endforelse
-
-                                </div>
-
-                            </div>
-
-                            {{-- Hidden template row (JS clones this) --}}
-                            <template id="cpMaterialTemplate">
-                                <div class="cp-materials__row" data-row>
-                                    <div class="cp-materials__field">
-                                        <label class="cp-materials__label">Item</label>
-                                        <select class="cp-materials__select" name="materials[item_id][]" required>
-                                            <option value="" selected disabled>Select item</option>
-                                            @foreach($inventoryItems as $it)
-                                            <option value="{{ $it->id }}" data-unit="{{ $it->unit }}">{{ $it->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div class="cp-materials__field cp-materials__field--qty">
-                                        <label class="cp-materials__label">Qty</label>
-                                        <input class="cp-materials__input" name="materials[qty][]" type="number"
-                                            step="0.01" min="0" placeholder="0" required>
-                                    </div>
-
-                                    <div class="cp-materials__field cp-materials__field--unit">
-                                        <label class="cp-materials__label">Unit</label>
-                                        <input class="cp-materials__input" name="materials[unit][]" type="text"
-                                            placeholder="Auto" readonly>
-                                    </div>
-
-                                    <div class="cp-materials__field cp-materials__field--note">
-                                        <label class="cp-materials__label">Note (optional)</label>
-                                        <input class="cp-materials__input" name="materials[note][]" type="text"
-                                            placeholder="e.g. for phase 1">
-                                    </div>
-
-                                    <div class="cp-materials__actions">
-                                        <button type="button" class="cp-materials__remove" data-remove
-                                            aria-label="Remove item">✕</button>
-                                    </div>
-                                </div>
-                            </template>
-
                         </section>
 
 
@@ -346,7 +241,6 @@
     <script>
         window.__existingFloors = @json($existingFloors);
     </script>
-    <script src="/js/materials.js"></script>
     <script src="/js/editProject.js"></script>
     <script src="/js/navSearch.js"></script>
 
