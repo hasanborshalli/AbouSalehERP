@@ -110,7 +110,8 @@
                                         data-payment-start="{{ $contract?->payment_start_date }}"
                                         data-contract-pdf="{{ $contract?->pdf_path }}"
                                         data-invoice-pdf="{{ $inv->pdf_path }}"
-                                        data-receipt-pdf="{{ $inv->receipt_path }}">
+                                        data-receipt-pdf="{{ $inv->receipt_path }}"
+                                        data-payment-type="{{ $inv->payment_type ?? 'cash' }}">
                                         <td class="invoices__td invoices__td--strong">{{ $inv->invoice_number }}</td>
                                         <td class="invoices__td">{{ $client?->name ?? '-' }}</td>
                                         <td class="invoices__td">{{ $unit }}</td>
@@ -208,17 +209,50 @@
             <div class="confirm-modal" id="markPaidModal" aria-hidden="true">
                 <div class="confirm-modal__backdrop"></div>
 
-                <div class="confirm-modal__box">
+                <div class="confirm-modal__box confirm-modal__box--wide">
                     <h3 class="confirm-modal__title">Mark invoice as paid</h3>
-                    <p class="confirm-modal__text">
-                        This will set status to <strong>paid</strong>.
-                    </p>
 
-                    <div class="inv-modal__grid">
-                        <div class="inv-modal__field inv-modal__field--wide">
-                            <label class="inv-modal__label">Paid date (optional)</label>
-                            <input class="inv-modal__input" type="date" id="paidDate">
+                    {{-- Payment type toggle --}}
+                    <div class="inv-modal__type-toggle">
+                        <button type="button" class="inv-modal__type-btn inv-modal__type-btn--active" id="typeCashBtn">
+                            💵 Cash Payment
+                        </button>
+                        <button type="button" class="inv-modal__type-btn" id="typeInKindBtn">
+                            📦 In-Kind (Inventory)
+                        </button>
+                    </div>
+
+                    {{-- CASH SECTION --}}
+                    <div id="cashSection">
+                        <p class="confirm-modal__text">This will set status to <strong>paid</strong>.</p>
+                        <div class="inv-modal__grid">
+                            <div class="inv-modal__field inv-modal__field--wide">
+                                <label class="inv-modal__label">Paid date (optional)</label>
+                                <input class="inv-modal__input" type="date" id="paidDate">
+                            </div>
                         </div>
+                    </div>
+
+                    {{-- IN-KIND SECTION --}}
+                    <div id="inKindSection" style="display:none;">
+                        <p class="confirm-modal__text">
+                            Client pays with <strong>inventory items</strong>. Select items and quantities whose
+                            total value equals the invoice amount.
+                        </p>
+
+                        <div class="inkind-summary">
+                            <span>Invoice amount: <strong id="inkindInvoiceTotal">—</strong></span>
+                            <span>Items total: <strong id="inkindItemsTotal">$0.00</strong></span>
+                            <span id="inkindDiffWrap">Remaining: <strong id="inkindDiff">—</strong></span>
+                        </div>
+
+                        <div id="inkindRows">
+                            {{-- Item rows are injected by JS --}}
+                        </div>
+
+                        <button type="button" class="inv-modal__add-row-btn" id="addInKindRowBtn">
+                            + Add item
+                        </button>
                     </div>
 
                     <div class="confirm-modal__actions">

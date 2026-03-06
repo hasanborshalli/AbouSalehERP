@@ -18,4 +18,9 @@ public function contract()
     return $this->belongsTo(Contract::class);
 }
 
+public function inventoryPayments()
+{
+    return $this->hasMany(InvoiceInventoryPayment::class);
+}
+
 }

@@ -65,6 +65,77 @@ class CashAccountingService
     }
 
     /**
+     * IN-KIND PAYMENT:
+     * When an invoice is settled with inventory items instead of cash,
+     * we still post revenue (the value of goods received = sale value),
+     * and record each inventory item as "received in payment" with stock deducted.
+     *
+     * Items array: [['inventory_item_id'=>X, 'quantity_used'=>Y, 'unit_price'=>Z, 'total_value'=>W], ...]
+     */
+    public function postInvoicePaidInKind(Invoice $invoice, array $items, ?int $userId = null): void
+    {
+        // Avoid double-posting
+        $exists = LedgerEntry::where('source_type', 'invoice')
+            ->where('source_id', $invoice->invoice_number)
+            ->exists();
+
+        if ($exists) return;
+
+        $totalPaid = (float)$invoice->amount + (float)$invoice->late_fee_amount;
+
+        DB::transaction(function () use ($invoice, $items, $totalPaid, $userId) {
+            // 1. Post revenue entry (in-kind)
+            LedgerEntry::create([
+                'posted_at'   => now(),
+                'account_id'  => $this->revenueAccount()->id,
+                'amount'      => $totalPaid,
+                'direction'   => 'in',
+                'description' => 'Invoice paid (in-kind): #' . $invoice->invoice_number,
+                'source_type' => 'invoice',
+                'source_id'   => $invoice->invoice_number,
+                'user_id'     => $userId,
+            ]);
+
+            // 2. Deduct inventory stock + create invoice_inventory_payment records
+            foreach ($items as $row) {
+                $item = InventoryItem::lockForUpdate()->findOrFail($row['inventory_item_id']);
+
+                $qtyUsed   = (float)$row['quantity_used'];
+                $unitPrice = (float)$row['unit_price'];
+                $rowValue  = round($unitPrice * $qtyUsed, 2);
+
+                // Deduct stock
+                $item->quantity      = max(0, (float)$item->quantity - $qtyUsed);
+                $item->is_out_of_stock = ($item->quantity <= 0);
+                $item->save();
+
+                // Record the in-kind payment line
+                \App\Models\InvoiceInventoryPayment::create([
+                    'invoice_id'          => $invoice->id,
+                    'inventory_item_id'   => $item->id,
+                    'quantity_used'       => $qtyUsed,
+                    'unit_price'          => $unitPrice,
+                    'total_value'         => $rowValue,
+                    'notes'               => $row['notes'] ?? null,
+                    'created_by'          => $userId,
+                ]);
+
+                // Also post an inventory-received ledger line for transparency
+                LedgerEntry::create([
+                    'posted_at'   => now(),
+                    'account_id'  => $this->purchasesAccount()->id,
+                    'amount'      => $rowValue,
+                    'direction'   => 'in',
+                    'description' => "In-kind payment received: {$item->name} × {$qtyUsed} {$item->unit} — Invoice #{$invoice->invoice_number}",
+                    'source_type' => 'invoice_in_kind',
+                    'source_id'   => $invoice->id,
+                    'user_id'     => $userId,
+                ]);
+            }
+        });
+    }
+
+    /**
      * CASH BASIS:
      * Record an inventory purchase (restock) as cash-out expense.
      * Also increases InventoryItem quantity.

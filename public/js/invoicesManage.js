@@ -22,13 +22,36 @@
     const paidCancel = document.getElementById("paidCancelBtn");
     const paidConfirm = document.getElementById("paidConfirmBtn");
 
+    // In-kind elements
+    const typeCashBtn = document.getElementById("typeCashBtn");
+    const typeInKindBtn = document.getElementById("typeInKindBtn");
+    const cashSection = document.getElementById("cashSection");
+    const inKindSection = document.getElementById("inKindSection");
+    const inkindRows = document.getElementById("inkindRows");
+    const addRowBtn = document.getElementById("addInKindRowBtn");
+    const inkindInvTotal = document.getElementById("inkindInvoiceTotal");
+    const inkindItemsTotal = document.getElementById("inkindItemsTotal");
+    const inkindDiff = document.getElementById("inkindDiff");
+    const inkindDiffWrap = document.getElementById("inkindDiffWrap");
+
     if (!tbody) return;
 
-    let currentRow = null; // row being edited/paid
+    let currentRow = null;
+    let inventoryItems = []; // loaded once on first in-kind open
+    let paymentMode = "cash"; // "cash" or "in_kind"
+    let currentInvoiceAmount = 0;
+
+    // ── Helpers ────────────────────────────────────────────────────────────
 
     function money(v) {
         const n = Number(v || 0);
-        return "$" + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        return (
+            "$" +
+            n.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })
+        );
     }
 
     function openModal(modal) {
@@ -43,7 +66,6 @@
         modal.setAttribute("aria-hidden", "true");
     }
 
-    // close on backdrop click
     [editModal, paidModal].forEach((m) => {
         if (!m) return;
         m.addEventListener("click", (e) => {
@@ -55,10 +77,11 @@
     editCancel?.addEventListener("click", () => closeModal(editModal));
     paidCancel?.addEventListener("click", () => closeModal(paidModal));
 
+    // ── Filtering ─────────────────────────────────────────────────────────
+
     function rowMatches(tr) {
         const q = (search?.value || "").trim().toLowerCase();
         const st = (statusFilter?.value || "all").toLowerCase();
-
         const hay = [
             tr.dataset.invoiceNumber,
             tr.dataset.client,
@@ -68,11 +91,10 @@
         ]
             .join(" ")
             .toLowerCase();
-
-        const okSearch = !q || hay.includes(q);
-        const okStatus = st === "all" || tr.dataset.status === st;
-
-        return okSearch && okStatus;
+        return (
+            (!q || hay.includes(q)) &&
+            (st === "all" || tr.dataset.status === st)
+        );
     }
 
     function applyFilters() {
@@ -84,6 +106,8 @@
     search?.addEventListener("input", applyFilters);
     statusFilter?.addEventListener("change", applyFilters);
 
+    // ── Details panel ─────────────────────────────────────────────────────
+
     function renderDetails(tr) {
         const d = tr.dataset;
         const baseAmount = Number(d.amount || 0);
@@ -92,6 +116,8 @@
         const isLate = (d.status || "").toLowerCase() === "overdue";
         const receiptPdfUrl = d.receiptPdf ? "/storage/" + d.receiptPdf : null;
         const isPaid = (d.status || "").toLowerCase() === "paid";
+        const isInKind = (d.paymentType || "cash") === "in_kind";
+
         detailsTitle.textContent = d.invoiceNumber
             ? d.invoiceNumber
             : "Invoice";
@@ -106,15 +132,14 @@
         <div class="invoices__block-title">Invoice</div>
         <div class="invoices__kv"><span>Invoice #</span><strong>${d.invoiceNumber || "-"}</strong></div>
         <div class="invoices__kv"><span>Status</span><strong>${(d.status || "-").toUpperCase()}</strong></div>
+        ${isPaid ? `<div class="invoices__kv"><span>Payment type</span><strong>${isInKind ? "📦 In-Kind (Inventory)" : "💵 Cash"}</strong></div>` : ""}
         <div class="invoices__kv"><span>Issue date</span><strong>${d.issue || "-"}</strong></div>
         <div class="invoices__kv"><span>Due date</span><strong>${d.due || "-"}</strong></div>
         <div class="invoices__kv"><span>Base amount</span><strong>${money(baseAmount)}</strong></div>
 ${
     isLate && lateFee > 0
-        ? `
-      <div class="invoices__kv"><span>Late fee</span><strong>${money(lateFee)}</strong></div>
-      <div class="invoices__kv"><span>Total due</span><strong>${money(totalDue)}</strong></div>
-    `
+        ? `<div class="invoices__kv"><span>Late fee</span><strong>${money(lateFee)}</strong></div>
+       <div class="invoices__kv"><span>Total due</span><strong>${money(totalDue)}</strong></div>`
         : `<div class="invoices__kv"><span>Total due</span><strong>${money(baseAmount)}</strong></div>`
 }
       </div>
@@ -139,31 +164,172 @@ ${
         <div class="invoices__block-title">Downloads</div>
         <div class="invoices__kv">
           <span>Contract PDF</span>
-          <strong>
-            ${contractPdfUrl ? `<a href="${contractPdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}
-          </strong>
+          <strong>${contractPdfUrl ? `<a href="${contractPdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}</strong>
         </div>
         <div class="invoices__kv">
           <span>Invoice PDF</span>
-          <strong>
-            ${invoicePdfUrl ? `<a href="${invoicePdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}
-          </strong>
+          <strong>${invoicePdfUrl ? `<a href="${invoicePdfUrl}" target="_blank" rel="noopener">Download</a>` : "—"}</strong>
         </div>
         <div class="invoices__kv">
-  <span>Receipt PDF</span>
-  <strong>
-    ${
-        isPaid
-            ? receiptPdfUrl
-                ? `<a href="${receiptPdfUrl}" target="_blank" rel="noopener">Download</a>`
-                : "—"
-            : "Available after payment"
-    }
-  </strong>
-</div>
+          <span>Receipt PDF</span>
+          <strong>
+            ${
+                isPaid
+                    ? receiptPdfUrl
+                        ? `<a href="${receiptPdfUrl}" target="_blank" rel="noopener">Download</a>`
+                        : "—"
+                    : "Available after payment"
+            }
+          </strong>
+        </div>
       </div>
     `;
     }
+
+    // ── In-Kind logic ─────────────────────────────────────────────────────
+
+    async function loadInventoryItems() {
+        if (inventoryItems.length > 0) return; // cached
+        try {
+            const res = await fetch("/invoices/inventory-items", {
+                headers: { Accept: "application/json", "X-CSRF-TOKEN": token },
+            });
+            inventoryItems = await res.json();
+        } catch {
+            inventoryItems = [];
+        }
+    }
+
+    function buildItemSelect(selectedId = null) {
+        const sel = document.createElement("select");
+        sel.className = "inv-modal__input inkind-item-select";
+        sel.innerHTML = `<option value="">— select item —</option>`;
+        inventoryItems.forEach((it) => {
+            const opt = document.createElement("option");
+            opt.value = it.id;
+            opt.dataset.price = it.price;
+            opt.dataset.stock = it.quantity;
+            opt.dataset.unit = it.unit || "";
+            opt.textContent = `${it.name} (${money(it.price)}/${it.unit || "unit"}, stock: ${it.quantity})`;
+            if (selectedId && it.id == selectedId) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        return sel;
+    }
+
+    function addInKindRow() {
+        const row = document.createElement("div");
+        row.className = "inkind-row";
+
+        const select = buildItemSelect();
+        const qtyInput = document.createElement("input");
+        qtyInput.type = "number";
+        qtyInput.min = "0.001";
+        qtyInput.step = "0.001";
+        qtyInput.placeholder = "Qty";
+        qtyInput.className = "inv-modal__input inkind-qty";
+
+        const rowValue = document.createElement("span");
+        rowValue.className = "inkind-row-value";
+        rowValue.textContent = "$0.00";
+
+        const stockInfo = document.createElement("span");
+        stockInfo.className = "inkind-stock-info";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "inkind-remove-btn";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+            row.remove();
+            recalcTotal();
+        });
+
+        function recalcRow() {
+            const opt = select.options[select.selectedIndex];
+            const price = parseFloat(opt?.dataset.price || 0);
+            const qty = parseFloat(qtyInput.value || 0);
+            const val = price * qty;
+            rowValue.textContent = money(val);
+            recalcTotal();
+        }
+
+        select.addEventListener("change", () => {
+            const opt = select.options[select.selectedIndex];
+            const stock = opt?.dataset.stock;
+            const unit = opt?.dataset.unit || "";
+            stockInfo.textContent = opt?.value
+                ? `Available: ${stock} ${unit}`
+                : "";
+            qtyInput.max = stock || "";
+            recalcRow();
+        });
+        qtyInput.addEventListener("input", recalcRow);
+
+        row.appendChild(select);
+        row.appendChild(qtyInput);
+        row.appendChild(stockInfo);
+        row.appendChild(rowValue);
+        row.appendChild(removeBtn);
+        inkindRows.appendChild(row);
+    }
+
+    function recalcTotal() {
+        let total = 0;
+        inkindRows.querySelectorAll(".inkind-row").forEach((row) => {
+            const opt = row.querySelector(".inkind-item-select")?.options[
+                row.querySelector(".inkind-item-select")?.selectedIndex
+            ];
+            const price = parseFloat(opt?.dataset.price || 0);
+            const qty = parseFloat(
+                row.querySelector(".inkind-qty")?.value || 0,
+            );
+            total += price * qty;
+        });
+
+        inkindItemsTotal.textContent = money(total);
+        const diff = currentInvoiceAmount - total;
+        inkindDiff.textContent = money(Math.abs(diff));
+
+        if (Math.abs(diff) <= 1) {
+            inkindDiff.style.color = "#22c55e";
+            inkindDiffWrap.querySelector("strong").previousSibling?.remove?.();
+            inkindDiffWrap.firstChild.textContent =
+                diff > 0 ? "Remaining: " : diff < 0 ? "Over by: " : "✓ Exact: ";
+        } else {
+            inkindDiff.style.color = diff > 0 ? "#ef4444" : "#f97316";
+            inkindDiffWrap.firstChild.textContent =
+                diff > 0 ? "Remaining: " : "Over by: ";
+        }
+    }
+
+    function switchPaymentMode(mode) {
+        paymentMode = mode;
+        if (mode === "cash") {
+            cashSection.style.display = "";
+            inKindSection.style.display = "none";
+            typeCashBtn.classList.add("inv-modal__type-btn--active");
+            typeInKindBtn.classList.remove("inv-modal__type-btn--active");
+        } else {
+            cashSection.style.display = "none";
+            inKindSection.style.display = "";
+            typeCashBtn.classList.remove("inv-modal__type-btn--active");
+            typeInKindBtn.classList.add("inv-modal__type-btn--active");
+        }
+    }
+
+    typeCashBtn?.addEventListener("click", () => switchPaymentMode("cash"));
+    typeInKindBtn?.addEventListener("click", async () => {
+        await loadInventoryItems();
+        switchPaymentMode("in_kind");
+        // Add a first row automatically if none exist
+        if (inkindRows.querySelectorAll(".inkind-row").length === 0)
+            addInKindRow();
+    });
+
+    addRowBtn?.addEventListener("click", addInKindRow);
+
+    // ── API helpers ────────────────────────────────────────────────────────
 
     async function apiPatch(url, payload) {
         const res = await fetch(url, {
@@ -180,15 +346,21 @@ ${
             let msg = "Request failed.";
             try {
                 const data = await res.json();
-                msg = data.message || msg;
+                msg =
+                    data.message || data.errors
+                        ? data.message || Object.values(data.errors)[0]?.[0]
+                        : msg;
             } catch (_) {}
             throw new Error(msg);
         }
         return res.json().catch(() => ({}));
     }
 
-    function setRowStatus(tr, status) {
+    // ── Row state updates ─────────────────────────────────────────────────
+
+    function setRowStatus(tr, status, paymentType) {
         tr.dataset.status = status;
+        tr.dataset.paymentType = paymentType || "cash";
 
         const pill = tr.querySelector(".invoices__status");
         if (pill) {
@@ -196,26 +368,21 @@ ${
             pill.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         }
 
-        // remove the "mark paid" button if now paid
         if (status === "paid") {
-            const paidBtn = tr.querySelector(".invoices__icon-btn--paid");
-            const editBtn = tr.querySelector(".invoices__icon-btn--edit");
-            if (paidBtn) {
-                paidBtn.remove();
-                editBtn?.remove(); // no more editing dates once paid
-            }
+            tr.querySelector(".invoices__icon-btn--paid")?.remove();
+            tr.querySelector(".invoices__icon-btn--edit")?.remove();
         }
     }
 
     function setRowDates(tr, issue, due) {
         tr.dataset.issue = issue;
         tr.dataset.due = due;
-
         const tds = tr.querySelectorAll("td");
-        // columns: invoice#, client, unit, issue, due, amount, status, actions
         if (tds[3]) tds[3].textContent = issue || "-";
         if (tds[4]) tds[4].textContent = due || "-";
     }
+
+    // ── Table click handler ────────────────────────────────────────────────
 
     tbody.addEventListener("click", (e) => {
         const viewBtn = e.target.closest(".invoices__btn--view");
@@ -240,30 +407,40 @@ ${
 
         if (paidBtn) {
             currentRow = tr;
-            paidDate.value = ""; // optional
+            // Reset modal state
+            switchPaymentMode("cash");
+            paidDate.value = "";
+            inkindRows.innerHTML = "";
+            // Set invoice total display
+            const amt = parseFloat(tr.dataset.amount || 0);
+            const late = parseFloat(tr.dataset.lateFee || 0);
+            currentInvoiceAmount = amt + late;
+            if (inkindInvTotal)
+                inkindInvTotal.textContent = money(currentInvoiceAmount);
+            if (inkindItemsTotal) inkindItemsTotal.textContent = "$0.00";
+            if (inkindDiff)
+                inkindDiff.textContent = money(currentInvoiceAmount);
             openModal(paidModal);
             return;
         }
     });
 
+    // ── Edit dates save ────────────────────────────────────────────────────
+
     editSave?.addEventListener("click", async () => {
         if (!currentRow) return;
-
         const invoiceId = currentRow.dataset.id;
         const issue_date = editIssue.value || null;
         const due_date = editDue.value || null;
 
         try {
             editSave.disabled = true;
-
             await apiPatch(`/invoices/${invoiceId}/dates`, {
                 issue_date,
                 due_date,
             });
-
             setRowDates(currentRow, issue_date, due_date);
             renderDetails(currentRow);
-
             closeModal(editModal);
         } catch (err) {
             alert(err.message || "Failed to update dates.");
@@ -272,28 +449,69 @@ ${
         }
     });
 
+    // ── Mark paid confirm ─────────────────────────────────────────────────
+
     paidConfirm?.addEventListener("click", async () => {
         if (!currentRow) return;
-
         const invoiceId = currentRow.dataset.id;
-        const paid_at = paidDate.value || null;
 
         try {
             paidConfirm.disabled = true;
 
-            const resp = await apiPatch(`/invoices/${invoiceId}/mark-paid`, {
-                paid_at,
-            });
+            if (paymentMode === "in_kind") {
+                // Collect items
+                const itemRows = inkindRows.querySelectorAll(".inkind-row");
+                const items = [];
 
-            setRowStatus(currentRow, "paid");
+                for (const row of itemRows) {
+                    const sel = row.querySelector(".inkind-item-select");
+                    const qty = row.querySelector(".inkind-qty");
+                    const itemId = sel?.value;
+                    const qtyVal = parseFloat(qty?.value || 0);
 
-            // if backend returns receipt path, store it on the row for instant UI update
-            if (resp?.receipt_path) {
-                currentRow.dataset.receiptPdf = resp.receipt_path;
+                    if (!itemId) {
+                        alert(
+                            "Please select an item for every row, or remove empty rows.",
+                        );
+                        paidConfirm.disabled = false;
+                        return;
+                    }
+                    if (!qtyVal || qtyVal <= 0) {
+                        alert("Please enter a valid quantity for every item.");
+                        paidConfirm.disabled = false;
+                        return;
+                    }
+
+                    items.push({
+                        inventory_item_id: parseInt(itemId),
+                        quantity_used: qtyVal,
+                    });
+                }
+
+                if (items.length === 0) {
+                    alert("Please add at least one inventory item.");
+                    paidConfirm.disabled = false;
+                    return;
+                }
+
+                await apiPatch(`/invoices/${invoiceId}/mark-paid`, {
+                    payment_type: "in_kind",
+                    items,
+                });
+
+                setRowStatus(currentRow, "paid", "in_kind");
+            } else {
+                const paid_at = paidDate.value || null;
+                const resp = await apiPatch(
+                    `/invoices/${invoiceId}/mark-paid`,
+                    { paid_at, payment_type: "cash" },
+                );
+                setRowStatus(currentRow, "paid", "cash");
+                if (resp?.receipt_path)
+                    currentRow.dataset.receiptPdf = resp.receipt_path;
             }
 
             renderDetails(currentRow);
-
             closeModal(paidModal);
         } catch (err) {
             alert(err.message || "Failed to mark as paid.");

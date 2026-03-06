@@ -306,3 +306,124 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── In-kind payment styles ────────────────────────────────────────── */
+
+.confirm-modal__box--wide {
+    max-width: 680px;
+    width: 95vw;
+}
+
+.inv-modal__type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.07);
+    padding-bottom: 14px;
+}
+
+.inv-modal__type-btn {
+    flex: 1;
+    padding: 9px 14px;
+    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+    color: #555;
+}
+
+.inv-modal__type-btn--active {
+    background: #1a1a2e;
+    border-color: #1a1a2e;
+    color: #fff;
+}
+
+.inkind-summary {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    color: #444;
+}
+
+.inkind-summary strong {
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.inkind-row {
+    display: grid;
+    grid-template-columns: 1fr 90px auto 80px 28px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.inkind-row .inv-modal__input {
+    height: 36px;
+    font-size: 13px;
+}
+
+.inkind-stock-info {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    grid-column: 1 / -1;
+    margin-top: -4px;
+    margin-bottom: 2px;
+    padding-left: 4px;
+}
+
+.inkind-row-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a2e;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.inkind-remove-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+}
+.inkind-remove-btn:hover {
+    background: #fee2e2;
+}
+
+.inv-modal__add-row-btn {
+    margin-top: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 2px dashed rgba(0, 0, 0, 0.2);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+    width: 100%;
+    transition: background 0.15s;
+}
+.inv-modal__add-row-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 600px) {
+    .inkind-row {
+        grid-template-columns: 1fr 80px 60px 24px;
+    }
+}

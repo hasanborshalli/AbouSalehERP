@@ -82,6 +82,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('invoices')->name('invoices.')->group(function () {
             Route::get('/', [PagesController::class, 'invoicesPage'])
             ->name('overview');
+            Route::get('/inventory-items', [InvoicesController::class, 'inventoryItemsJson'])->name('inventory-items');
             Route::patch('/{invoice}/dates', [InvoicesController::class, 'updateDates']);
             Route::patch('/{invoice}/mark-paid', [InvoicesController::class, 'markPaid']);
         
