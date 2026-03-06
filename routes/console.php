@@ -11,9 +11,6 @@ Schedule::command('invoices:mark-late')
     ->everySixHours()
     ->withoutOverlapping();
 
-    Schedule::command('queue:work --stop-when-empty --sleep=3 --tries=3')
-    ->everyMinute()
-        ->withoutOverlapping()
-        ->runInBackground();
-        
-    Schedule::command('client:invoice-notifications')->dailyAt('00:05');
+Schedule::command('client:invoice-notifications')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();
