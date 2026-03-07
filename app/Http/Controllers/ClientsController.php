@@ -205,6 +205,9 @@ DB::transaction(function () use (
         // Mark apartment sold immediately for in-kind (full payment at once)
         $apartment->update(['status' => 'sold']);
 
+        // Mark contract as completed — in-kind is full payment upfront, no invoices needed
+        $contract->update(['status' => 'completed']);
+
         // Post ledger
         $inKindPayment->load('items');
         app(\App\Services\CashAccountingService::class)
