@@ -180,7 +180,8 @@ $end   = Carbon::now()->endOfMonth();
         $clients=ClientProfile::with([
             'user',
             'contract.apartment.project',
-            'contract.invoices'
+            'contract.invoices',
+            'contract.inKindPayments.items.inventoryItem',
         ])->get();
         return view('clients.existing',compact('clients'));
     }

@@ -109,14 +109,28 @@
                                     $lateMonths = $contract?->invoices()->where('status', 'overdue')->count() ?? 0;
                                     $remainingMonths=$contract?->invoices?->where('status','pending')->count()??0;
                                     $remaining = max(0, $contract->final_price - $paid);
-                                    $nextdue=$contract?->nextPendingInvoice?->issue_date;
+
+                                    // In-kind contracts are fully paid upfront — override all financial figures
+                                    if ($contract->payment_type === 'in_kind') {
+                                    $paid = $contract->final_price;
+                                    $remaining = 0;
+                                    $paidMonths = 0;
+                                    $lateMonths = 0;
+                                    $remainingMonths = 0;
+                                    }
+                                    $nextdue = $contract->payment_type === 'in_kind' ? null :
+                                    $contract?->nextPendingInvoice?->issue_date;
                                     $totalLateFeesPaid = $contract
                                     ? $contract->invoices()->where('status', 'paid')->sum('late_fee_amount')
                                     : 0;
                                     $totalLateFeesApplied = $contract
                                     ? $contract->invoices()->where('status', 'overdue')->sum('late_fee_amount')
                                     : 0;
-                                    if ($remaining <= 0) { $status='completed' ; } else { $status=$client->
+                                    $hasPaidInvoice = $contract->payment_type === 'in_kind' ? true : ($contract
+                                    ? $contract->invoices->where('status', 'paid')->count() > 0
+                                    : false);
+                                    if ($remaining <= 0 || $contract->payment_type === 'in_kind') { $status='completed'
+                                        ; } else { $status=$client->
                                         contract->invoices()
                                         ->where('status', 'overdue')
                                         ->exists()
@@ -126,9 +140,6 @@
                                         $contractPdfUrl = $contract?->pdf_path
                                         ? asset('storage/'.$contract->pdf_path)
                                         : null;
-                                        $hasPaidInvoice = $contract
-                                        ? $contract->invoices->where('status', 'paid')->count() > 0
-                                        : false;
                                         @endphp <tr class="clients-index__row"
                                             data-route="{{ route('contracts.progress.editor',$contract->id) }}"
                                             data-code="CL-{{str_pad( $client->user_id,5,'0', STR_PAD_LEFT) }}"
@@ -151,7 +162,11 @@
                                             data-remainingmonths="{{ $remainingMonths }}" data-nextdue="{{ $nextdue }}"
                                             data-notes="{{ $contract->notes }}"
                                             data-contract-pdf="{{ $contractPdfUrl }}"
-                                            data-can-edit="{{ $hasPaidInvoice ? '0' : '1' }}">
+                                            data-can-edit="{{ $hasPaidInvoice ? '0' : '1' }}"
+                                            data-payment-type="{{ $contract->payment_type }}"
+                                            data-inkind-items="{{ $contract->payment_type === 'in_kind' ? json_encode($contract->inKindPayments->first()?->items->map(fn($i) => ['name' => $i->inventoryItem->name ?? '—', 'qty' => $i->quantity, 'unit' => $i->inventoryItem->unit ?? '', 'unit_price' => $i->unit_price_snapshot, 'total' => $i->total_value])->toArray() ?? []) : '[]' }}"
+                                            data-inkind-total="{{ $contract->payment_type === 'in_kind' ? ($contract->inKindPayments->first()?->total_estimated_value ?? 0) : 0 }}"
+                                            data-inkind-notes="{{ $contract->payment_type === 'in_kind' ? ($contract->inKindPayments->first()?->notes ?? '') : '' }}">
                                             <td class="clients-index__td">CL-{{str_pad( $client->user_id,5,'0',
                                                 STR_PAD_LEFT)
                                                 }}
@@ -253,6 +268,52 @@
     <script src="/js/existingClients.js">
     </script>
     <script src="/js/navSearch.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('clientsTbody')?.addEventListener('click', function (e) {
+            var row = e.target.closest('tr.clients-index__row');
+            if (!row || row.dataset.paymentType !== 'in_kind') return;
+            setTimeout(function () {
+                var body = document.getElementById('detailsBody');
+                if (!body) return;
+                var items = [];
+                try { items = JSON.parse(row.dataset.inkindItems || '[]'); } catch(err) {}
+                var total = parseFloat(row.dataset.inkindTotal || 0);
+                var notes = row.dataset.inkindNotes || '';
+                var rows = items.map(function(it) {
+                    return '<tr style="border-bottom:1px solid rgba(0,0,0,0.05);">'
+                        + '<td style="padding:6px 4px;">' + it.name + '</td>'
+                        + '<td style="padding:6px 4px;text-align:right;">' + parseFloat(it.qty).toLocaleString() + ' ' + it.unit + '</td>'
+                        + '<td style="padding:6px 4px;text-align:right;">$' + parseFloat(it.unit_price).toFixed(2) + '</td>'
+                        + '<td style="padding:6px 4px;text-align:right;font-weight:600;">$' + parseFloat(it.total).toFixed(2) + '</td>'
+                        + '</tr>';
+                }).join('');
+                body.querySelectorAll('[data-inkind-block]').forEach(function(el){ el.remove(); });
+                var wrapper = document.createElement('div');
+                wrapper.setAttribute('data-inkind-block', '1');
+                wrapper.innerHTML = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);">'
+                    + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:10px;">In-Kind Payment</div>'
+                    + '<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+                    + '<thead><tr style="color:#6b7280;">'
+                    + '<th style="text-align:left;padding:4px;">Item</th>'
+                    + '<th style="text-align:right;padding:4px;">Qty</th>'
+                    + '<th style="text-align:right;padding:4px;">Unit Price</th>'
+                    + '<th style="text-align:right;padding:4px;">Value</th>'
+                    + '</tr></thead>'
+                    + '<tbody>' + rows + '</tbody>'
+                    + '<tfoot><tr>'
+                    + '<td colspan="3" style="padding:6px 4px;text-align:right;font-weight:700;">Total value:</td>'
+                    + '<td style="padding:6px 4px;text-align:right;font-weight:700;color:#059669;">$' + total.toFixed(2) + '</td>'
+                    + '</tr></tfoot>'
+                    + '</table>'
+                    + (notes ? '<div style="margin-top:8px;font-size:12px;color:#6b7280;">Notes: ' + notes + '</div>' : '')
+                    + '<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(5,150,105,0.08);font-size:12px;color:#059669;font-weight:600;">Fully paid via in-kind delivery</div>'
+                    + '</div>';
+                body.appendChild(wrapper);
+            }, 80);
+        });
+    });
+    </script>
 
 </body>
 
