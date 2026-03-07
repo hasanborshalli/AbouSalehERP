@@ -241,9 +241,20 @@ class AdditionalCostController extends Controller
             return back()->with('error', "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.");
         }
 
+        // If this item is already assigned to the project, add to its quantity instead of inserting a duplicate
+        $existing = \App\Models\ProjectInventoryItem::where('project_id', $project->id)
+            ->where('inventory_item_id', $item->id)
+            ->first();
+
         $item->decrement('quantity', $data['quantity_needed']);
         $item->is_out_of_stock = $item->quantity <= 0;
         $item->save();
+
+        if ($existing) {
+            $existing->increment('quantity_needed', $data['quantity_needed']);
+            $this->auditLog('Update', 'Project Material', "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to project {$project->name} (total: {$existing->quantity_needed}).");
+            return back()->with('success', "Updated quantity for {$item->name}.");
+        }
 
         \App\Models\ProjectInventoryItem::create([
             'project_id'        => $project->id,

@@ -244,7 +244,9 @@ $end   = Carbon::now()->endOfMonth();
     $project->load([
         'manager',
         'floors.apartments',
-        'inventoryItems', // pivot has quantity_needed, unit, quantity_used
+        'inventoryItems',
+        'inventoryUsages.inventoryItem',
+        'additionalCosts',
     ]);
 
     // Flatten apartments from floors
@@ -260,8 +262,55 @@ $end   = Carbon::now()->endOfMonth();
         'available'  => $apartments->where('status', 'available')->count(),
     ];
 
-    return view('apartments.project', compact('project', 'stats'));
+    $inventoryItems = \App\Models\InventoryItem::whereNull('deleted_at')->orderBy('name')->get();
+
+    return view('apartments.project', compact('project', 'stats', 'inventoryItems'));
 }
+    public function apartmentUnitPage(\App\Models\Apartment $apartment)
+    {
+        $apartment->load([
+            'project',
+            'floor',
+            'materials.inventoryItem',
+            'additionalCosts',
+            'contract.invoices',
+        ]);
+
+        $inventoryItems = \App\Models\InventoryItem::whereNull('deleted_at')
+            ->orderBy('name')->get();
+
+        // Revenue: down payment + paid invoices
+        $downPayment  = (float) optional($apartment->contract)->down_payment;
+        $paidInvoices = optional($apartment->contract)
+            ->invoices
+            ?->whereIn('status', ['paid'])
+            ->sum('amount') ?? 0;
+        $totalRevenue = $downPayment + $paidInvoices;
+
+        // Materials cost
+        $materialsCost = $apartment->materials->sum(function ($m) {
+            return (float) ($m->inventoryItem->price ?? 0) * (float) $m->quantity_needed;
+        });
+
+        // Additional costs
+        $costsExpected = $apartment->additionalCosts->sum('expected_amount');
+        $costsActual   = $apartment->additionalCosts->whereNotNull('actual_amount')->sum('actual_amount');
+        $totalCost     = $materialsCost + $costsActual;
+
+        $profit = $totalRevenue - $totalCost;
+
+        return view('apartments.unit', compact(
+            'apartment',
+            'inventoryItems',
+            'totalRevenue',
+            'materialsCost',
+            'costsExpected',
+            'costsActual',
+            'totalCost',
+            'profit'
+        ));
+    }
+
     public function existingProjectsPage(){
         $projects = Project::query()
         ->leftJoin('apartments', 'apartments.project_id', '=', 'projects.id')

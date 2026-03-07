@@ -305,13 +305,14 @@
                                     <label class="add-client__label" for="installment_amount">Monthly payment
                                         ($)</label>
                                     <input class="add-client__input" id="installment_amount" name="installment_amount"
-                                        type="number" step="0.01" min="0" placeholder="0.00" required
+                                        type="number" step="0.01" min="0" placeholder="0.00" required readonly
+                                        style="background:#f3f4f6;cursor:not-allowed;"
                                         value="{{ old('installment_amount') }}" />
                                     @error('installment_amount')
                                     <p style="color:red">{{ $message }}</p>
                                     @enderror
                                     <div class="add-client__hint">
-                                        Tip: you can type it manually, or press “Auto-calc”.
+                                        Calculated automatically from price, discount, down payment, and months.
                                     </div>
                                 </div>
 
@@ -344,10 +345,6 @@
                             </div>
 
                             <div class="add-client__calc">
-                                <button class="add-client__calc-btn" type="button" id="autoCalcBtn">
-                                    Auto-calc monthly payment
-                                </button>
-
                                 <div class="add-client__summary" aria-live="polite">
                                     <div><span>Net price:</span> <strong id="netPriceText">$0.00</strong></div>
                                     <div><span>Remaining after down payment:</span> <strong
@@ -379,6 +376,53 @@
 
     <script src="/js/addClient.js"></script>
     <script src="/js/navSearch.js"></script>
+    <script>
+        // Auto-calculate monthly payment whenever relevant fields change
+        function autoCalcMonthly() {
+            var apartmentSelect = document.getElementById('apartment_id');
+            var discount        = parseFloat(document.getElementById('discount')?.value) || 0;
+            var downPayment     = parseFloat(document.getElementById('down_payment')?.value) || 0;
+            var months          = parseInt(document.getElementById('installment_months')?.value) || 0;
+            var amountField     = document.getElementById('installment_amount');
+
+            var price = 0;
+            if (apartmentSelect && apartmentSelect.selectedOptions[0]) {
+                price = parseFloat(apartmentSelect.selectedOptions[0].dataset.price) || 0;
+            }
+
+            var net       = Math.max(price - discount, 0);
+            var remaining = Math.max(net - downPayment, 0);
+            var monthly   = (months > 0) ? (remaining / months) : 0;
+
+            if (amountField) {
+                amountField.value = monthly > 0 ? monthly.toFixed(2) : '';
+            }
+
+            // Update summary display if elements exist
+            var netEl  = document.getElementById('netPriceText');
+            var remEl  = document.getElementById('remainingText');
+            var totEl  = document.getElementById('totalPaidText');
+            if (netEl) netEl.textContent = '$' + net.toFixed(2);
+            if (remEl) remEl.textContent = '$' + remaining.toFixed(2);
+            if (totEl) totEl.textContent = '$' + (downPayment + monthly * months).toFixed(2);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Trigger on every relevant field change
+            ['apartment_id', 'discount', 'down_payment', 'installment_months'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('input', autoCalcMonthly);
+                if (el) el.addEventListener('change', autoCalcMonthly);
+            });
+
+            // Also fire once immediately in case of old() values
+            autoCalcMonthly();
+
+            // Keep button working as fallback (if it still exists in addClient.js)
+            var btn = document.getElementById('autoCalcBtn');
+            if (btn) btn.addEventListener('click', autoCalcMonthly);
+        });
+    </script>
 </body>
 
 </html>

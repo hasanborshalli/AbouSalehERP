@@ -104,6 +104,11 @@
                                             href="{{ route('apartments.edit-project', $p->id) }}"
                                             aria-label="Edit project">✎</a>
 
+                                        <a class="projects-index__icon-btn"
+                                            href="{{ route('apartments.project', $p->id) }}"
+                                            aria-label="Manage materials"
+                                            style="background:rgba(16,185,129,0.1);color:#059669;text-decoration:none;">📦</a>
+
                                         <form action="{{ route('apartments.delete-project', $p->id) }}" method="POST"
                                             style="display:inline;">
                                             @csrf
