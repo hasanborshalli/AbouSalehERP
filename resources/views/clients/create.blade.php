@@ -421,6 +421,32 @@
             // Keep button working as fallback (if it still exists in addClient.js)
             var btn = document.getElementById('autoCalcBtn');
             if (btn) btn.addEventListener('click', autoCalcMonthly);
+
+            // Fix: disable hidden in-kind inputs so browser skips validation on them
+            function syncInKindDisabled() {
+                var isInKind = document.getElementById('typeInKind')?.checked;
+                var container = document.getElementById('ikItemsContainer');
+                if (!container) return;
+                var inputs = container.querySelectorAll('input, select');
+                inputs.forEach(function(el) {
+                    el.disabled = !isInKind;
+                });
+            }
+
+            // Run on payment type change
+            document.querySelectorAll('input[name="payment_type"]').forEach(function(radio) {
+                radio.addEventListener('change', syncInKindDisabled);
+            });
+
+            // Also re-run whenever items are added (observe DOM changes in container)
+            var ikContainer = document.getElementById('ikItemsContainer');
+            if (ikContainer) {
+                var observer = new MutationObserver(syncInKindDisabled);
+                observer.observe(ikContainer, { childList: true, subtree: true });
+            }
+
+            // Run once on load
+            syncInKindDisabled();
         });
     </script>
 </body>

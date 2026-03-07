@@ -61,6 +61,13 @@ class InvoicesController extends Controller
 
         // ── IN-KIND PAYMENT ───────────────────────────────────────────────
         if ($paymentType === 'in_kind') {
+            // Strip out any empty/incomplete rows before validation
+            $rawItems = collect($request->input('items', []))
+                ->filter(fn($row) => !empty($row['inventory_item_id']) && !empty($row['quantity']))
+                ->values()
+                ->toArray();
+            $request->merge(['items' => $rawItems]);
+
             $data = $request->validate([
                 'items'                     => ['required', 'array', 'min:1'],
                 'items.*.inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],

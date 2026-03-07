@@ -307,6 +307,38 @@
 
     <script src="/js/invoicesManage.js"></script>
     <script src="/js/navSearch.js"></script>
+    <script>
+        // Fix: before the paidConfirmBtn submits, ensure in-kind item fields
+    // are not disabled and have correct names so they reach the server.
+    document.addEventListener('DOMContentLoaded', function () {
+        var confirmBtn = document.getElementById('paidConfirmBtn');
+        if (!confirmBtn) return;
+
+        confirmBtn.addEventListener('click', function (e) {
+            var paymentType = document.querySelector('input[name="payment_type"]:checked')
+                           || { value: 'cash' };
+            var isInKind = (paymentType.value === 'in_kind')
+                        || document.getElementById('inKindSection')?.style.display !== 'none';
+            if (!isInKind) return;
+
+            // Re-enable any disabled inputs in inkindRows before submit
+            var container = document.getElementById('inkindRows');
+            if (!container) return;
+            container.querySelectorAll('input[disabled], select[disabled]').forEach(function (el) {
+                el.disabled = false;
+            });
+
+            // Ensure each row has the correct index-based names
+            var rows = container.querySelectorAll('[data-ik-row]');
+            rows.forEach(function (row, idx) {
+                row.querySelectorAll('[data-ik-field]').forEach(function (el) {
+                    var field = el.dataset.ikField;
+                    el.name = 'items[' + idx + '][' + field + ']';
+                });
+            });
+        }, true); // capture phase so it runs before invoicesManage.js handler
+    });
+    </script>
 
 </body>
 
