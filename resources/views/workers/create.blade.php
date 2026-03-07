@@ -224,7 +224,116 @@
     </div>
     <script src="/js/navSearch.js"></script>
     <script>
-       
+        document.addEventListener('DOMContentLoaded', function () {
+
+        // ── Helpers ──────────────────────────────────────────────────────
+        function recalcTotal() {
+            var total = 0;
+            document.querySelectorAll('.cost-input').forEach(function (inp) {
+                if (!inp.disabled && inp.value) {
+                    total += parseFloat(inp.value) || 0;
+                }
+            });
+            var totalBar   = document.getElementById('totalBar');
+            var totalDisp  = document.getElementById('totalDisplay');
+            var totalField = document.getElementById('total_amount');
+            if (totalBar)  totalBar.style.display  = total > 0 ? 'flex' : 'none';
+            if (totalDisp) totalDisp.textContent    = '$' + total.toFixed(2);
+            if (totalField && total > 0) totalField.value = total.toFixed(2);
+            recalcMonthly();
+        }
+
+        function recalcMonthly() {
+            var total   = parseFloat(document.getElementById('total_amount')?.value) || 0;
+            var months  = parseInt(document.getElementById('payment_months')?.value) || 0;
+            var preview = document.getElementById('monthly_preview');
+            if (preview) {
+                preview.value = (total > 0 && months > 0)
+                    ? '$' + (total / months).toFixed(2) + ' / month'
+                    : '';
+            }
+        }
+
+        // ── Project checkbox: disable its apartments when checked ─────────
+        document.querySelectorAll('.proj-cb').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var projectId  = this.dataset.projectId;
+                var checked    = this.checked;
+                var hiddenProj = this.closest('.assign-row').querySelector('.proj-id-hidden');
+                var costDiv    = this.closest('.assign-row').querySelector('.assign-cost');
+
+                // Enable/disable the project hidden field and cost input
+                if (hiddenProj) hiddenProj.disabled = !checked;
+                if (costDiv) {
+                    costDiv.style.display = checked ? 'flex' : 'none';
+                    var costInput = costDiv.querySelector('.cost-input');
+                    if (costInput) {
+                        costInput.disabled = !checked;
+                        if (!checked) costInput.value = '';
+                    }
+                }
+
+                // Disable/uncheck all apartment rows under this project
+                document.querySelectorAll('.assign-row--apt[data-parent="' + projectId + '"]').forEach(function (aptRow) {
+                    var aptCb     = aptRow.querySelector('.apt-cb');
+                    var aptHidden = aptRow.querySelector('.apt-id-hidden');
+                    var aptCost   = aptRow.querySelector('.assign-cost');
+                    var aptInput  = aptRow.querySelector('.cost-input');
+
+                    if (checked) {
+                        // Project checked: disable and grey out apartments
+                        aptRow.style.opacity  = '0.35';
+                        aptRow.style.pointerEvents = 'none';
+                        if (aptCb)     { aptCb.checked = false; aptCb.disabled = true; }
+                        if (aptHidden) aptHidden.disabled = true;
+                        if (aptCost)   aptCost.style.display = 'none';
+                        if (aptInput)  { aptInput.disabled = true; aptInput.value = ''; }
+                    } else {
+                        // Project unchecked: re-enable apartments
+                        aptRow.style.opacity  = '';
+                        aptRow.style.pointerEvents = '';
+                        if (aptCb)    aptCb.disabled = false;
+                    }
+                });
+
+                recalcTotal();
+            });
+        });
+
+        // ── Apartment checkbox ────────────────────────────────────────────
+        document.querySelectorAll('.apt-cb').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var checked    = this.checked;
+                var aptRow     = this.closest('.assign-row--apt');
+                var aptHidden  = aptRow.querySelector('.apt-id-hidden');
+                var costDiv    = aptRow.querySelector('.assign-cost');
+                var costInput  = aptRow.querySelector('.cost-input');
+
+                if (aptHidden) aptHidden.disabled = !checked;
+                if (costDiv)   costDiv.style.display = checked ? 'flex' : 'none';
+                if (costInput) {
+                    costInput.disabled = !checked;
+                    if (!checked) costInput.value = '';
+                }
+
+                recalcTotal();
+            });
+        });
+
+        // ── Cost input changes ────────────────────────────────────────────
+        document.querySelectorAll('.cost-input').forEach(function (inp) {
+            inp.addEventListener('input', recalcTotal);
+        });
+
+        // ── Manual total / months change ──────────────────────────────────
+        document.getElementById('total_amount')?.addEventListener('input', recalcMonthly);
+        document.getElementById('payment_months')?.addEventListener('input', recalcMonthly);
+
+        // ── Init: hide all cost inputs and apt rows ───────────────────────
+        document.querySelectorAll('.assign-cost').forEach(function (div) {
+            div.style.display = 'none';
+        });
+    });
     </script>
 </body>
 
