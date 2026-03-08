@@ -8,6 +8,7 @@ class ContractProgressItem extends Model
 {
     protected $fillable = [
         'contract_id',
+        'apartment_id',
         'title',
         'description',
         'sort_order',
@@ -25,5 +26,10 @@ class ContractProgressItem extends Model
     public function contract()
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    public function apartment()
+    {
+        return $this->belongsTo(\App\Models\Apartment::class);
     }
 }

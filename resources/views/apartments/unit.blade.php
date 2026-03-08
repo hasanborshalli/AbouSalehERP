@@ -50,6 +50,10 @@
                         <a class="project-page__back" href="{{ route('apartments.project', $apartment->project_id) }}">
                             ← Back to project
                         </a>
+                        <a href="{{ route('apartments.progress.editor', $apartment->id) }}" class="project-page__edit"
+                            style="background:rgba(67,184,156,.1);color:#2d9e81;border-color:rgba(67,184,156,.3);">
+                            📈 Progress
+                        </a>
                         <a href="{{ route('reports.apartment.show', $apartment->id) }}" class="project-page__edit">
                             📊 View Report
                         </a>
@@ -99,8 +103,9 @@
                                 <thead>
                                     <tr>
                                         <th>Item</th>
-                                        <th>Qty Needed</th>
+                                        <th>Qty</th>
                                         <th>Unit</th>
+                                        <th>Unit Price</th>
                                         <th>Stock</th>
                                         <th></th>
                                     </tr>
@@ -111,15 +116,23 @@
                                         <td>{{ $m->inventoryItem->name ?? '—' }}</td>
                                         <td>{{ number_format($m->quantity_needed, 2) }}</td>
                                         <td>{{ $m->unit ?? '—' }}</td>
+                                        <td>${{ number_format($m->inventoryItem->price ?? 0, 2) }}</td>
                                         <td>{{ $m->inventoryItem->quantity ?? '—' }}</td>
-                                        <td>
+                                        <td style="display:flex;gap:6px;align-items:center;">
+                                            {{-- Client upgrade button --}}
+                                            @if($apartment->contract)
+                                            <button type="button"
+                                                onclick="openUpgradeModal({{ $m->id }}, '{{ addslashes($m->inventoryItem->name ?? '') }}')"
+                                                style="background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.3);color:#92400e;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">
+                                                🔄 Client Upgrade
+                                            </button>
+                                            @endif
                                             <form method="post"
                                                 action="{{ route('apartments.materials.destroy', [$apartment, $m]) }}"
                                                 onsubmit="return confirm('Remove this material and restore stock?')">
                                                 @csrf @method('DELETE')
                                                 <button type="submit"
-                                                    style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;">✕
-                                                    Remove</button>
+                                                    style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;">✕</button>
                                             </form>
                                         </td>
                                     </tr>
@@ -146,7 +159,7 @@
                                             <option value="">Select item</option>
                                             @foreach($inventoryItems as $it)
                                             <option value="{{ $it->id }}">{{ $it->name }} (Stock: {{ $it->quantity }} {{
-                                                $it->unit }})</option>
+                                                $it->unit }}) — ${{ number_format($it->price,2) }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -163,6 +176,47 @@
                                 </div>
                             </form>
                         </div>
+
+                        {{-- Client upgrade history --}}
+                        @if(isset($upgradeHistory) && $upgradeHistory->isNotEmpty())
+                        <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.07);">
+                            <p style="font-size:13px;font-weight:700;margin:0 0 10px;color:rgba(0,0,0,.6);">🔄 Client
+                                Upgrade History</p>
+                            <table class="project-page__table" style="font-size:12px;">
+                                <thead>
+                                    <tr>
+                                        <th>Replaced</th>
+                                        <th>New Item</th>
+                                        <th>Qty</th>
+                                        <th>Total Billed</th>
+                                        <th>Invoice</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($upgradeHistory as $upg)
+                                    <tr>
+                                        <td style="opacity:.6;">{{ $upg->oldInventoryItem->name ?? '—' }}</td>
+                                        <td style="font-weight:600;">{{ $upg->newInventoryItem->name ?? '—' }}</td>
+                                        <td>{{ $upg->new_quantity }}</td>
+                                        <td style="color:#16a34a;font-weight:700;">${{
+                                            number_format($upg->total_amount,2) }}</td>
+                                        <td>
+                                            @if($upg->invoice)
+                                            <span
+                                                style="font-size:11px;padding:2px 7px;border-radius:4px;background:rgba(37,99,235,.08);color:#1d4ed8;">
+                                                {{ $upg->invoice->invoice_number }}
+                                            </span>
+                                            @else —
+                                            @endif
+                                        </td>
+                                        <td>{{ $upg->created_at->format('Y-m-d') }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @endif
                     </section>
 
                     {{-- ── Additional Costs ── --}}
@@ -267,7 +321,100 @@
         </main>
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
+
+    {{-- ── Client Upgrade Modal ───────────────────────────── --}}
+    @if($apartment->contract)
+    <div id="upgradeModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+        <div
+            style="background:#fff;border-radius:16px;padding:28px 32px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+            <h3 style="margin:0 0 6px;font-size:16px;font-weight:800;">🔄 Client Material Upgrade</h3>
+            <p id="upgradeModalSubtitle" style="font-size:13px;opacity:.6;margin:0 0 20px;"></p>
+
+            <form method="POST" action="{{ route('apartments.upgrade-material', $apartment->id) }}">
+                @csrf
+                <input type="hidden" id="upgradeMaterialId" name="old_material_id">
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12px;display:block;margin-bottom:5px;font-weight:600;">New inventory
+                        item</label>
+                    <select name="new_inventory_item_id" id="upgradeItemSelect" required
+                        style="width:100%;padding:9px 12px;border-radius:8px;border:2px solid rgba(0,0,0,.1);font-size:13px;">
+                        <option value="">Select replacement item</option>
+                        @foreach($inventoryItems as $it)
+                        <option value="{{ $it->id }}" data-price="{{ $it->price }}" data-unit="{{ $it->unit }}">
+                            {{ $it->name }} — ${{ number_format($it->price,2) }}/{{ $it->unit }} (Stock: {{
+                            $it->quantity }})
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12px;display:block;margin-bottom:5px;font-weight:600;">Quantity</label>
+                    <input type="number" name="new_quantity" id="upgradeQty" step="0.01" min="0.01" required
+                        placeholder="0.00"
+                        style="width:100%;padding:9px 12px;border-radius:8px;border:2px solid rgba(0,0,0,.1);font-size:13px;box-sizing:border-box;">
+                </div>
+
+                {{-- Total preview --}}
+                <div id="upgradeTotalBar"
+                    style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(22,163,74,.07);border-radius:9px;border:1.5px solid rgba(22,163,74,.2);">
+                    <span style="font-size:12px;font-weight:600;color:rgba(0,0,0,.55);">Invoice total for client:</span>
+                    <span id="upgradeTotalDisplay"
+                        style="font-size:17px;font-weight:800;color:#16a34a;float:right;">$0.00</span>
+                </div>
+
+                <p style="font-size:11px;opacity:.5;margin:0 0 16px;line-height:1.5;">
+                    The old material will be removed (stock restored). The client will be billed the <strong>full
+                        cost</strong> of the new selection. A standalone invoice will be created on their contract.
+                </p>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button type="button" onclick="closeUpgradeModal()"
+                        style="padding:9px 20px;border-radius:8px;border:2px solid rgba(0,0,0,.1);background:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        style="padding:9px 20px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">
+                        Confirm Upgrade &amp; Create Invoice
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     <script src="/js/navSearch.js"></script>
+    <script>
+        function openUpgradeModal(materialId, itemName) {
+        document.getElementById('upgradeMaterialId').value = materialId;
+        document.getElementById('upgradeModalSubtitle').textContent = 'Replacing: ' + itemName;
+        document.getElementById('upgradeItemSelect').value = '';
+        document.getElementById('upgradeQty').value = '';
+        document.getElementById('upgradeTotalBar').style.display = 'none';
+        document.getElementById('upgradeModal').style.display = 'flex';
+    }
+    function closeUpgradeModal() {
+        document.getElementById('upgradeModal').style.display = 'none';
+    }
+    function recalcUpgradeTotal() {
+        var sel = document.getElementById('upgradeItemSelect');
+        var qty = parseFloat(document.getElementById('upgradeQty').value) || 0;
+        var opt = sel.options[sel.selectedIndex];
+        var price = parseFloat(opt?.dataset?.price) || 0;
+        var total = price * qty;
+        var bar = document.getElementById('upgradeTotalBar');
+        bar.style.display = (total > 0) ? 'block' : 'none';
+        document.getElementById('upgradeTotalDisplay').textContent = '$' + total.toFixed(2);
+    }
+    document.getElementById('upgradeItemSelect')?.addEventListener('change', recalcUpgradeTotal);
+    document.getElementById('upgradeQty')?.addEventListener('input', recalcUpgradeTotal);
+    // Close on backdrop click
+    document.getElementById('upgradeModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeUpgradeModal();
+    });
+    </script>
 </body>
 
 </html>

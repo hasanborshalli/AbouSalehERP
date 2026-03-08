@@ -249,8 +249,10 @@
             $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
             $linkedApartments = \App\Models\Apartment::whereIn('id',
             $contract->allApartmentIds())->with('project')->get();
+            $linkedManagedProps = \App\Models\ManagedProperty::whereIn('id', $contract->allManagedPropertyIds())->get();
             $projectCosts = $contract->project_costs ?? [];
             $apartmentCosts = $contract->apartment_costs ?? [];
+            $managedPropertyCosts = $contract->managed_property_costs ?? [];
             @endphp
             @if($linkedProjects->isNotEmpty())
             <tr>
@@ -269,6 +271,18 @@
                     @foreach($linkedApartments as $apt)
                     @if($apt->project){{ $apt->project->name }} – @endif Unit {{ $apt->unit_number ?? '#'.$apt->id
                     }}@if(!$loop->last), @endif
+                    @endforeach
+                </td>
+            </tr>
+            @endif
+            @if($linkedManagedProps->isNotEmpty())
+            <tr>
+                <td class="label">Managed Property(ies)</td>
+                <td class="value">
+                    @foreach($linkedManagedProps as $mp)
+                    {{ $mp->address }}@if($mp->city), {{ $mp->city }}@endif
+                    <span style="color:#6b7280;font-size:10.5px;">({{ ucfirst($mp->type) }})</span>@if(!$loop->last);
+                    @endif
                     @endforeach
                 </td>
             </tr>
@@ -310,7 +324,7 @@
     <div class="sp-10"></div>
 
     <!-- ASSIGNMENT & COST BREAKDOWN -->
-    @if($linkedProjects->isNotEmpty() || $linkedApartments->isNotEmpty())
+    @if($linkedProjects->isNotEmpty() || $linkedApartments->isNotEmpty() || $linkedManagedProps->isNotEmpty())
     <div class="card">
         <div class="h2">Assignment & Cost Breakdown</div>
         <table class="money">
@@ -342,6 +356,21 @@
                 </td>
             </tr>
             @endforeach
+            @foreach($linkedManagedProps as $mp)
+            <tr>
+                <th>
+                    Property: {{ $mp->address }}@if($mp->city), {{ $mp->city }}@endif
+                    <span style="font-weight:400;color:#6b7280;">({{ ucfirst($mp->type) }})</span>
+                </th>
+                <td>
+                    @if(isset($managedPropertyCosts[$mp->id]) && $managedPropertyCosts[$mp->id] > 0)
+                    USD ${{ number_format($managedPropertyCosts[$mp->id], 2) }}
+                    @else
+                    <span style="color:#6b7280;">—</span>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
             <tr class="final">
                 <th>Total Contract Amount</th>
                 <td>USD ${{ number_format($contract->total_amount, 2) }}</td>
@@ -356,7 +385,7 @@
     <div class="card">
         <div class="h2">Payment Terms</div>
         <table class="money">
-            @if($linkedProjects->isEmpty() && $linkedApartments->isEmpty())
+            @if($linkedProjects->isEmpty() && $linkedApartments->isEmpty() && $linkedManagedProps->isEmpty())
             <tr>
                 <th>Total Contract Amount</th>
                 <td>USD ${{ number_format($contract->total_amount,2) }}</td>

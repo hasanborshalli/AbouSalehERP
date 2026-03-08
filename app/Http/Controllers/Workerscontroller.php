@@ -7,7 +7,6 @@ use App\Jobs\GenerateWorkerPaymentReceiptJob;
 use App\Jobs\SendWorkerPaymentReceiptMailJob;
 use App\Mail\WorkerCredentialsMail;
 use App\Models\AuditLog;
-use App\Models\Apartment;
 use App\Models\ApartmentAdditionalCost;
 use App\Models\Project;
 use App\Models\ProjectAdditionalCost;
@@ -45,8 +44,9 @@ class WorkersController extends Controller
 
     public function createPage()
     {
-        $projects = Project::with('apartments')->orderByDesc('created_at')->get();
-        return view('workers.create', compact('projects'));
+        $projects         = Project::with('apartments')->orderByDesc('created_at')->get();
+        $managedProperties = \App\Models\ManagedProperty::orderBy('address')->get();
+        return view('workers.create', compact('projects', 'managedProperties'));
     }
 
     public function store(Request $request)
@@ -76,25 +76,29 @@ class WorkersController extends Controller
         // ── Parse per-item costs ──────────────────────────────────────────────
         // project_ids[]     = all selected project IDs (reliable — hidden field enabled on check)
         // project_costs[id] = cost per project (only when a cost was entered)
-        $projectIds   = array_map('intval', array_filter($request->input('project_ids', [])));
-        $apartmentIds = array_map('intval', array_filter($request->input('apartment_ids', [])));
+        $projectIds          = array_map('intval', array_filter($request->input('project_ids', [])));
+        $apartmentIds        = array_map('intval', array_filter($request->input('apartment_ids', [])));
+        $managedPropertyIds  = array_map('intval', array_filter($request->input('managed_property_ids', [])));
 
-        $rawProjectCosts   = $request->input('project_costs', []);
-        $rawApartmentCosts = $request->input('apartment_costs', []);
+        $rawProjectCosts          = $request->input('project_costs', []);
+        $rawApartmentCosts        = $request->input('apartment_costs', []);
+        $rawManagedPropertyCosts  = $request->input('managed_property_costs', []);
 
         // Only non-zero cost entries → used for accounting + total
-        $projectCosts   = array_filter($rawProjectCosts,   fn($v) => is_numeric($v) && (float)$v > 0);
-        $apartmentCosts = array_filter($rawApartmentCosts, fn($v) => is_numeric($v) && (float)$v > 0);
-        $projectCosts   = empty($projectCosts)   ? [] : array_combine(array_map('intval', array_keys($projectCosts)),   array_map('floatval', array_values($projectCosts)));
-        $apartmentCosts = empty($apartmentCosts) ? [] : array_combine(array_map('intval', array_keys($apartmentCosts)), array_map('floatval', array_values($apartmentCosts)));
+        $projectCosts          = array_filter($rawProjectCosts,         fn($v) => is_numeric($v) && (float)$v > 0);
+        $apartmentCosts        = array_filter($rawApartmentCosts,       fn($v) => is_numeric($v) && (float)$v > 0);
+        $managedPropertyCosts  = array_filter($rawManagedPropertyCosts, fn($v) => is_numeric($v) && (float)$v > 0);
+        $projectCosts          = empty($projectCosts)         ? [] : array_combine(array_map('intval', array_keys($projectCosts)),         array_map('floatval', array_values($projectCosts)));
+        $apartmentCosts        = empty($apartmentCosts)       ? [] : array_combine(array_map('intval', array_keys($apartmentCosts)),       array_map('floatval', array_values($apartmentCosts)));
+        $managedPropertyCosts  = empty($managedPropertyCosts) ? [] : array_combine(array_map('intval', array_keys($managedPropertyCosts)), array_map('floatval', array_values($managedPropertyCosts)));
 
         // Total = sum of entered costs, or fall back to manual total_amount
-        $totalAmount = array_sum($projectCosts) + array_sum($apartmentCosts);
+        $totalAmount = array_sum($projectCosts) + array_sum($apartmentCosts) + array_sum($managedPropertyCosts);
         if ($totalAmount <= 0) {
             $totalAmount = (float) ($contractData['total_amount'] ?? 0);
         }
         if ($totalAmount <= 0) {
-            return back()->withErrors(['total_amount' => 'Please assign a cost to at least one project or apartment, or enter a total amount.'])->withInput();
+            return back()->withErrors(['total_amount' => 'Please assign a cost to at least one project, apartment, or managed property, or enter a total amount.'])->withInput();
         }
        
 
@@ -107,7 +111,7 @@ class WorkersController extends Controller
         $audit->record = 'WRK-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
 
-        return DB::transaction(function () use ($workerData, $contractData, $audit, $request, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
+        return DB::transaction(function () use ($workerData,$managedPropertyIds,$managedPropertyCosts, $contractData, $audit, $request, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
             $rawPassword = Str::password(8);
 
             $worker = User::create([
@@ -125,24 +129,26 @@ class WorkersController extends Controller
             $monthlyAmount = round($totalAmount / $months, 2);
 
             $contract = WorkerContract::create([
-                'worker_user_id'    => $worker->id,
-                'project_id'        => count($projectIds) ? $projectIds[0] : null,
-                'project_ids'       => $projectIds ?: null,
-                'project_costs'     => $projectCosts ?: null,
-                'apartment_id'      => count($apartmentIds) ? $apartmentIds[0] : null,
-                'apartment_ids'     => $apartmentIds ?: null,
-                'apartment_costs'   => $apartmentCosts ?: null,
-                'scope_of_work'     => $contractData['scope_of_work'],
-                'category'          => $contractData['category'] ?? null,
-                'contract_date'     => $contractData['contract_date'],
-                'start_date'        => $contractData['start_date'] ?? null,
-                'expected_end_date' => $contractData['expected_end_date'] ?? null,
-                'total_amount'      => $totalAmount,
-                'payment_months'    => $months,
-                'monthly_amount'    => $monthlyAmount,
-                'first_payment_date'=> $contractData['first_payment_date'],
-                'notes'             => $contractData['notes'] ?? null,
-                'created_by'        => auth()->id(),
+                'worker_user_id'         => $worker->id,
+                'project_id'             => count($projectIds) ? $projectIds[0] : null,
+                'project_ids'            => $projectIds ?: null,
+                'project_costs'          => $projectCosts ?: null,
+                'apartment_id'           => count($apartmentIds) ? $apartmentIds[0] : null,
+                'apartment_ids'          => $apartmentIds ?: null,
+                'apartment_costs'        => $apartmentCosts ?: null,
+                'managed_property_ids'   => $managedPropertyIds ?: null,
+                'managed_property_costs' => $managedPropertyCosts ?: null,
+                'scope_of_work'          => $contractData['scope_of_work'],
+                'category'               => $contractData['category'] ?? null,
+                'contract_date'          => $contractData['contract_date'],
+                'start_date'             => $contractData['start_date'] ?? null,
+                'expected_end_date'      => $contractData['expected_end_date'] ?? null,
+                'total_amount'           => $totalAmount,
+                'payment_months'         => $months,
+                'monthly_amount'         => $monthlyAmount,
+                'first_payment_date'     => $contractData['first_payment_date'],
+                'notes'                  => $contractData['notes'] ?? null,
+                'created_by'             => auth()->id(),
             ]);
 
             // ── Create ProjectAdditionalCost records ──
@@ -211,9 +217,10 @@ class WorkersController extends Controller
         abort_unless($worker->role === 'worker', 404);
 
         $worker->load(['workerContracts.payments', 'workerContracts.project']);
-        $projects = Project::with('apartments')->orderByDesc('created_at')->get();
+        $projects         = Project::with('apartments')->orderByDesc('created_at')->get();
+        $managedProperties = \App\Models\ManagedProperty::orderBy('address')->get();
 
-        return view('workers.show', compact('worker', 'projects'));
+        return view('workers.show', compact('worker', 'projects', 'managedProperties'));
     }
 
     // ─────────────────────────────────────────────
@@ -316,23 +323,27 @@ class WorkersController extends Controller
             'notes'              => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $projectIds   = array_map('intval', array_filter($request->input('project_ids', [])));
-        $apartmentIds = array_map('intval', array_filter($request->input('apartment_ids', [])));
+        $projectIds          = array_map('intval', array_filter($request->input('project_ids', [])));
+        $apartmentIds        = array_map('intval', array_filter($request->input('apartment_ids', [])));
+        $managedPropertyIds  = array_map('intval', array_filter($request->input('managed_property_ids', [])));
 
-        $rawProjectCosts   = $request->input('project_costs', []);
-        $rawApartmentCosts = $request->input('apartment_costs', []);
+        $rawProjectCosts          = $request->input('project_costs', []);
+        $rawApartmentCosts        = $request->input('apartment_costs', []);
+        $rawManagedPropertyCosts  = $request->input('managed_property_costs', []);
 
-        $projectCosts   = array_filter($rawProjectCosts,   fn($v) => is_numeric($v) && (float)$v > 0);
-        $apartmentCosts = array_filter($rawApartmentCosts, fn($v) => is_numeric($v) && (float)$v > 0);
-        $projectCosts   = empty($projectCosts)   ? [] : array_combine(array_map('intval', array_keys($projectCosts)),   array_map('floatval', array_values($projectCosts)));
-        $apartmentCosts = empty($apartmentCosts) ? [] : array_combine(array_map('intval', array_keys($apartmentCosts)), array_map('floatval', array_values($apartmentCosts)));
+        $projectCosts          = array_filter($rawProjectCosts,         fn($v) => is_numeric($v) && (float)$v > 0);
+        $apartmentCosts        = array_filter($rawApartmentCosts,       fn($v) => is_numeric($v) && (float)$v > 0);
+        $managedPropertyCosts  = array_filter($rawManagedPropertyCosts, fn($v) => is_numeric($v) && (float)$v > 0);
+        $projectCosts          = empty($projectCosts)         ? [] : array_combine(array_map('intval', array_keys($projectCosts)),         array_map('floatval', array_values($projectCosts)));
+        $apartmentCosts        = empty($apartmentCosts)       ? [] : array_combine(array_map('intval', array_keys($apartmentCosts)),       array_map('floatval', array_values($apartmentCosts)));
+        $managedPropertyCosts  = empty($managedPropertyCosts) ? [] : array_combine(array_map('intval', array_keys($managedPropertyCosts)), array_map('floatval', array_values($managedPropertyCosts)));
 
-        $totalAmount = array_sum($projectCosts) + array_sum($apartmentCosts);
+        $totalAmount = array_sum($projectCosts) + array_sum($apartmentCosts) + array_sum($managedPropertyCosts);
         if ($totalAmount <= 0) {
             $totalAmount = (float) ($contractData['total_amount'] ?? 0);
         }
         if ($totalAmount <= 0) {
-            return back()->withErrors(['total_amount' => 'Please assign a cost to at least one project or apartment, or enter a total amount.'])->withInput();
+            return back()->withErrors(['total_amount' => 'Please assign a cost to at least one project, apartment, or managed property, or enter a total amount.'])->withInput();
         }
 
         $audit = new AuditLog();
@@ -344,29 +355,31 @@ class WorkersController extends Controller
         $audit->record = 'WRK-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
 
-        DB::transaction(function () use ($worker, $contractData, $audit, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
+        DB::transaction(function () use ($worker,$managedPropertyIds,$managedPropertyCosts, $contractData, $audit, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
             $months        = (int) $contractData['payment_months'];
             $monthlyAmount = round($totalAmount / $months, 2);
 
             $contract = WorkerContract::create([
-                'worker_user_id'    => $worker->id,
-                'project_id'        => count($projectIds) ? $projectIds[0] : null,
-                'project_ids'       => $projectIds ?: null,
-                'project_costs'     => $projectCosts ?: null,
-                'apartment_id'      => count($apartmentIds) ? $apartmentIds[0] : null,
-                'apartment_ids'     => $apartmentIds ?: null,
-                'apartment_costs'   => $apartmentCosts ?: null,
-                'scope_of_work'     => $contractData['scope_of_work'],
-                'category'          => $contractData['category'] ?? null,
-                'contract_date'     => $contractData['contract_date'],
-                'start_date'        => $contractData['start_date'] ?? null,
-                'expected_end_date' => $contractData['expected_end_date'] ?? null,
-                'total_amount'      => $totalAmount,
-                'payment_months'    => $months,
-                'monthly_amount'    => $monthlyAmount,
-                'first_payment_date'=> $contractData['first_payment_date'],
-                'notes'             => $contractData['notes'] ?? null,
-                'created_by'        => auth()->id(),
+                'worker_user_id'         => $worker->id,
+                'project_id'             => count($projectIds) ? $projectIds[0] : null,
+                'project_ids'            => $projectIds ?: null,
+                'project_costs'          => $projectCosts ?: null,
+                'apartment_id'           => count($apartmentIds) ? $apartmentIds[0] : null,
+                'apartment_ids'          => $apartmentIds ?: null,
+                'apartment_costs'        => $apartmentCosts ?: null,
+                'managed_property_ids'   => $managedPropertyIds ?: null,
+                'managed_property_costs' => $managedPropertyCosts ?: null,
+                'scope_of_work'          => $contractData['scope_of_work'],
+                'category'               => $contractData['category'] ?? null,
+                'contract_date'          => $contractData['contract_date'],
+                'start_date'             => $contractData['start_date'] ?? null,
+                'expected_end_date'      => $contractData['expected_end_date'] ?? null,
+                'total_amount'           => $totalAmount,
+                'payment_months'         => $months,
+                'monthly_amount'         => $monthlyAmount,
+                'first_payment_date'     => $contractData['first_payment_date'],
+                'notes'                  => $contractData['notes'] ?? null,
+                'created_by'             => auth()->id(),
             ]);
 
             foreach ($projectCosts as $pid => $cost) {

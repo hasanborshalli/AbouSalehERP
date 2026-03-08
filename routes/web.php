@@ -192,10 +192,20 @@ Route::middleware(['role:client'])->prefix('client')->name('client.')->group(fun
     });
 
 Route::middleware([ 'role:owner,admin'])->group(function () {
+    // Contract-level progress (legacy)
     Route::get('/contracts/{contract}/progress', [ContractProgressController::class, 'index'])->name('contracts.progress.editor');
     Route::post('/contracts/{contract}/progress', [ContractProgressController::class, 'store'])->name('contracts.progress.store');
     Route::post('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'update'])->name('contracts.progress.update');
     Route::delete('/contracts/{contract}/progress/{item}', [ContractProgressController::class, 'destroy'])->name('contracts.progress.destroy');
+
+    // Apartment-level progress (primary)
+    Route::get('/apartments/{apartment}/progress', [ContractProgressController::class, 'apartmentIndex'])->name('apartments.progress.editor');
+    Route::post('/apartments/{apartment}/progress', [ContractProgressController::class, 'apartmentStore'])->name('apartments.progress.store');
+    Route::post('/apartments/{apartment}/progress/{item}', [ContractProgressController::class, 'apartmentUpdate'])->name('apartments.progress.update');
+    Route::delete('/apartments/{apartment}/progress/{item}', [ContractProgressController::class, 'apartmentDestroy'])->name('apartments.progress.destroy');
+
+    // Client material upgrade (generates invoice)
+    Route::post('/apartments/{apartment}/upgrade-material', [\App\Http\Controllers\ClientMaterialUpgradeController::class, 'store'])->name('apartments.upgrade-material');
 });
 
 // ── Reports ──────────────────────────────────────────────────

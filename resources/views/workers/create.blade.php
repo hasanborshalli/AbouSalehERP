@@ -165,6 +165,43 @@
                                 @endforeach
                             </div>
 
+                            {{-- Managed Properties --}}
+                            <div style="margin-top:16px;">
+                                <h4 class="add-client__section-title" style="font-size:12px;margin-bottom:8px;">Managed
+                                    Properties</h4>
+                                @if($managedProperties->isEmpty())
+                                <p style="font-size:12px;color:rgba(0,0,0,.4);margin:0;">No managed properties
+                                    available.</p>
+                                @else
+                                <div class="assign-panel" style="margin-top:0;">
+                                    @foreach($managedProperties as $mp)
+                                    <div class="assign-row" data-mp-row="{{ $mp->id }}">
+                                        <label class="assign-check">
+                                            <input type="checkbox" class="mp-cb" data-mp-id="{{ $mp->id }}"
+                                                value="{{ $mp->id }}">
+                                            <span class="assign-label">
+                                                {{ $mp->address }}
+                                                @if($mp->city) <span style="opacity:.45;font-size:11px;">({{ $mp->city
+                                                    }})</span> @endif
+                                                <span
+                                                    style="opacity:.4;font-size:11px;font-weight:400;margin-left:4px;">{{
+                                                    ucfirst($mp->type) }} · {{ ucfirst($mp->status) }}</span>
+                                            </span>
+                                        </label>
+                                        <input type="hidden" name="managed_property_ids[]" value="{{ $mp->id }}"
+                                            class="mp-id-hidden" disabled>
+                                        <div class="assign-cost">
+                                            <span class="assign-cost__symbol">$</span>
+                                            <input type="number" class="assign-cost__input cost-input"
+                                                name="managed_property_costs[{{ $mp->id }}]" min="0.01" step="0.01"
+                                                placeholder="Cost">
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                                @endif
+                            </div>
+
                             <div class="assign-total-bar" id="totalBar" style="display:none;">
                                 <span class="assign-total-bar__label">Contract total (from assignments)</span>
                                 <span class="assign-total-bar__value" id="totalDisplay">$0.00</span>
@@ -262,7 +299,6 @@
                 var hiddenProj = this.closest('.assign-row').querySelector('.proj-id-hidden');
                 var costDiv    = this.closest('.assign-row').querySelector('.assign-cost');
 
-                // Enable/disable the project hidden field and cost input
                 if (hiddenProj) hiddenProj.disabled = !checked;
                 if (costDiv) {
                     costDiv.style.display = checked ? 'flex' : 'none';
@@ -273,7 +309,6 @@
                     }
                 }
 
-                // Disable/uncheck all apartment rows under this project
                 document.querySelectorAll('.assign-row--apt[data-parent="' + projectId + '"]').forEach(function (aptRow) {
                     var aptCb     = aptRow.querySelector('.apt-cb');
                     var aptHidden = aptRow.querySelector('.apt-id-hidden');
@@ -281,7 +316,6 @@
                     var aptInput  = aptRow.querySelector('.cost-input');
 
                     if (checked) {
-                        // Project checked: disable and grey out apartments
                         aptRow.style.opacity  = '0.35';
                         aptRow.style.pointerEvents = 'none';
                         if (aptCb)     { aptCb.checked = false; aptCb.disabled = true; }
@@ -289,7 +323,6 @@
                         if (aptCost)   aptCost.style.display = 'none';
                         if (aptInput)  { aptInput.disabled = true; aptInput.value = ''; }
                     } else {
-                        // Project unchecked: re-enable apartments
                         aptRow.style.opacity  = '';
                         aptRow.style.pointerEvents = '';
                         if (aptCb)    aptCb.disabled = false;
@@ -320,6 +353,26 @@
             });
         });
 
+        // ── Managed Property checkbox ─────────────────────────────────────
+        document.querySelectorAll('.mp-cb').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var checked   = this.checked;
+                var row       = this.closest('[data-mp-row]');
+                var mpHidden  = row.querySelector('.mp-id-hidden');
+                var costDiv   = row.querySelector('.assign-cost');
+                var costInput = costDiv?.querySelector('.cost-input');
+
+                if (mpHidden)  mpHidden.disabled  = !checked;
+                if (costDiv)   costDiv.style.display = checked ? 'flex' : 'none';
+                if (costInput) {
+                    costInput.disabled = !checked;
+                    if (!checked) costInput.value = '';
+                }
+
+                recalcTotal();
+            });
+        });
+
         // ── Cost input changes ────────────────────────────────────────────
         document.querySelectorAll('.cost-input').forEach(function (inp) {
             inp.addEventListener('input', recalcTotal);
@@ -329,7 +382,7 @@
         document.getElementById('total_amount')?.addEventListener('input', recalcMonthly);
         document.getElementById('payment_months')?.addEventListener('input', recalcMonthly);
 
-        // ── Init: hide all cost inputs and apt rows ───────────────────────
+        // ── Init: hide all cost inputs ────────────────────────────────────
         document.querySelectorAll('.assign-cost').forEach(function (div) {
             div.style.display = 'none';
         });

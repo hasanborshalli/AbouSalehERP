@@ -44,4 +44,9 @@ public function additionalCosts()
     return $this->hasMany(ApartmentAdditionalCost::class);
 }
 
+public function progressItems()
+{
+    return $this->hasMany(\App\Models\ContractProgressItem::class)->orderBy('sort_order');
+}
+
 }

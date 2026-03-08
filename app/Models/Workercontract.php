@@ -14,6 +14,8 @@ class WorkerContract extends Model
         'apartment_id',
         'apartment_ids',
         'apartment_costs',
+        'managed_property_ids',
+        'managed_property_costs',
         'scope_of_work',
         'category',
         'contract_date',
@@ -29,14 +31,16 @@ class WorkerContract extends Model
     ];
 
     protected $casts = [
-        'contract_date'      => 'date',
-        'start_date'         => 'date',
-        'expected_end_date'  => 'date',
-        'first_payment_date' => 'date',
-        'project_ids'        => 'array',
-        'project_costs'      => 'array',
-        'apartment_ids'      => 'array',
-        'apartment_costs'    => 'array',
+        'contract_date'           => 'date',
+        'start_date'              => 'date',
+        'expected_end_date'       => 'date',
+        'first_payment_date'      => 'date',
+        'project_ids'             => 'array',
+        'project_costs'           => 'array',
+        'apartment_ids'           => 'array',
+        'apartment_costs'         => 'array',
+        'managed_property_ids'    => 'array',
+        'managed_property_costs'  => 'array',
     ];
 
     public function worker()
@@ -52,6 +56,11 @@ class WorkerContract extends Model
     public function apartment()
     {
         return $this->belongsTo(Apartment::class);
+    }
+
+    public function managedProperties()
+    {
+        return $this->belongsToMany(\App\Models\ManagedProperty::class, 'worker_contract_managed_properties', 'worker_contract_id', 'managed_property_id');
     }
 
     public function createdBy()
@@ -82,6 +91,12 @@ class WorkerContract extends Model
     public function totalPending(): float
     {
         return (float) $this->pendingPayments()->sum('amount');
+    }
+
+    /** All linked managed property IDs */
+    public function allManagedPropertyIds(): array
+    {
+        return array_values(array_unique(array_filter($this->managed_property_ids ?? [])));
     }
 
     /** All linked project IDs merged */

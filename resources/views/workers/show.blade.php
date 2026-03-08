@@ -52,6 +52,8 @@
                                 $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
                                 $linkedApartments = \App\Models\Apartment::whereIn('id',
                                 $contract->allApartmentIds())->with('project')->get();
+                                $linkedManagedProps = \App\Models\ManagedProperty::whereIn('id',
+                                $contract->allManagedPropertyIds())->get();
                                 @endphp
                                 @if($linkedProjects->isNotEmpty())
                                 · Projects: {{ $linkedProjects->pluck('name')->join(', ') }}
@@ -59,6 +61,10 @@
                                 @if($linkedApartments->isNotEmpty())
                                 · Units: {{ $linkedApartments->map(fn($a) => ($a->project?->name ? $a->project->name.' –
                                 ' : '').'Unit '.($a->unit_number ?? '#'.$a->id))->join(', ') }}
+                                @endif
+                                @if($linkedManagedProps->isNotEmpty())
+                                · Properties: {{ $linkedManagedProps->map(fn($p) => $p->address.($p->city ? ',
+                                '.$p->city : ''))->join(', ') }}
                                 @endif
                                 · Contract date: {{ $contract->contract_date->format('d M Y') }}
                                 @if($contract->pdf_path)
@@ -226,14 +232,54 @@
                                 @endforeach
                                 @endforeach
                             </div>
+                        </div>
 
-                            <div id="nc-total-bar"
-                                style="display:none; margin-top:8px; padding:9px 14px; background:rgba(42,127,176,.07); border-radius:9px; border:1.5px solid rgba(42,127,176,.15); display:none; justify-content:space-between; align-items:center;">
-                                <span style="font-size:12px; font-weight:700; color:rgba(0,0,0,.55);">Contract total
-                                    (from assignments)</span>
-                                <span id="nc-total-display"
-                                    style="font-size:17px; font-weight:800; color:rgba(42,127,176,.9);">$0.00</span>
+                        {{-- Managed Properties assignment --}}
+                        <div style="margin-top:14px;">
+                            <label
+                                style="display:block; font-size:12px; font-weight:700; color:rgba(0,0,0,.5); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">
+                                Managed Properties Assignment
+                            </label>
+                            @if($managedProperties->isEmpty())
+                            <p style="font-size:12px;color:rgba(0,0,0,.4);">No managed properties available.</p>
+                            @else
+                            <div
+                                style="border:1.5px solid rgba(0,0,0,.08); border-radius:12px; overflow:hidden; background:#fff;">
+                                @foreach($managedProperties as $mp)
+                                <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid rgba(0,0,0,.05);"
+                                    data-nc-mp-row="{{ $mp->id }}">
+                                    <label
+                                        style="display:flex; align-items:center; gap:7px; flex:1; cursor:pointer; font-size:13px; font-weight:500; color:rgba(0,0,0,.75);">
+                                        <input type="checkbox" class="nc-mp-cb" data-mp-id="{{ $mp->id }}"
+                                            style="width:15px;height:15px;accent-color:rgba(42,127,176,.9);cursor:pointer;">
+                                        {{ $mp->address }}
+                                        @if($mp->city) <span style="opacity:.45;font-size:11px;font-weight:400;">({{
+                                            $mp->city }})</span> @endif
+                                        <span style="opacity:.4;font-size:11px;font-weight:400;margin-left:4px;">{{
+                                            ucfirst($mp->type) }} · {{ ucfirst($mp->status) }}</span>
+                                    </label>
+                                    <input type="hidden" name="managed_property_ids[]" value="{{ $mp->id }}"
+                                        class="nc-mp-id-hidden" disabled>
+                                    <div class="nc-mp-cost" style="display:none; align-items:center; gap:5px;">
+                                        <span
+                                            style="font-size:13px; font-weight:700; color:rgba(42,127,176,.8);">$</span>
+                                        <input type="number" class="nc-cost-input"
+                                            name="managed_property_costs[{{ $mp->id }}]" min="0.01" step="0.01"
+                                            placeholder="Cost" disabled
+                                            style="width:110px; padding:5px 8px; border:2px solid rgba(42,127,176,.25); border-radius:7px; font-size:13px; font-weight:600;">
+                                    </div>
+                                </div>
+                                @endforeach
                             </div>
+                            @endif
+                        </div>
+
+                        <div id="nc-total-bar"
+                            style="display:none; margin-top:8px; padding:9px 14px; background:rgba(42,127,176,.07); border-radius:9px; border:1.5px solid rgba(42,127,176,.15); justify-content:space-between; align-items:center;">
+                            <span style="font-size:12px; font-weight:700; color:rgba(0,0,0,.55);">Contract total
+                                (from assignments)</span>
+                            <span id="nc-total-display"
+                                style="font-size:17px; font-weight:800; color:rgba(42,127,176,.9);">$0.00</span>
                         </div>
 
                         <div class="form-grid" style="margin-top:14px;">
@@ -277,7 +323,99 @@
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
     <script src="/js/navSearch.js"></script>
-    <script src="/js/workers.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        // ── Helpers ────────────────────────────────────────────
+        function recalcTotal() {
+            var total = 0;
+            document.querySelectorAll('.nc-cost-input').forEach(function(inp) {
+                if (!inp.disabled && inp.value) total += parseFloat(inp.value) || 0;
+            });
+            var bar   = document.getElementById('nc-total-bar');
+            var disp  = document.getElementById('nc-total-display');
+            var field = document.getElementById('nc_total');
+            if (bar)  bar.style.display  = total > 0 ? 'flex' : 'none';
+            if (disp) disp.textContent   = '$' + total.toFixed(2);
+            if (field && total > 0) field.value = total.toFixed(2);
+            recalcMonthly();
+        }
+        function recalcMonthly() {
+            var total   = parseFloat(document.getElementById('nc_total')?.value) || 0;
+            var months  = parseInt(document.getElementById('nc_months')?.value) || 0;
+            var preview = document.getElementById('nc_preview');
+            if (preview) preview.value = (total > 0 && months > 0) ? '$' + (total / months).toFixed(2) + ' / month' : '';
+        }
+
+        // ── Project checkboxes ─────────────────────────────────
+        document.querySelectorAll('.nc-proj-cb').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var pid     = this.dataset.projectId;
+                var checked = this.checked;
+                var row     = this.closest('[data-nc-proj-row]');
+                var hidden  = row.querySelector('.nc-proj-id-hidden');
+                var costDiv = row.querySelector('.nc-proj-cost');
+                var inp     = costDiv?.querySelector('.nc-cost-input');
+                if (hidden)  hidden.disabled  = !checked;
+                if (costDiv) costDiv.style.display = checked ? 'flex' : 'none';
+                if (inp)     { inp.disabled = !checked; if (!checked) inp.value = ''; }
+
+                document.querySelectorAll('.nc-apt-row[data-nc-apt-parent="' + pid + '"]').forEach(function(aptRow) {
+                    var aptCb     = aptRow.querySelector('.nc-apt-cb');
+                    var aptHidden = aptRow.querySelector('.nc-apt-id-hidden');
+                    var aptCost   = aptRow.querySelector('.nc-apt-cost');
+                    var aptInp    = aptRow.querySelector('.nc-cost-input');
+                    if (checked) {
+                        aptRow.style.opacity = '.35'; aptRow.style.pointerEvents = 'none';
+                        if (aptCb)     { aptCb.checked = false; aptCb.disabled = true; }
+                        if (aptHidden) aptHidden.disabled = true;
+                        if (aptCost)   aptCost.style.display = 'none';
+                        if (aptInp)    { aptInp.disabled = true; aptInp.value = ''; }
+                    } else {
+                        aptRow.style.opacity = ''; aptRow.style.pointerEvents = '';
+                        if (aptCb) aptCb.disabled = false;
+                    }
+                });
+                recalcTotal();
+            });
+        });
+
+        // ── Apartment checkboxes ───────────────────────────────
+        document.querySelectorAll('.nc-apt-cb').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var checked  = this.checked;
+                var row      = this.closest('.nc-apt-row');
+                var hidden   = row.querySelector('.nc-apt-id-hidden');
+                var costDiv  = row.querySelector('.nc-apt-cost');
+                var inp      = costDiv?.querySelector('.nc-cost-input');
+                if (hidden)  hidden.disabled  = !checked;
+                if (costDiv) costDiv.style.display = checked ? 'flex' : 'none';
+                if (inp)     { inp.disabled = !checked; if (!checked) inp.value = ''; }
+                recalcTotal();
+            });
+        });
+
+        // ── Managed property checkboxes ────────────────────────
+        document.querySelectorAll('.nc-mp-cb').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var checked  = this.checked;
+                var row      = this.closest('[data-nc-mp-row]');
+                var hidden   = row.querySelector('.nc-mp-id-hidden');
+                var costDiv  = row.querySelector('.nc-mp-cost');
+                var inp      = costDiv?.querySelector('.nc-cost-input');
+                if (hidden)  hidden.disabled  = !checked;
+                if (costDiv) costDiv.style.display = checked ? 'flex' : 'none';
+                if (inp)     { inp.disabled = !checked; if (!checked) inp.value = ''; }
+                recalcTotal();
+            });
+        });
+
+        document.querySelectorAll('.nc-cost-input').forEach(function(inp) {
+            inp.addEventListener('input', recalcTotal);
+        });
+        document.getElementById('nc_total')?.addEventListener('input', recalcMonthly);
+        document.getElementById('nc_months')?.addEventListener('input', recalcMonthly);
+    });
+    </script>
 </body>
 
 </html>

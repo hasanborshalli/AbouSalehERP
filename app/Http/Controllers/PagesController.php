@@ -275,10 +275,16 @@ $end   = Carbon::now()->endOfMonth();
             'materials.inventoryItem',
             'additionalCosts',
             'contract.invoices',
+            'progressItems',
         ]);
 
         $inventoryItems = \App\Models\InventoryItem::whereNull('deleted_at')
             ->orderBy('name')->get();
+
+        $upgradeHistory = \App\Models\ClientMaterialUpgrade::where('apartment_id', $apartment->id)
+            ->with(['oldInventoryItem', 'newInventoryItem', 'invoice'])
+            ->latest()
+            ->get();
 
         // Revenue: down payment + paid invoices
         $downPayment  = (float) optional($apartment->contract)->down_payment;
@@ -303,6 +309,7 @@ $end   = Carbon::now()->endOfMonth();
         return view('apartments.unit', compact(
             'apartment',
             'inventoryItems',
+            'upgradeHistory',
             'totalRevenue',
             'materialsCost',
             'costsExpected',
