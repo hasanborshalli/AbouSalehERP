@@ -235,7 +235,7 @@ class CashAccountingService
                 'account_id' => $this->operatingExpenseAccount()->id,
                 'amount' => $amount,
                 'direction' => 'out',
-                'description' => 'Operating expense: ' . $exp->category,
+                'description' => 'Operating expense: ' . $exp->description,
                 'source_type' => 'operating_expense',
                 'source_id' => $exp->id,
                 'user_id' => $userId,
