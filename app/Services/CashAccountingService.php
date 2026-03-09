@@ -87,17 +87,6 @@ class CashAccountingService
         $invoiceTotal = (float)$invoice->amount + (float)$invoice->late_fee_amount;
 
         DB::transaction(function () use ($inKindPayment, $invoice, $invoiceTotal, $userId) {
-            // 1. Post revenue for invoice (in-kind, no cash)
-            LedgerEntry::create([
-                'posted_at'   => now(),
-                'account_id'  => $this->revenueAccount()->id,
-                'amount'      => $invoiceTotal,
-                'direction'   => 'in',
-                'description' => 'Invoice paid (in-kind items received): #' . $invoice->invoice_number,
-                'source_type' => 'invoice',
-                'source_id'   => $invoice->invoice_number,
-                'user_id'     => $userId,
-            ]);
 
             // 2. Increase stock for each item received
             foreach ($inKindPayment->items as $line) {
