@@ -131,7 +131,6 @@
                         }
                     </div>
                     <br>
-                    <a class="clients-index__btn clients-index__btn--progress" href="${data.route}">View Progress</a>
                 </div>
 
             `;
