@@ -96,17 +96,7 @@ class CashAccountingService
                 $item->is_out_of_stock = false;
                 $item->save();
 
-                // Ledger: record inventory received (as asset / negative expense)
-                LedgerEntry::create([
-                    'posted_at'   => now(),
-                    'account_id'  => $this->purchasesAccount()->id,
-                    'amount'      => round((float)$line->total_value, 2),
-                    'direction'   => 'in',
-                    'description' => "In-kind received: {$item->name} × {$line->quantity} {$item->unit} (Invoice #{$invoice->invoice_number})",
-                    'source_type' => 'in_kind_payment',
-                    'source_id'   => $inKindPayment->id,
-                    'user_id'     => $userId,
-                ]);
+                
             }
         });
     }
