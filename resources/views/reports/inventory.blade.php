@@ -94,6 +94,12 @@
                         <div class="lkpi__sub">${{ number_format($totalInKindValue, 2) }} est. value · {{
                             $inKindReceipts->count() }} receipt(s)</div>
                     </div>
+                    <div class="lkpi lkpi--red">
+                        <div class="lkpi__label">Paid (In-Kind)</div>
+                        <div class="lkpi__val">{{ number_format($totalPaidInKindQty, 1) }} {{ $item->unit }}</div>
+                        <div class="lkpi__sub">${{ number_format($totalPaidInKindValue, 2) }} value · {{
+                            $paidInKindItems->count() }} receipt(s)</div>
+                    </div>
                     <div class="lkpi">
                         <div class="lkpi__label">Current Price</div>
                         <div class="lkpi__val">${{ number_format($item->price,2) }}</div>
@@ -157,6 +163,7 @@
                                             <th class="num">Qty Used</th>
                                             <th class="num">Usage Cost</th>
                                             <th class="num" style="color:#2563eb;">Received (In-Kind)</th>
+                                            <th class="num" style="color:#dc2626;">Paid (In-Kind)</th>
                                             <th class="num">In Stock</th>
                                             <th class="num">Unit Price</th>
                                         </tr>
@@ -185,6 +192,14 @@
                                                 —
                                                 @endif
                                             </td>
+                                            <td class="num" style="color:#dc2626;">
+                                                @if(($row->qty_paid_inkind ?? 0) > 0)
+                                                {{ number_format($row->qty_paid_inkind,1) }} {{ $row->unit
+                                                }}<br><small>${{ number_format($row->val_paid_inkind,0) }}</small>
+                                                @else
+                                                —
+                                                @endif
+                                            </td>
                                             <td class="num {{ $row->qty_in_stock>0?'val-green':'val-red' }}">{{
                                                 number_format($row->qty_in_stock) }}</td>
                                             <td class="num">${{ number_format($row->current_price,2) }}</td>
@@ -200,6 +215,8 @@
                                             <td class="num val-amber">${{ number_format($grandUsageCost,2) }}</td>
                                             <td class="num" style="color:#2563eb;">${{
                                                 number_format($summary->sum('val_in_kind'),2) }}</td>
+                                            <td class="num" style="color:#dc2626;">${{
+                                                number_format($summary->sum('val_paid_inkind'),2) }}</td>
                                             <td class="num">—</td>
                                             <td class="num">—</td>
                                         </tr>
@@ -401,6 +418,59 @@
                                             <td class="num">—</td>
                                             <td class="num" style="color:#2563eb;">${{ number_format($totalInKindValue,
                                                 2) }}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Paid to Supplier (In-Kind) --}}
+                        @if($paidInKindItems->isNotEmpty())
+                        <div class="section-card">
+                            <div class="section-card__head">
+                                <h3>📤 Paid to Supplier (In-Kind)</h3>
+                                <span style="font-size:13px;font-weight:800;color:#dc2626;">{{
+                                    number_format($totalPaidInKindQty,1) }} {{ $item->unit }} · ${{
+                                    number_format($totalPaidInKindValue,2) }}</span>
+                            </div>
+                            <div class="section-card__table-wrap">
+                                <table class="rpt-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Receipt Ref</th>
+                                            <th class="num">Qty Given</th>
+                                            <th class="num">Unit Value</th>
+                                            <th class="num">Total Value</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($paidInKindItems as $pi)
+                                        <tr>
+                                            <td>{{ $pi->created_at->format('Y-m-d') }}</td>
+                                            <td style="font-family:monospace;font-size:12px;">{{ $pi->receipt_ref }}
+                                            </td>
+                                            <td class="num val-red">{{ number_format($pi->quantity, 3) }} {{ $item->unit
+                                                }}</td>
+                                            <td class="num">${{ number_format($pi->unit_price_snapshot, 2) }}</td>
+                                            <td class="num" style="font-weight:700;color:#dc2626;">${{
+                                                number_format($pi->total_value, 2) }}</td>
+                                            <td style="color:rgba(0,0,0,.5);font-size:12px;">{{ $pi->notes ?? '—' }}
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="border-top:2px solid #e5e7eb;background:#f8fafc;font-weight:800;">
+                                            <td colspan="2">Total</td>
+                                            <td class="num val-red">{{ number_format($totalPaidInKindQty, 1) }} {{
+                                                $item->unit }}</td>
+                                            <td class="num">—</td>
+                                            <td class="num" style="color:#dc2626;">${{
+                                                number_format($totalPaidInKindValue, 2) }}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>

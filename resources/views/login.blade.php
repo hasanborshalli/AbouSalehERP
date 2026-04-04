@@ -42,10 +42,7 @@
                     <input id="password" name="password" type="password" autocomplete="current-password" />
                 </div>
 
-                <label class="login-remember">
-                    <input type="checkbox" name="remember" />
-                    <span>Remember Me</span>
-                </label>
+
 
                 <button class="login-btn" type="submit">Login</button>
             </form>

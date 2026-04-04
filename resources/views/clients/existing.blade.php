@@ -53,17 +53,21 @@
 
                             <div class="clients-index__search" role="search">
                                 <img class="clients-index__search-ico" src="/img/search.svg" alt="" aria-hidden="true">
-                                <input id="clientsSearch" type="text"
-                                    placeholder="Search by name, phone, apartment..." />
+                                <input id="clientsSearch" type="text" placeholder="Search by name, phone, apartment..."
+                                    value="{{ $search ?? '' }}" />
                             </div>
                         </div>
 
                         <div class="clients-index__header-right">
                             <select id="clientsStatus" class="clients-index__filter" aria-label="Filter by status">
-                                <option value="all" selected>All</option>
-                                <option value="active">Active</option>
-                                <option value="late">Late</option>
-                                <option value="completed">Completed</option>
+                                <option value="all" {{ ($statusFilter ?? 'all' )==='all' ? 'selected' : '' }}>All
+                                </option>
+                                <option value="active" {{ ($statusFilter ?? '' )==='active' ? 'selected' : '' }}>Active
+                                </option>
+                                <option value="late" {{ ($statusFilter ?? '' )==='late' ? 'selected' : '' }}>Late
+                                </option>
+                                <option value="completed" {{ ($statusFilter ?? '' )==='completed' ? 'selected' : '' }}>
+                                    Completed</option>
                             </select>
 
                             <a href="{{ route('clients.add-client') ?? '#' }}" class="clients-index__add-btn">Add
@@ -229,6 +233,9 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        {{-- Pagination --}}
+                        {{ $clients->links('vendor.pagination.custom') }}
 
                         {{-- Right: details panel --}}
                         <aside class="clients-index__details" aria-label="Client details">

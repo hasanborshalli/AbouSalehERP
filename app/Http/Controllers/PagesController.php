@@ -176,14 +176,52 @@ $end   = Carbon::now()->endOfMonth();
         ->get();
         return view('clients.edit', compact('user', 'contract', 'apartments'));
     }
-    public function existingClientsPage(){
-        $clients=ClientProfile::with([
+    public function existingClientsPage(\Illuminate\Http\Request $request){
+        $search       = trim($request->input('search', ''));
+        $statusFilter = $request->input('status', 'all');
+
+        $query = ClientProfile::with([
             'user',
             'contract.apartment.project',
             'contract.invoices',
             'contract.inKindPayments.items.inventoryItem',
-        ])->get();
-        return view('clients.existing',compact('clients'));
+        ]);
+
+        // Server-side search: name, phone, or apartment unit number
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', fn($q2) =>
+                        $q2->where('name',  'like', "%{$search}%")
+                           ->orWhere('phone', 'like', "%{$search}%"))
+                  ->orWhereHas('contract.apartment', fn($q2) =>
+                        $q2->where('unit_number', 'like', "%{$search}%"));
+            });
+        }
+
+        // Server-side status filter (derived from invoice data)
+        if ($statusFilter === 'completed') {
+            // completed = in-kind OR no pending/overdue invoices remaining
+            $query->whereHas('contract', fn($q) =>
+                $q->where('payment_type', 'in_kind')
+                  ->orWhereDoesntHave('invoices', fn($q2) =>
+                        $q2->whereIn('status', ['pending', 'overdue']))
+            );
+        } elseif ($statusFilter === 'late') {
+            $query->whereHas('contract.invoices', fn($q) =>
+                $q->where('status', 'overdue')
+            );
+        } elseif ($statusFilter === 'active') {
+            $query->whereHas('contract.invoices', fn($q) =>
+                $q->where('status', 'pending'))
+                ->whereDoesntHave('contract.invoices', fn($q) =>
+                    $q->where('status', 'overdue'));
+        }
+
+        $clients = $query->orderBy('created_at', 'desc')
+                         ->paginate(15)
+                         ->withQueryString();
+
+        return view('clients.existing', compact('clients', 'search', 'statusFilter'));
     }
     public function apartmentsPage(){
          $soldCount = Apartment::
@@ -346,13 +384,35 @@ $end   = Carbon::now()->endOfMonth();
         $auditLogs = AuditLog::with('user')->orderBy('created_at', 'desc')->get();
         return view('settings', compact('employees', 'currentUserRole', 'auditLogs'));
     }
-  public function invoicesPage(){
-         $invoices = Invoice::with(['contract.client', 'contract.project', 'contract.apartment'])
-           
-            ->orderBy('issue_date','asc') 
-            ->get();
+  public function invoicesPage(\Illuminate\Http\Request $request){
+        $search = trim($request->input('search', ''));
+        $status = $request->input('status', 'all');
 
-        return view('invoices.manage', compact('invoices'));
+        $query = Invoice::with(['contract.client', 'contract.project', 'contract.apartment'])
+            ->orderBy('issue_date', 'asc');
+
+        // Server-side search across invoice number, client name, phone, unit, project
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhereHas('contract.client', fn($q2) =>
+                        $q2->where('name',  'like', "%{$search}%")
+                           ->orWhere('phone', 'like', "%{$search}%"))
+                  ->orWhereHas('contract.apartment', fn($q2) =>
+                        $q2->where('unit_number', 'like', "%{$search}%"))
+                  ->orWhereHas('contract.project', fn($q2) =>
+                        $q2->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        // Server-side status filter
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $invoices = $query->paginate(20)->withQueryString();
+
+        return view('invoices.manage', compact('invoices', 'search', 'status'));
     }
     public function accountingPage(CashAccountingService $acct){
         $summary = $acct->lastMonthsSummary(6);

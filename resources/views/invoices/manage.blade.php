@@ -55,16 +55,19 @@
                             <div class="invoices__search" role="search">
                                 <img class="invoices__search-ico" src="/img/search.svg" alt="" aria-hidden="true">
                                 <input id="invSearch" type="text"
-                                    placeholder="Search by invoice #, client, phone, unit..." />
+                                    placeholder="Search by invoice #, client, phone, unit..."
+                                    value="{{ $search ?? '' }}" />
                             </div>
                         </div>
 
                         <div class="invoices__header-right">
                             <select id="invStatus" class="invoices__filter" aria-label="Filter by status">
-                                <option value="all" selected>All</option>
-                                <option value="pending">Pending</option>
-                                <option value="paid">Paid</option>
-                                <option value="overdue">Overdue</option>
+                                <option value="all" {{ ($status ?? 'all' )==='all' ? 'selected' : '' }}>All</option>
+                                <option value="pending" {{ ($status ?? '' )==='pending' ? 'selected' : '' }}>Pending
+                                </option>
+                                <option value="paid" {{ ($status ?? '' )==='paid' ? 'selected' : '' }}>Paid</option>
+                                <option value="overdue" {{ ($status ?? '' )==='overdue' ? 'selected' : '' }}>Overdue
+                                </option>
                             </select>
                         </div>
                     </header>
@@ -158,6 +161,8 @@
                             </table>
                         </div>
 
+
+
                         {{-- Right details panel --}}
                         <aside class="invoices__details" aria-label="Invoice details">
                             <div class="invoices__details-head">
@@ -169,6 +174,8 @@
                                 <div class="invoices__empty">Click "View" to see details here.</div>
                             </div>
                         </aside>
+                        {{-- Pagination --}}
+                        {{ $invoices->links('vendor.pagination.custom') }}
                     </div>
                 </section>
             </section>

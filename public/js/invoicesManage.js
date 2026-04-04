@@ -78,31 +78,31 @@
     editCancel?.addEventListener("click", () => closeModal(editModal));
     paidCancel?.addEventListener("click", () => closeModal(paidModal));
 
-    // ── Filtering ────────────────────────────────────────────────────────
-    function rowMatches(tr) {
-        const q = (search?.value || "").trim().toLowerCase();
-        const st = (statusFilter?.value || "all").toLowerCase();
-        const hay = [
-            tr.dataset.invoiceNumber,
-            tr.dataset.client,
-            tr.dataset.phone,
-            tr.dataset.unit,
-            tr.dataset.project,
-        ]
-            .join(" ")
-            .toLowerCase();
-        return (
-            (!q || hay.includes(q)) &&
-            (st === "all" || tr.dataset.status === st)
-        );
+    // ── Search & filter — server-side via URL params ─────────────────────
+    // Typing debounces 450ms then navigates; status change navigates immediately.
+    // withQueryString() on the paginator preserves these params in page links.
+    let searchTimer = null;
+
+    function navigateWithParams() {
+        const url = new URL(window.location.href);
+        const q = (search?.value || "").trim();
+        const st = statusFilter?.value || "all";
+        if (q) url.searchParams.set("search", q);
+        else url.searchParams.delete("search");
+        if (st !== "all") url.searchParams.set("status", st);
+        else url.searchParams.delete("status");
+        url.searchParams.delete("page"); // reset to page 1 on new search
+        window.location.href = url.toString();
     }
-    function applyFilters() {
-        [...tbody.querySelectorAll("tr")].forEach(
-            (tr) => (tr.style.display = rowMatches(tr) ? "" : "none"),
-        );
-    }
-    search?.addEventListener("input", applyFilters);
-    statusFilter?.addEventListener("change", applyFilters);
+
+    search?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(navigateWithParams, 450);
+    });
+
+    statusFilter?.addEventListener("change", navigateWithParams);
+
+    function applyFilters() {} // kept as no-op so existing call below doesn't break
 
     // ── Details panel ────────────────────────────────────────────────────
     function renderDetails(tr) {

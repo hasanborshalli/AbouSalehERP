@@ -13,33 +13,29 @@
         return "$" + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
 
-    function rowMatches(tr) {
-        const q = (search?.value || "").trim().toLowerCase();
-        const st = (statusFilter?.value || "all").toLowerCase();
+    // ── Search & filter — server-side via URL params ─────────────────────
+    let searchTimer = null;
 
-        const hay = [
-            tr.dataset.code,
-            tr.dataset.name,
-            tr.dataset.phone,
-            tr.dataset.apt,
-        ]
-            .join(" ")
-            .toLowerCase();
-
-        const okSearch = !q || hay.includes(q);
-        const okStatus = st === "all" || tr.dataset.status === st;
-
-        return okSearch && okStatus;
+    function navigateWithParams() {
+        const url = new URL(window.location.href);
+        const q = (search?.value || "").trim();
+        const st = statusFilter?.value || "all";
+        if (q) url.searchParams.set("search", q);
+        else url.searchParams.delete("search");
+        if (st !== "all") url.searchParams.set("status", st);
+        else url.searchParams.delete("status");
+        url.searchParams.delete("page"); // reset to page 1 on new search
+        window.location.href = url.toString();
     }
 
-    function applyFilters() {
-        [...tbody.querySelectorAll("tr")].forEach((tr) => {
-            tr.style.display = rowMatches(tr) ? "" : "none";
-        });
-    }
+    search?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(navigateWithParams, 450);
+    });
 
-    search?.addEventListener("input", applyFilters);
-    statusFilter?.addEventListener("change", applyFilters);
+    statusFilter?.addEventListener("change", navigateWithParams);
+
+    function applyFilters() {} // no-op — filtering is now server-side
 
     // View -> details panel
     tbody.addEventListener("click", function (e) {
