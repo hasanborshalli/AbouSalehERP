@@ -94,46 +94,56 @@
 
                                 <tbody id="clientsTbody" class="clients-index__tbody">
 
-                                    @foreach($clients as $client) @php $contract=$client->
-                                    contract;
-                                    $user=$client->user;
-                                    $paidInvoices = $contract
-                                    ? $contract->invoices()
-                                    ->where('status', 'paid')
-                                    ->sum('amount')
-                                    : 0;
+                                    @foreach($clients as $client) @php
+                                    $contract = $client->contract;
+                                    $user = $client->user;
 
-                                    $downPayment = $contract->down_payment ?? 0;
-                                    $paid = max(0, $paidInvoices + $downPayment);
-                                    $paidMonths=$contract?->invoices?->where('status','paid')->count() ??0;
-                                    $lateMonths = $contract?->invoices()->where('status', 'overdue')->count() ?? 0;
-                                    $remainingMonths=$contract?->invoices?->where('status','pending')->count()??0;
-                                    $remaining = max(0, $contract->final_price - $paid);
+                                    // Use the already-eager-loaded invoice collection.
+                                    // Never call $contract->invoices() (a new query) inside the loop —
+                                    // that causes N+1 DB hits for every client row.
+                                    $allInvoices = $contract ? $contract->invoices : collect();
 
-                                    // In-kind contracts are fully paid upfront — override all financial figures
+                                    // REMAINING: sum of all invoices the client still owes.
+                                    // Using the invoice amounts directly (which are already adjusted
+                                    // by the over/underpayment logic) is the only correct approach.
+                                    // The old formula (final_price − paid) breaks when invoice amounts
+                                    // are reduced via credit carry-forward.
+                                    $remaining = max(0, (float) $allInvoices
+                                    ->whereIn('status', ['pending', 'overdue'])
+                                    ->sum('amount'));
+
+                                    // PAID: everything already settled = final price minus what's left.
+                                    $paid = max(0, (float) $contract->final_price - $remaining);
+
+                                    $paidMonths = $allInvoices->where('status', 'paid')->count();
+                                    $lateMonths = $allInvoices->where('status', 'overdue')->count();
+                                    $remainingMonths = $allInvoices->whereIn('status', ['pending', 'overdue'])->count();
+
+                                    $totalLateFeesPaid = (float) $allInvoices->where('status',
+                                    'paid')->sum('late_fee_amount');
+                                    $totalLateFeesApplied = (float) $allInvoices->where('status',
+                                    'overdue')->sum('late_fee_amount');
+
+                                    // In-kind: fully settled upfront, override all financial figures
                                     if ($contract->payment_type === 'in_kind') {
-                                    $paid = $contract->final_price;
+                                    $paid = (float) $contract->final_price;
                                     $remaining = 0;
                                     $paidMonths = 0;
                                     $lateMonths = 0;
                                     $remainingMonths = 0;
                                     }
-                                    $nextdue = $contract->payment_type === 'in_kind' ? null :
-                                    $contract?->nextPendingInvoice?->issue_date;
-                                    $totalLateFeesPaid = $contract
-                                    ? $contract->invoices()->where('status', 'paid')->sum('late_fee_amount')
-                                    : 0;
-                                    $totalLateFeesApplied = $contract
-                                    ? $contract->invoices()->where('status', 'overdue')->sum('late_fee_amount')
-                                    : 0;
-                                    $hasPaidInvoice = $contract->payment_type === 'in_kind' ? true : ($contract
-                                    ? $contract->invoices->where('status', 'paid')->count() > 0
-                                    : false);
-                                    if ($remaining <= 0 || $contract->payment_type === 'in_kind') { $status='completed'
-                                        ; } else { $status=$client->
-                                        contract->invoices()
-                                        ->where('status', 'overdue')
-                                        ->exists()
+
+                                    $nextdue = $contract->payment_type === 'in_kind' ? null
+                                    : $contract?->nextPendingInvoice?->issue_date;
+
+                                    $hasPaidInvoice = $contract->payment_type === 'in_kind'
+                                    ? true
+                                    : $allInvoices->where('status', 'paid')->count() > 0;
+
+                                    if ($remaining <= 0 || $contract->payment_type === 'in_kind') {
+                                        $status = 'completed';
+                                        } else {
+                                        $status = $allInvoices->where('status', 'overdue')->count() > 0
                                         ? 'late'
                                         : 'active';
                                         }

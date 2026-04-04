@@ -8,7 +8,7 @@
         .querySelector('meta[name="csrf-token"]')
         ?.getAttribute("content");
 
-    // Modals
+    // ── Modals ───────────────────────────────────────────────────────────
     const editModal = document.getElementById("editDatesModal");
     const editIssue = document.getElementById("editIssueDate");
     const editDue = document.getElementById("editDueDate");
@@ -21,7 +21,12 @@
     const paidConfirm = document.getElementById("paidConfirmBtn");
     const inkindBack = document.getElementById("inkindBackBtn");
 
-    // In-kind elements
+    // ── Amount-paid elements (cash section) ──────────────────────────────
+    const amountPaidInput = document.getElementById("amountPaidInput");
+    const amountPaidHint = document.getElementById("amountPaidHint");
+    const amountPaidDiff = document.getElementById("amountPaidDiff");
+
+    // ── In-kind elements ─────────────────────────────────────────────────
     const typeCashBtn = document.getElementById("typeCashBtn");
     const typeInKindBtn = document.getElementById("typeInKindBtn");
     const cashSection = document.getElementById("cashSection");
@@ -31,7 +36,7 @@
     const inkindItemsTotal = document.getElementById("inkindItemsTotal");
     const inkindPaymentNotes = document.getElementById("inkindPaymentNotes");
 
-    // Confirmation step elements
+    // ── Confirmation step elements ───────────────────────────────────────
     const inkindConfirmStep = document.getElementById("inkindConfirmStep");
     const inkindConfirmBody = document.getElementById("inkindConfirmBody");
     const inkindConfirmTotal = document.getElementById("inkindConfirmTotal");
@@ -41,9 +46,9 @@
     let currentRow = null;
     let inventoryItems = [];
     let paymentMode = "cash";
-    let confirmStep = false; // are we showing the confirmation step?
+    let confirmStep = false;
 
-    // ── Helpers ─────────────────────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────
     function money(v) {
         return (
             "$" +
@@ -73,7 +78,7 @@
     editCancel?.addEventListener("click", () => closeModal(editModal));
     paidCancel?.addEventListener("click", () => closeModal(paidModal));
 
-    // ── Filtering ─────────────────────────────────────────────────────
+    // ── Filtering ────────────────────────────────────────────────────────
     function rowMatches(tr) {
         const q = (search?.value || "").trim().toLowerCase();
         const st = (statusFilter?.value || "all").toLowerCase();
@@ -99,7 +104,7 @@
     search?.addEventListener("input", applyFilters);
     statusFilter?.addEventListener("change", applyFilters);
 
-    // ── Details panel ─────────────────────────────────────────────────
+    // ── Details panel ────────────────────────────────────────────────────
     function renderDetails(tr) {
         const d = tr.dataset;
         const base = Number(d.amount || 0),
@@ -147,7 +152,7 @@
           </div>`;
     }
 
-    // ── Inventory items loader ────────────────────────────────────────
+    // ── Inventory items loader ───────────────────────────────────────────
     async function loadInventoryItems() {
         if (inventoryItems.length > 0) return;
         try {
@@ -160,7 +165,7 @@
         }
     }
 
-    // ── Build one item row in the in-kind form ────────────────────────
+    // ── Build one item row in the in-kind form ───────────────────────────
     function buildItemSelect() {
         const sel = document.createElement("select");
         sel.className = "inv-modal__input inkind-item-select";
@@ -246,6 +251,41 @@
         if (inkindItemsTotal) inkindItemsTotal.textContent = money(total);
     }
 
+    // ── Amount-paid: live diff feedback ─────────────────────────────────
+    // Runs every time the user types in the "Amount received" field.
+    // Shows whether the payment is exact, over, or under, and explains
+    // what will happen to upcoming invoices.
+    function updateAmountPaidDiff() {
+        if (!amountPaidInput || !amountPaidDiff || !currentRow) return;
+
+        const totalDue =
+            Number(currentRow.dataset.amount || 0) +
+            Number(currentRow.dataset.lateFee || 0);
+        const paid = parseFloat(amountPaidInput.value);
+
+        if (isNaN(paid) || amountPaidInput.value === "") {
+            amountPaidDiff.textContent = "";
+            return;
+        }
+
+        const diff = parseFloat((paid - totalDue).toFixed(2));
+
+        if (Math.abs(diff) < 0.01) {
+            amountPaidDiff.style.color = "#059669";
+            amountPaidDiff.textContent =
+                "✓ Exact payment — no adjustment needed.";
+        } else if (diff > 0) {
+            amountPaidDiff.style.color = "#2563eb";
+            amountPaidDiff.textContent = `Overpayment of ${money(diff)} — upcoming invoices will be auto-paid from this credit.`;
+        } else {
+            amountPaidDiff.style.color = "#d97706";
+            amountPaidDiff.textContent = `Underpayment of ${money(Math.abs(diff))} — will be added to the next invoice.`;
+        }
+    }
+
+    amountPaidInput?.addEventListener("input", updateAmountPaidDiff);
+
+    // ── Payment mode switch ──────────────────────────────────────────────
     function switchPaymentMode(mode) {
         paymentMode = mode;
         confirmStep = false;
@@ -279,7 +319,6 @@
     });
     addRowBtn?.addEventListener("click", addInKindRow);
 
-    // Back button: go from confirmation step back to item entry
     inkindBack?.addEventListener("click", () => {
         confirmStep = false;
         inKindSection.style.display = "";
@@ -288,7 +327,7 @@
         if (paidConfirm) paidConfirm.textContent = "Review & Confirm →";
     });
 
-    // ── API patch ──────────────────────────────────────────────────────
+    // ── API patch ────────────────────────────────────────────────────────
     async function apiPatch(url, payload) {
         const res = await fetch(url, {
             method: "PATCH",
@@ -310,7 +349,7 @@
         return res.json().catch(() => ({}));
     }
 
-    // ── Row state updates ──────────────────────────────────────────────
+    // ── Row state updates ────────────────────────────────────────────────
     function setRowStatus(tr, status) {
         tr.dataset.status = status;
         const pill = tr.querySelector(".invoices__status");
@@ -324,6 +363,13 @@
         }
     }
 
+    function setRowAmount(tr, amount) {
+        tr.dataset.amount = amount;
+        // Amount column is index 5 (0-based: #, client, unit, issue, due, amount, status, actions)
+        const amountTd = tr.querySelectorAll("td")[5];
+        if (amountTd) amountTd.textContent = money(amount);
+    }
+
     function setRowDates(tr, issue, due) {
         tr.dataset.issue = issue;
         tr.dataset.due = due;
@@ -332,7 +378,7 @@
         if (tds[4]) tds[4].textContent = due || "-";
     }
 
-    // ── Table click ────────────────────────────────────────────────────
+    // ── Table click ──────────────────────────────────────────────────────
     tbody.addEventListener("click", (e) => {
         const tr = e.target.closest("tr");
         const viewBtn = e.target.closest(".invoices__btn--view");
@@ -360,11 +406,26 @@
             if (paidDate) paidDate.value = "";
             if (inkindRows) inkindRows.innerHTML = "";
             if (inkindPaymentNotes) inkindPaymentNotes.value = "";
+
+            // Pre-fill "Amount received" with the exact amount due
+            // so the user can just confirm without typing if nothing changed.
+            const totalDue =
+                Number(tr.dataset.amount || 0) +
+                Number(tr.dataset.lateFee || 0);
+            if (amountPaidInput) {
+                amountPaidInput.value = totalDue.toFixed(2);
+            }
+            if (amountPaidHint) {
+                amountPaidHint.textContent = `(due: ${money(totalDue)})`;
+            }
+            if (amountPaidDiff) amountPaidDiff.textContent = "";
+            updateAmountPaidDiff();
+
             openModal(paidModal);
         }
     });
 
-    // ── Edit save ──────────────────────────────────────────────────────
+    // ── Edit save ────────────────────────────────────────────────────────
     editSave?.addEventListener("click", async () => {
         if (!currentRow) return;
         try {
@@ -383,11 +444,11 @@
         }
     });
 
-    // ── Confirm button (handles both review step and final submit) ────
+    // ── Confirm button (handles review step + final submit) ──────────────
     paidConfirm?.addEventListener("click", async () => {
         if (!currentRow) return;
 
-        // ── IN-KIND: STEP 1 → show confirmation table ─────────────────
+        // ── IN-KIND: STEP 1 → show confirmation table ────────────────────
         if (paymentMode === "in_kind" && !confirmStep) {
             const rows = inkindRows.querySelectorAll(".inkind-row");
             const items = [];
@@ -422,7 +483,6 @@
                 return;
             }
 
-            // Build confirmation table
             let totalVal = 0;
             inkindConfirmBody.innerHTML = "";
             items.forEach((it) => {
@@ -434,7 +494,6 @@
             });
             inkindConfirmTotal.textContent = money(totalVal);
 
-            // Switch to confirmation view
             inKindSection.style.display = "none";
             inkindConfirmStep.style.display = "";
             inkindBack.style.display = "";
@@ -443,7 +502,7 @@
             return;
         }
 
-        // ── IN-KIND: STEP 2 → actually submit ─────────────────────────
+        // ── IN-KIND: STEP 2 → actually submit ───────────────────────────
         if (paymentMode === "in_kind" && confirmStep) {
             const rows = inkindRows.querySelectorAll(".inkind-row");
             const items = [];
@@ -475,19 +534,46 @@
             return;
         }
 
-        // ── CASH ───────────────────────────────────────────────────────
+        // ── CASH ─────────────────────────────────────────────────────────
         try {
             paidConfirm.disabled = true;
+
             const resp = await apiPatch(
                 `/invoices/${currentRow.dataset.id}/mark-paid`,
                 {
                     payment_type: "cash",
                     paid_at: paidDate?.value || null,
+                    amount_paid:
+                        amountPaidInput?.value !== ""
+                            ? parseFloat(amountPaidInput.value)
+                            : null,
                 },
             );
+
+            // Mark the current invoice as paid in the UI
             setRowStatus(currentRow, "paid");
             if (resp?.receipt_path)
                 currentRow.dataset.receiptPdf = resp.receipt_path;
+
+            // Update all invoices that were adjusted by the server:
+            // - status "paid"    → mark row as paid (removes action buttons)
+            // - status "pending" → update the displayed amount only
+            if (resp?.adjusted_invoices?.length) {
+                resp.adjusted_invoices.forEach((adj) => {
+                    const adjTr = tbody.querySelector(
+                        `tr[data-id="${adj.id}"]`,
+                    );
+                    if (!adjTr) return;
+
+                    if (adj.status === "paid") {
+                        setRowStatus(adjTr, "paid");
+                        setRowAmount(adjTr, adj.amount);
+                    } else {
+                        setRowAmount(adjTr, adj.amount);
+                    }
+                });
+            }
+
             renderDetails(currentRow);
             closeModal(paidModal);
         } catch (err) {

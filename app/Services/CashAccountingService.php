@@ -196,17 +196,21 @@ class CashAccountingService
 
         $item->save();
 
-        // Ledger cash-out expense
-        \App\Models\LedgerEntry::create([
-            'posted_at' => $purchaseDate,
-            'account_id' => $this->purchasesAccount()->id,
-            'amount' => $total,
-            'direction' => 'out',
-            'description' => 'Inventory purchase: ' . ($item->name ?? ('Item#'.$item->id)),
-            'source_type' => 'inventory_purchase',
-            'source_id' => $purchase->id,
-            'user_id' => $userId,
-        ]);
+        // Cash-out ledger entry only applies when the supplier was paid in cash.
+        // For in-kind purchases the company pays with inventory items instead —
+        // no cash leaves, so we skip the ledger entry here.
+        if (($data['payment_method'] ?? 'cash') === 'cash') {
+            \App\Models\LedgerEntry::create([
+                'posted_at'   => $purchaseDate,
+                'account_id'  => $this->purchasesAccount()->id,
+                'amount'      => $total,
+                'direction'   => 'out',
+                'description' => 'Inventory purchase (cash): ' . ($item->name ?? ('Item#'.$item->id)),
+                'source_type' => 'inventory_purchase',
+                'source_id'   => $purchase->id,
+                'user_id'     => $userId,
+            ]);
+        }
 
         return $purchase;
     });

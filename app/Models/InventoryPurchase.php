@@ -12,6 +12,7 @@ class InventoryPurchase extends Model
         'qty',
         'unit_cost',
         'total_cost',
+        'payment_method',
         'vendor_name',
         'notes',
         'created_by',

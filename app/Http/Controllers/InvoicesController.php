@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateInvoicePdfJob;
 use App\Jobs\GenerateInKindReceiptJob;
+use App\Jobs\GenerateReceiptPdfJob;
+use App\Jobs\SendInvoiceReceiptMailJob;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\InventoryItem;
@@ -12,8 +14,6 @@ use App\Models\InKindPaymentItem;
 use App\Services\CashAccountingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Jobs\GenerateReceiptPdfJob;
-use App\Jobs\SendInvoiceReceiptMailJob;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 
@@ -61,7 +61,6 @@ class InvoicesController extends Controller
 
         // ── IN-KIND PAYMENT ───────────────────────────────────────────────
         if ($paymentType === 'in_kind') {
-            // Strip out any empty/incomplete rows before validation
             $rawItems = collect($request->input('items', []))
                 ->filter(fn($row) => !empty($row['inventory_item_id']) && !empty($row['quantity']))
                 ->values()
@@ -79,24 +78,20 @@ class InvoicesController extends Controller
             $inKindPayment = null;
 
             DB::transaction(function () use ($request, $data, $invoice, $acct, &$inKindPayment) {
-                // 1. Mark invoice paid
                 $invoice->status  = 'paid';
                 $invoice->paid_at = now();
                 $invoice->save();
 
-                // 2. Create InKindPayment record
                 $inKindPayment = InKindPayment::create([
                     'contract_id'           => $invoice->contract_id,
                     'invoice_id'            => $invoice->id,
                     'payment_date'          => now()->toDateString(),
                     'notes'                 => $data['payment_notes'] ?? null,
                     'created_by'            => auth()->id(),
-                    'total_estimated_value' => 0, // will update below
+                    'total_estimated_value' => 0,
                 ]);
 
                 $totalValue = 0;
-
-                // 3. Save items
                 foreach ($data['items'] as $row) {
                     $item      = InventoryItem::findOrFail($row['inventory_item_id']);
                     $qty       = (float)$row['quantity'];
@@ -105,26 +100,22 @@ class InvoicesController extends Controller
                     $totalValue += $rowVal;
 
                     InKindPaymentItem::create([
-                        'in_kind_payment_id' => $inKindPayment->id,
-                        'inventory_item_id'  => $item->id,
-                        'quantity'           => $qty,
+                        'in_kind_payment_id'  => $inKindPayment->id,
+                        'inventory_item_id'   => $item->id,
+                        'quantity'            => $qty,
                         'unit_price_snapshot' => $unitPrice,
-                        'total_value'        => $rowVal,
-                        'notes'              => $row['notes'] ?? null,
+                        'total_value'         => $rowVal,
+                        'notes'               => $row['notes'] ?? null,
                     ]);
                 }
 
                 $inKindPayment->update(['total_estimated_value' => $totalValue]);
                 $inKindPayment->load('items');
-
-                // 4. Post ledger (INCREASES stock)
                 $acct->postInvoicePaidInKind($inKindPayment, auth()->id());
 
-                // 5. Mark apartment sold on first paid invoice
                 $invoice->loadMissing('contract.apartment');
                 $contract  = $invoice->contract;
                 $apartment = $contract?->apartment;
-
                 if ($apartment && $apartment->status !== 'sold') {
                     $paidCount = $contract->invoices()->where('status', 'paid')->count();
                     if ($paidCount === 1) {
@@ -133,53 +124,177 @@ class InvoicesController extends Controller
                 }
             });
 
-            // 6. Generate in-kind receipt PDF
             if ($inKindPayment) {
                 GenerateInKindReceiptJob::dispatch($inKindPayment->id, auth()->id());
             }
-
             GenerateInvoicePdfJob::dispatch($invoice->id);
 
             $audit->details = 'Marking invoice (' . $invoice->invoice_number . ') as paid (in-kind) succeeded';
             $audit->save();
-
             return response()->json(['message' => 'Marked as paid (in-kind). Items added to stock.']);
         }
 
-        // ── CASH PAYMENT ─────────────────────────────────────────────────
+        // ── CASH PAYMENT ──────────────────────────────────────────────────
         $data = $request->validate([
-            'paid_at' => ['nullable', 'date'],
+            'paid_at'     => ['nullable', 'date'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $invoice->status  = 'paid';
-        $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : now();
-        $invoice->paid_at = $paidAt;
-        $invoice->save();
+        $totalDue   = round((float) $invoice->amount + (float) $invoice->late_fee_amount, 2);
+        $amountPaid = ($data['amount_paid'] !== null && $data['amount_paid'] !== '')
+            ? round((float) $data['amount_paid'], 2)
+            : $totalDue;
 
-        GenerateInvoicePdfJob::dispatch($invoice->id);
-        $acct->postInvoicePaid($invoice, $paidAt, auth()->id());
+        // ── Step 1: All DB work in one transaction (fast) ─────────────────
+        // We do everything DB-related here — marking paid, ledger entries,
+        // apartment status — BEFORE touching any PDF generation.
+        // Collecting IDs of invoices whose PDFs need regenerating.
+        $adjustedInvoices  = [];
+        $pdfInvoiceIds     = []; // will be regenerated after DB work
+        $userId            = auth()->id();
 
-        $invoice->loadMissing('contract.apartment');
-        $contract  = $invoice->contract;
-        $apartment = $contract?->apartment;
+        DB::transaction(function () use (
+            $invoice, $data, $acct, $totalDue, $amountPaid, $userId,
+            &$adjustedInvoices, &$pdfInvoiceIds
+        ) {
+            $paidAt = (isset($data['paid_at']) && $data['paid_at'])
+                ? Carbon::parse($data['paid_at'])
+                : now();
 
-        if ($apartment && $apartment->status !== 'sold') {
-            $paidCount = $contract->invoices()->where('status', 'paid')->count();
-            if ($paidCount === 1) {
-                $apartment->update(['status' => 'sold']);
+            // Mark current invoice paid
+            $invoice->status      = 'paid';
+            $invoice->amount_paid = $amountPaid;
+            $invoice->paid_at     = $paidAt;
+            $invoice->save();
+
+            $pdfInvoiceIds[] = $invoice->id;
+
+            // Ledger entry for current invoice
+            $acct->postInvoicePaid($invoice, $paidAt, $userId);
+
+            // Apartment sold on first payment
+            $invoice->loadMissing('contract.apartment');
+            $contract  = $invoice->contract;
+            $apartment = $contract?->apartment;
+            if ($apartment && $apartment->status !== 'sold') {
+                $paidCount = $contract->invoices()->where('status', 'paid')->count();
+                if ($paidCount === 1) {
+                    $apartment->update(['status' => 'sold']);
+                }
             }
-        }
 
-        DB::afterCommit(function () use ($invoice) {
+            // ── Apply credit / deficit ────────────────────────────────────
+            $credit = round($amountPaid - $totalDue, 2);
+
+            if ($credit >= 0.01) {
+                // OVERPAYMENT: cascade through upcoming invoices
+                $upcomingInvoices = Invoice::where('contract_id', $invoice->contract_id)
+                    ->where('status', 'pending')
+                    ->where('due_date', '>', $invoice->due_date)
+                    ->orderBy('due_date')
+                    ->get();
+
+                foreach ($upcomingInvoices as $upcoming) {
+                    if ($credit < 0.01) break;
+
+                    $upcomingAmount = round((float) $upcoming->amount, 2);
+
+                    if ($credit >= $upcomingAmount) {
+                        // Fully covered → auto-pay
+                        $credit -= $upcomingAmount;
+                        $credit  = round($credit, 2);
+
+                        $upcoming->status      = 'paid';
+                        $upcoming->amount_paid = $upcomingAmount;
+                        $upcoming->paid_at     = $paidAt;
+                        $upcoming->save();
+
+                        // Ledger entry for auto-paid invoice
+                        $acct->postInvoicePaid($upcoming, $paidAt, $userId);
+
+                        $pdfInvoiceIds[] = $upcoming->id; // queue PDF, don't block
+
+                        $adjustedInvoices[] = [
+                            'id'     => $upcoming->id,
+                            'status' => 'paid',
+                            'amount' => $upcomingAmount,
+                        ];
+
+                    } else {
+                        // Partial credit → reduce amount only
+                        $newAmount      = round($upcomingAmount - $credit, 2);
+                        $upcoming->amount = $newAmount;
+                        $upcoming->save();
+
+                        $pdfInvoiceIds[] = $upcoming->id;
+
+                        $adjustedInvoices[] = [
+                            'id'     => $upcoming->id,
+                            'status' => 'pending',
+                            'amount' => $newAmount,
+                        ];
+
+                        $credit = 0;
+                    }
+                }
+
+            } elseif ($credit <= -0.01) {
+                // UNDERPAYMENT: add deficit to next invoice only
+                $nextInvoice = Invoice::where('contract_id', $invoice->contract_id)
+                    ->where('status', 'pending')
+                    ->where('due_date', '>', $invoice->due_date)
+                    ->orderBy('due_date')
+                    ->first();
+
+                if ($nextInvoice) {
+                    $newAmount        = round((float) $nextInvoice->amount + abs($credit), 2);
+                    $nextInvoice->amount = $newAmount;
+                    $nextInvoice->save();
+
+                    $pdfInvoiceIds[] = $nextInvoice->id;
+
+                    $adjustedInvoices[] = [
+                        'id'     => $nextInvoice->id,
+                        'status' => 'pending',
+                        'amount' => $newAmount,
+                    ];
+                }
+            }
+        });
+
+        // ── Step 2: Dispatch ALL PDF jobs in one batch after DB is done ───
+        // All invoice PDFs (current + any adjusted) are queued together.
+        // The receipt + email for the CURRENT invoice are chained after.
+        //
+        // With QUEUE_CONNECTION=database (recommended) these all run in the
+        // background and the HTTP response returns immediately.
+        // With QUEUE_CONNECTION=sync they run here, but at least all DB
+        // work finished first so the data is always correct.
+        DB::afterCommit(function () use ($pdfInvoiceIds, $userId, $invoice) {
+            // Regenerate all affected invoice PDFs in one batch
+            $pdfJobs = array_map(
+                fn($id) => new GenerateInvoicePdfJob($id),
+                $pdfInvoiceIds
+            );
+
+            Bus::batch($pdfJobs)
+                ->name("Invoice PDFs after payment #{$invoice->id}")
+                ->dispatch();
+
+            // Receipt + email only for the invoice the user manually paid
             Bus::chain([
-                new GenerateReceiptPdfJob($invoice->id, auth()->id()),
+                new GenerateReceiptPdfJob($invoice->id, $userId),
                 new SendInvoiceReceiptMailJob($invoice->id),
             ])->dispatch();
         });
 
-        $audit->details = 'Marking invoice (' . $invoice->invoice_number . ') as paid succeeded';
+        $audit->details = 'Marking invoice (' . $invoice->invoice_number . ') as paid succeeded. Amount paid: $' . $amountPaid;
         $audit->save();
-        return response()->json(['message' => 'Marked as paid']);
+
+        return response()->json([
+            'message'           => 'Marked as paid',
+            'adjusted_invoices' => $adjustedInvoices,
+        ]);
     }
 
     /**

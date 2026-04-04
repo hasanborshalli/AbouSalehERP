@@ -146,7 +146,6 @@
                                                 ✎
                                             </button>
 
-
                                             <button class="invoices__icon-btn invoices__icon-btn--paid" type="button"
                                                 aria-label="Mark paid">
                                                 ✔
@@ -167,7 +166,7 @@
                             </div>
 
                             <div class="invoices__details-body" id="invDetailsBody">
-                                <div class="invoices__empty">Click “View” to see details here.</div>
+                                <div class="invoices__empty">Click "View" to see details here.</div>
                             </div>
                         </aside>
                     </div>
@@ -225,10 +224,25 @@
                     {{-- CASH SECTION --}}
                     <div id="cashSection">
                         <p class="confirm-modal__text">This will set status to <strong>paid</strong>.</p>
+
                         <div class="inv-modal__grid">
                             <div class="inv-modal__field inv-modal__field--wide">
                                 <label class="inv-modal__label">Paid date (optional)</label>
                                 <input class="inv-modal__input" type="date" id="paidDate">
+                            </div>
+
+                            <div class="inv-modal__field inv-modal__field--wide">
+                                <label class="inv-modal__label">
+                                    Amount received
+                                    <span id="amountPaidHint"
+                                        style="margin-left:6px; opacity:.55; font-size:12px; font-weight:400;"></span>
+                                </label>
+                                <input class="inv-modal__input" type="number" id="amountPaidInput" min="0" step="0.01"
+                                    placeholder="Enter amount received from client">
+                                {{-- Live feedback shown below the input --}}
+                                <div id="amountPaidDiff"
+                                    style="margin-top:8px; font-size:13px; font-weight:600; min-height:18px; line-height:1.4;">
+                                </div>
                             </div>
                         </div>
                     </div>

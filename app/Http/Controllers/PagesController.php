@@ -439,10 +439,11 @@ $end   = Carbon::now()->endOfMonth();
     $items = InventoryItem::orderBy('name')->get();
     $itemsJson = $items->map(function ($i) {
         return [
-            'id'   => $i->id,
-            'name' => $i->name,
-            'qty'  => $i->quantity,
-            'unit' => $i->unit,
+            'id'    => $i->id,
+            'name'  => $i->name,
+            'qty'   => $i->quantity,
+            'unit'  => $i->unit,
+            'price' => (float) $i->price, // used to auto-fill unit value in in-kind payment rows
         ];
     })->values()->toJson();
     return view('accounting.purchases', compact('items', 'itemsJson'));
