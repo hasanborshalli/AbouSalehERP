@@ -1,5 +1,6 @@
+@php $locale = app()->getLocale(); $dir = $locale === "ar" ? "rtl" : "ltr"; @endphp
 <!doctype html>
-<html lang="en">
+<html lang="{{ $locale }}" dir="{{ $dir }}">
 
 <head>
     <meta charset="utf-8" />
@@ -12,6 +13,9 @@
     <link rel="stylesheet" href="/css/alert.css">
     <link rel="stylesheet" href="/css/managed.css">
     <link rel="stylesheet" href="/css/responsive.css">
+    @if(app()->getLocale() === 'ar')
+    <link rel="stylesheet" href="/css/rtl.css">
+    @endif
 </head>
 
 <body class="app-shell">
@@ -47,13 +51,17 @@
                     </div>
                     <div class="mp-hero__actions">
                         <a href="{{ route('managed.agreement.pdf', $property) }}" target="_blank">📄 Agreement PDF</a>
+                        @if(auth()->user()->isOwner())
                         <a href="{{ route('managed.edit', $property) }}">✏️ Edit</a>
+                        @endif
                         @if(!in_array($property->status, ['sold','terminated']))
+                        @if(auth()->user()->isOwner())
                         <form method="POST" action="{{ route('managed.terminate', $property) }}" style="display:inline;"
                             onsubmit="return confirm('Terminate this agreement?')">
                             @csrf @method('PATCH')
                             <button class="danger-btn" type="submit">⛔ Terminate</button>
                         </form>
+                        @endif
                         @endif
                         <a href="{{ route('managed.index') }}" style="opacity:.7;">← Back</a>
                     </div>
@@ -289,12 +297,14 @@
                                 </td>
                                 <td>
                                     @if(!$exp->isVoided() && !in_array($property->status, ['sold','terminated']))
+                                    @if(auth()->user()->isOwner())
                                     <form method="POST"
                                         action="{{ route('managed.expenses.destroy', [$property, $exp]) }}"
                                         onsubmit="return confirm('Void this expense?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="action-btn red">Void</button>
                                     </form>
+                                    @endif
                                     @endif
                                 </td>
                             </tr>
@@ -510,12 +520,14 @@
                                 <td>{{ $exp->isVoided() ? '⊘ Voided' : '✓' }}</td>
                                 <td>
                                     @if(!$exp->isVoided())
+                                    @if(auth()->user()->isOwner())
                                     <form method="POST"
                                         action="{{ route('managed.expenses.destroy', [$property, $exp]) }}"
                                         onsubmit="return confirm('Void this expense?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="action-btn red">Void</button>
                                     </form>
+                                    @endif
                                     @endif
                                 </td>
                             </tr>

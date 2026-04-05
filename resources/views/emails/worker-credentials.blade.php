@@ -3,67 +3,45 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Worker Portal Access</title>
+    <title>Worker Account | حساب العامل</title>
 </head>
 
-<body style="font-family: Arial, Helvetica, sans-serif; color:#333; line-height:1.6;">
+<body style="font-family: Arial, Helvetica, sans-serif; color:#333; line-height:1.8;">
 
-    <p>Dear {{ $user->name }},</p>
-
-    <p>
-        We have created a secure <strong>Worker Portal</strong> account for you to track your
-        contract payments with Abou Saleh General Trading.
-    </p>
-
-    <p><strong>Your login credentials:</strong></p>
-
+    <p>Dear {{ $worker->name }},</p>
+    <p>An account has been created for you to access your contracts and payment schedule.</p>
     <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
         <tr>
-            <td><strong>Login ID:</strong></td>
-            <td>{{ $user->id }}</td>
+            <td><strong>Email:</strong></td>
+            <td>{{ $worker->email }}</td>
         </tr>
         <tr>
             <td><strong>Temporary Password:</strong></td>
             <td>{{ $rawPassword }}</td>
         </tr>
     </table>
+    <p>Login: <a href="{{ url('/login') }}" style="color:#1a73e8;">{{ url('/login') }}</a></p>
+    <p>Please change your password on first login.</p>
 
-    <p>
-        Access your portal here:<br>
-        <a href="{{ url('/login') }}" style="color:#1a73e8;">{{ url('/login') }}</a>
-    </p>
+    <hr style="margin:24px 0; border:none; border-top:1px solid #eee;">
 
-    <p>
-        In your portal you can:
-    </p>
-    <ul>
-        <li>View your contract details and payment schedule</li>
-        <li>See which payments have been made and which are upcoming</li>
-        <li>Download payment receipts</li>
-    </ul>
-
-    @if($contractPath)
-    <p>
-        A copy of your <strong>work contract is attached to this email (PDF)</strong>.
-        Please review it carefully and contact us if you have any questions.
-    </p>
-    @endif
-
-    <p>
-        <strong>Important:</strong> Please log in and change your password immediately after first access.
-    </p>
-
-    <p>Kind regards,</p>
-    <p>
-        <strong>Abou Saleh General Trading</strong><br>
-        Phone: +961 71 999 219<br>
-        Email: info@abousaleh.me
-    </p>
-
-    <hr style="margin-top:30px;">
-    <p style="font-size:12px;color:#777;">
-        This email contains confidential information intended only for the recipient.
-    </p>
+    <div dir="rtl" style="text-align:right;">
+        <p>عزيزي {{ $worker->name }}،</p>
+        <p>تم إنشاء حساب لك للاطلاع على عقودك وجدول المدفوعات.</p>
+        <table cellpadding="6" cellspacing="0" style="border-collapse:collapse; direction:rtl;">
+            <tr>
+                <td><strong>البريد:</strong></td>
+                <td>{{ $worker->email }}</td>
+            </tr>
+            <tr>
+                <td><strong>كلمة المرور المؤقتة:</strong></td>
+                <td>{{ $rawPassword }}</td>
+            </tr>
+        </table>
+        <p>رابط الدخول: <a href="{{ url('/login') }}" style="color:#1a73e8;">{{ url('/login') }}</a></p>
+        <p>يُرجى تغيير كلمة المرور عند أول دخول.</p>
+        <p>مع تحياتنا — أبو صالح للتجارة العامة</p>
+    </div>
 </body>
 
 </html>

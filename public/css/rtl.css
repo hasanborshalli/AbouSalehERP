@@ -1,0 +1,206 @@
+/* ── RTL / Arabic layout overrides ─────────────────────────── */
+/* Applied when <html dir="rtl"> is set */
+
+[dir="rtl"] body {
+    font-family: "Amiri", "Arial", sans-serif;
+    text-align: right;
+}
+
+/* Sidebar */
+[dir="rtl"] .app-sidebar__nav .app-sidebar__link {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .app-sidebar__footer {
+    direction: rtl;
+}
+[dir="rtl"] .app-sidebar__logout {
+    flex-direction: row-reverse;
+}
+
+/* Navbar */
+[dir="rtl"] .app-navbar {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .app-navbar__left {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .app-navbar__right {
+    flex-direction: row-reverse;
+}
+
+/* Cards / sections */
+[dir="rtl"] .dashboard-card,
+[dir="rtl"] .add-client__card,
+[dir="rtl"] .clients-index__card,
+[dir="rtl"] .invoices__card {
+    direction: rtl;
+}
+
+/* Tables */
+[dir="rtl"] table {
+    direction: rtl;
+}
+[dir="rtl"] th,
+[dir="rtl"] td {
+    text-align: right;
+}
+
+/* Forms */
+[dir="rtl"] .add-client__input,
+[dir="rtl"] .add-client__select,
+[dir="rtl"] .add-client__textarea,
+[dir="rtl"] .inv-modal__input,
+[dir="rtl"] .rt-input,
+[dir="rtl"] .rt-select {
+    text-align: right;
+    direction: rtl;
+}
+
+/* Labels */
+[dir="rtl"] label {
+    display: block;
+    text-align: right;
+}
+
+/* Alerts */
+[dir="rtl"] .alert {
+    flex-direction: row-reverse;
+}
+
+/* Pagination */
+[dir="rtl"] .pagination {
+    flex-direction: row-reverse;
+}
+
+/* Headers */
+[dir="rtl"] .clients-index__header,
+[dir="rtl"] .invoices__header,
+[dir="rtl"] .add-item__header {
+    flex-direction: row-reverse;
+}
+
+/* Details panel KV rows */
+[dir="rtl"] .clients-index__kv,
+[dir="rtl"] .invoices__kv {
+    flex-direction: row-reverse;
+}
+
+/* Buttons that have icons on the left */
+[dir="rtl"] .add-client__btn,
+[dir="rtl"] .clients-index__add-btn {
+    flex-direction: row-reverse;
+}
+
+/* Section titles */
+[dir="rtl"] .add-client__section-title,
+[dir="rtl"] .clients-index__title,
+[dir="rtl"] .invoices__title,
+[dir="rtl"] .add-item__title {
+    text-align: right;
+}
+
+/* Modal */
+[dir="rtl"] .confirm-modal__box {
+    direction: rtl;
+}
+
+/* Lang toggle button */
+.lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin-left: 10px;
+}
+[dir="rtl"] .lang-toggle {
+    margin-left: 0;
+    margin-right: 10px;
+}
+.lang-toggle__btn {
+    padding: 4px 11px;
+    border: none;
+    background: transparent;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 999px;
+    transition:
+        background 0.15s,
+        color 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+.lang-toggle__btn--active {
+    background: rgba(255, 255, 255, 0.22);
+    color: #00b7ff;
+}
+.lang-toggle__btn:hover:not(.lang-toggle__btn--active) {
+    background: rgba(255, 255, 255, 0.12);
+    color: #000000;
+}
+
+/* ── Google Translate triggers ─────────────────────────────── */
+/* Google Translate adds .translated-rtl to <html> for Arabic  */
+.translated-rtl body,
+.translated-rtl .app-navbar,
+.translated-rtl .app-sidebar__nav .app-sidebar__link,
+.translated-rtl table,
+.translated-rtl th,
+.translated-rtl td,
+.translated-rtl .add-client__input,
+.translated-rtl .add-client__select,
+.translated-rtl .add-client__textarea,
+.translated-rtl label {
+    direction: rtl;
+    text-align: right;
+}
+
+.translated-rtl .app-navbar {
+    flex-direction: row-reverse;
+}
+.translated-rtl .app-navbar__left {
+    flex-direction: row-reverse;
+}
+.translated-rtl .clients-index__header,
+.translated-rtl .invoices__header,
+.translated-rtl .add-item__header {
+    flex-direction: row-reverse;
+}
+.translated-rtl .clients-index__kv,
+.translated-rtl .invoices__kv {
+    flex-direction: row-reverse;
+}
+.translated-rtl .pagination {
+    flex-direction: row-reverse;
+}
+.translated-rtl .alert {
+    flex-direction: row-reverse;
+}
+.translated-rtl .confirm-modal__box {
+    direction: rtl;
+}
+
+/* Hide Google's own banner/toolbar completely */
+.goog-te-banner-frame {
+    display: none !important;
+}
+.skiptranslate {
+    display: none !important;
+}
+body {
+    top: 0 !important;
+}
+#goog-gt-tt {
+    display: none !important;
+}
+.goog-te-balloon-frame {
+    display: none !important;
+}
+.goog-tooltip {
+    display: none !important;
+}

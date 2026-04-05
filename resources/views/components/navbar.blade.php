@@ -5,6 +5,8 @@ $latest = $u?->notifications()?->take(5)->get() ?? collect();
 $isWorker = $u?->role === 'worker';
 $isClient = $u?->role === 'client';
 @endphp
+{{-- RTL CSS loaded globally via navbar component --}}
+<link rel="stylesheet" href="/css/rtl.css">
 <header class="app-navbar" aria-label="Top navigation">
     <div class="app-navbar__left">
         <label for="sidebarToggle" class="app-navbar__burger" aria-label="Open menu">
@@ -19,10 +21,20 @@ $isClient = $u?->role === 'client';
             <span class="app-navbar__search-icon" aria-hidden="true">
                 <img src="/img/search.svg" class="search-icon">
             </span>
-            <input id="navSearchInput" type="search" placeholder="Search pages..." aria-label="Search pages"
-                autocomplete="off" />
+            <input id="navSearchInput" type="search" placeholder="{{ __('Search Pages') }}..."
+                aria-label="{{ __('ui.search') }}" autocomplete="off" />
             <div class="app-navbar__search-results" id="navSearchResults" hidden></div>
         </div>
+
+        {{-- Google Translate language toggle --}}
+        <div class="lang-toggle" id="langToggleWrap">
+            <button type="button" class="lang-toggle__btn lang-toggle__btn--active" id="langBtnEN"
+                onclick="switchLang('en')" translate="no">EN</button>
+            <button type="button" class="lang-toggle__btn" id="langBtnAR" onclick="switchLang('ar')"
+                translate="no">العربية</button>
+        </div>
+        {{-- Hidden Google Translate element --}}
+        <div id="google_translate_element" style="display:none;"></div>
     </div>
 
     <div class="nav-bell" style="position:relative;">
@@ -78,4 +90,89 @@ $isClient = $u?->role === 'client';
         window.NAV_ROLE="{{ auth()->user()?->role ?? 'admin' }}";
     </script>
     <script src="/js/navSearch.js" defer></script>
+
+    {{-- Google Translate integration --}}
+    <script>
+        // Initialize Google Translate
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,ar',
+            autoDisplay: false,
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+    }
+
+    function switchLang(lang) {
+        var btnEN = document.getElementById('langBtnEN');
+        var btnAR = document.getElementById('langBtnAR');
+
+        if (lang === 'en') {
+            // Restore to English — reload without translate cookie
+            var frame = document.querySelector('.goog-te-banner-frame');
+            if (frame) {
+                // Click "Show original" inside the translate bar if visible
+                try {
+                    var innerDoc = frame.contentDocument || frame.contentWindow.document;
+                    var restoreBtn = innerDoc.querySelector('.goog-te-button button');
+                    if (restoreBtn) restoreBtn.click();
+                } catch(e) {}
+            }
+            // Remove Google translate cookies and reload
+            document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + location.hostname + ';';
+            localStorage.setItem('siteLang', 'en');
+            if (btnEN) { btnEN.classList.add('lang-toggle__btn--active'); }
+            if (btnAR) { btnAR.classList.remove('lang-toggle__btn--active'); }
+            location.reload();
+            return;
+        }
+
+        // Translate to Arabic
+        localStorage.setItem('siteLang', 'ar');
+        if (btnEN) { btnEN.classList.remove('lang-toggle__btn--active'); }
+        if (btnAR) { btnAR.classList.add('lang-toggle__btn--active'); }
+
+        // Set the Google Translate cookie directly
+        document.cookie = 'googtrans=/en/ar; path=/';
+        document.cookie = 'googtrans=/en/ar; path=/; domain=' + location.hostname;
+
+        // Trigger translation via the hidden select element
+        var sel = document.querySelector('.goog-te-combo');
+        if (sel) {
+            sel.value = 'ar';
+            sel.dispatchEvent(new Event('change'));
+        } else {
+            // Widget not loaded yet — reload with cookie set
+            location.reload();
+        }
+    }
+
+    // On page load: restore the button active state from localStorage
+    document.addEventListener('DOMContentLoaded', function () {
+        var lang = localStorage.getItem('siteLang') || 'en';
+        var btnEN = document.getElementById('langBtnEN');
+        var btnAR = document.getElementById('langBtnAR');
+
+        if (lang === 'ar') {
+            if (btnEN) btnEN.classList.remove('lang-toggle__btn--active');
+            if (btnAR) btnAR.classList.add('lang-toggle__btn--active');
+        } else {
+            if (btnEN) btnEN.classList.add('lang-toggle__btn--active');
+            if (btnAR) btnAR.classList.remove('lang-toggle__btn--active');
+        }
+
+        // Hide the Google Translate banner bar that appears at the top
+        var style = document.createElement('style');
+        style.textContent = [
+            '.goog-te-banner-frame { display:none !important; }',
+            'body { top: 0 !important; }',
+            '.skiptranslate { display:none !important; }',
+            '#goog-gt-tt { display:none !important; }',
+            '.goog-te-balloon-frame { display:none !important; }',
+        ].join('');
+        document.head.appendChild(style);
+    });
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" defer></script>
 </header>

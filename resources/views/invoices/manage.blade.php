@@ -144,10 +144,12 @@
                                             <button class="invoices__btn invoices__btn--view"
                                                 type="button">View</button>
                                             @if($status !== 'paid')
+                                            @if(auth()->user()->isOwner())
                                             <button class="invoices__icon-btn invoices__icon-btn--edit" type="button"
-                                                aria-label="Edit dates">
+                                                aria-label="{{ __('ui.edit') }}">
                                                 ✎
                                             </button>
+                                            @endif
 
                                             <button class="invoices__icon-btn invoices__icon-btn--paid" type="button"
                                                 aria-label="Mark paid">
@@ -161,7 +163,8 @@
                             </table>
                         </div>
 
-
+                        {{-- Pagination --}}
+                        {{ $invoices->links('vendor.pagination.custom') }}
 
                         {{-- Right details panel --}}
                         <aside class="invoices__details" aria-label="Invoice details">
@@ -174,8 +177,6 @@
                                 <div class="invoices__empty">Click "View" to see details here.</div>
                             </div>
                         </aside>
-                        {{-- Pagination --}}
-                        {{ $invoices->links('vendor.pagination.custom') }}
                     </div>
                 </section>
             </section>

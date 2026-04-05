@@ -100,6 +100,7 @@
                                     <td class="projects-index__td">{{ (int) $p->not_sold_count }}</td>
 
                                     <td class="projects-index__td projects-index__td--actions">
+                                        @if(auth()->user()->isOwner())
                                         <a class="projects-index__icon-btn projects-index__icon-btn--edit"
                                             href="{{ route('apartments.edit-project', $p->id) }}"
                                             aria-label="Edit project">✎</a>
@@ -118,6 +119,7 @@
                                                 aria-label="Delete project"
                                                 onclick="event.preventDefault(); deleteProject(this);">🗑</button>
                                         </form>
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach

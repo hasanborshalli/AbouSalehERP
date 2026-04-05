@@ -4,268 +4,313 @@
 <head>
     <meta charset="utf-8">
     @php
+    use App\Support\ArabicPdf;
+    use App\Support\MoneyToWords;
+
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $signaturePath = public_path('img/abousaleh-signature.png');
-    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-    @endphp
-    <style>
-        @page {
-            margin: 32px 40px;
-        }
 
-        .signature-img {
-            position: relative;
-            top: -8px;
-            height: 40px;
-            max-width: 220px;
-            display: inline-block;
-            vertical-align: bottom;
+    $numericAmount = (float) preg_replace('/[^0-9.]/', '', $amountNumbers);
+    $arAmountWords = ArabicPdf::shape(MoneyToWords::ar($numericAmount, 'USD'));
+
+    $arTitle = ArabicPdf::shape('إيصال استلام');
+    $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+    $arNo = ArabicPdf::shape('رقم الإيصال');
+    $arDate = ArabicPdf::shape('التاريخ');
+    $arFrom = ArabicPdf::shape('استلمنا من');
+    $arSum = ArabicPdf::shape('مبلغ وقدره');
+    $arAmtNum = ArabicPdf::shape('المبلغ بالارقام');
+    $arFor = ArabicPdf::shape('وذلك بدل');
+    $arMethod = ArabicPdf::shape('طريقة الدفع');
+    $arReceiver = ArabicPdf::shape('المستلم');
+    $arNote = ArabicPdf::shape('هذا الإيصال يثبت استلام المبلغ المذكور أعلاه');
+
+    $arFaqat = ArabicPdf::shape('فقط لا غير');
+    $arReceivedFrom = ArabicPdf::shape($receivedFrom);
+    $arForWhat = ArabicPdf::shape($forWhat);
+    $arReceiverName = ArabicPdf::shape($receiverName);
+    $arCompanyName = ArabicPdf::shape('أبو صالح للعقارات');
+    $arPayMethod = ArabicPdf::shape(match($paymentMethod) {
+    'cash' => 'نقدا',
+    'cheque' => 'شيك',
+    'bank_transfer' => 'تحويل بنكي',
+    default => $paymentMethod,
+    });
+    @endphp
+
+    @include('pdfs._arabic_font')
+
+    <style>
+        @@page {
+            margin: 30px 40px;
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 12px;
-            color: #0b2545;
+            font-family: 'Amiri', DejaVu Sans, sans-serif;
+            font-size: 13px;
+            color: #111;
         }
 
-        /* WATERMARK */
+        /* Watermark centered on the page */
         .watermark {
             position: fixed;
-            left: 50%;
-            top: 55%;
-            transform: translate(-50%, -50%);
-            width: 480px;
-            opacity: 0.06;
-            z-index: -1;
-        }
-
-        .logo-top {
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
             text-align: center;
-            margin-bottom: 8px;
         }
 
-        .logo-top img {
+        .watermark img {
+            margin-top: 220px;
+            width: 340px;
+            opacity: 0.07;
+        }
+
+        .logo {
             width: 110px;
+            float: right;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 12px;
+        .clearfix::after {
+            content: '';
+            display: block;
+            clear: both;
         }
 
-        .header .title {
-            margin: 0;
-            font-size: 14px;
-            letter-spacing: 1px;
+        .title-bar {
+            font-size: 20px;
             font-weight: bold;
+            margin: 10px 0 16px;
         }
 
-        .contact-row {
-            display: table;
-            width: 100%;
-            margin: 8px 0 14px;
-        }
-
-        .contact-col {
-            display: table-cell;
-            width: 50%;
-            font-size: 11px;
-            vertical-align: top;
-        }
-
-        .voucher-bar {
-            background: #1e3a5f;
-            color: #fff;
-            padding: 10px 14px;
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 18px;
-            text-align: center;
-        }
-
-        .row {
-            display: table;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-
-        .col {
-            display: table-cell;
-            width: 100%;
-            vertical-align: top;
-        }
-
-        .label {
-            font-weight: bold;
-        }
-
-        .line {
-            border-bottom: 1px dotted #333;
-            display: inline-block;
-            min-width: 260px;
-            padding-bottom: 2px;
-            margin-left: 8px;
-        }
-
-        .wide-line {
-            border-bottom: 1px dotted #333;
-            display: inline-block;
-            width: 100%;
-            padding-bottom: 2px;
-            margin-top: 4px;
-        }
-
-        .payment-method {
-            margin-top: 14px;
-        }
-
-        .checkbox {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
-            text-align: center;
-            font-size: 10px;
-            line-height: 12px;
-            margin: 0 6px 0 14px;
-        }
-
-        .signature-section {
-            margin-top: 40px;
-            display: table;
-            width: 100%;
-        }
-
-        .sig-col {
-            display: table-cell;
-            width: 55%;
-            vertical-align: top;
-        }
-
-        .sig-col-right {
-            display: table-cell;
-            width: 45%;
-            vertical-align: top;
+        /* Arabic spans: ltr + bidi-override because utf8Glyphs pre-orders visually */
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
             text-align: right;
+            display: block;
+            width: 100%;
         }
 
-        .stamp-box {
-            width: 90px;
-            height: 90px;
-            border: 1px solid #000;
-            margin-top: 16px;
-            display: inline-block;
+        .ar-lbl {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+            width: 100%;
+            font-weight: bold;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 2px;
         }
 
-        .info-note {
+        .ar-val {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        .box {
+            border: 2px solid #111;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .bi {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bi td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #eee;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .bi tr:last-child td {
+            border-bottom: none;
+        }
+
+        .en {
+            text-align: left;
+            direction: ltr;
+        }
+
+        .en-lbl {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+            color: #555;
+            font-size: 11px;
+        }
+
+        .en-val {
+            display: block;
+        }
+
+        .amount-val {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        .footer-table td {
+            vertical-align: top;
+            width: 50%;
+            padding: 0 8px;
+        }
+
+        .sig-line {
+            width: 160px;
+            border-bottom: 1px solid #111;
+            margin-top: 24px;
+        }
+
+        .note {
             font-size: 10px;
-            color: #6b7280;
-            margin-top: 12px;
-            border-top: 1px dashed #e5e7eb;
+            color: #777;
+            margin-top: 16px;
+            border-top: 1px dashed #ccc;
             padding-top: 8px;
-        }
-
-        .footer-line {
-            margin-top: 26px;
-            border-top: 3px solid #1e3a5f;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
+    {{-- Watermark centered on full page --}}
     @if($logoB64)
-    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="">
+    <div class="watermark">
+        <img src="data:image/png;base64,{{ $logoB64 }}" alt="">
+    </div>
     @endif
 
-    <div class="logo-top">
-        @if($logoB64)
-        <img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
-        @endif
-    </div>
-
-    <div class="header">
-        <div class="title">ABOU SALEH GENERAL TRADING</div>
-    </div>
-
-    <div class="contact-row">
-        <div class="contact-col">Address: ___________________________<br>Email: info@abousaleh.me</div>
-        <div class="contact-col" style="text-align:right;">Tel: +961 71 999 219<br>www.abousaleh.me</div>
-    </div>
-
-    <div class="voucher-bar">RECEIPT VOUCHER</div>
-
-    <div class="row">
-        <div class="col">
-            <span class="label">Receipt No:</span>
-            <span class="line">{{ $receiptNo }}</span>
+    {{-- Header --}}
+    @if($logoB64)
+    <img class="logo" src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
+    @endif
+    <div class="clearfix">
+        <div class="title-bar">
+            Receipt &nbsp;|&nbsp; <span class="ar" style="font-size:20px; font-weight:bold; display:inline;">{{ $arTitle
+                }}</span>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <span class="label">Date:</span>
-            <span class="line">{{ $date }}</span>
-        </div>
+    {{-- Data box --}}
+    <div class="box">
+        <table class="bi">
+            {{-- No --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">No:</span>
+                    <span class="en-val">{{ $receiptNo }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arNo }}</span>
+                    <span class="ar-val">{{ $receiptNo }}</span>
+                </td>
+            </tr>
+            {{-- Date --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">Date:</span>
+                    <span class="en-val">{{ $date }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arDate }}</span>
+                    <span class="ar-val">{{ $date }}</span>
+                </td>
+            </tr>
+            {{-- Received from --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">Received from:</span>
+                    <span class="en-val">{{ $receivedFrom }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arFrom }}</span>
+                    <span class="ar-val">{{ $arReceivedFrom }}</span>
+                </td>
+            </tr>
+            {{-- Sum of --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">Sum of:</span>
+                    <span class="en-val amount-val">{{ $sumOf }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arSum }}</span>
+                    <span class="ar-val" style="font-size:12px;">{{ $arAmountWords }}</span>
+                    <span class="ar-val" style="font-size:12px; color:#555;">{{ $arFaqat }}</span>
+                </td>
+            </tr>
+            {{-- Amount --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">Amount:</span>
+                    <span class="en-val amount-val">{{ $amountNumbers }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arAmtNum }}</span>
+                    <span class="ar-val amount-val">{{ $amountNumbers }}</span>
+                </td>
+            </tr>
+            {{-- For --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">For:</span>
+                    <span class="en-val">{{ $forWhat }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arFor }}</span>
+                    <span class="ar-val">{{ $arForWhat }}</span>
+                </td>
+            </tr>
+            {{-- Payment method --}}
+            <tr>
+                <td class="en">
+                    <span class="en-lbl">Payment method:</span>
+                    <span class="en-val">{{ ucfirst($paymentMethod) }}</span>
+                </td>
+                <td>
+                    <span class="ar-lbl">{{ $arMethod }}</span>
+                    <span class="ar-val">{{ $arPayMethod }}</span>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <div class="row">
-        <div class="col">
-            <span class="label">Received From:</span>
-            <div class="wide-line">{{ $receivedFrom }}</div>
-        </div>
-    </div>
+    {{-- Footer --}}
+    <table class="footer-table">
+        <tr>
+            <td class="en">
+                <strong>Receiver:</strong> {{ $receiverName }}<br>
+                <strong>Abou Saleh Real Estate</strong>
+                <div class="sig-line"></div>
+            </td>
+            <td style="text-align:right;">
+                <span class="ar-lbl">{{ $arReceiver }}</span>
+                <span class="ar-val">{{ $arReceiverName }}</span>
+                <span class="ar-val" style="font-weight:bold;">{{ $arCompanyName }}</span>
+                <div class="sig-line" style="margin-left:auto; margin-right:0;"></div>
+            </td>
+        </tr>
+    </table>
 
-    <div class="row">
-        <div class="col">
-            <span class="label">The Sum of:</span>
-            <div class="wide-line">{{ $sumOf }}</div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <span class="label">Amount in Numbers:</span>
-            <div class="wide-line">{{ $amountNumbers }}</div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col">
-            <span class="label">For:</span>
-            <div class="wide-line">{{ $forWhat }}</div>
-        </div>
-    </div>
-
-    <div class="payment-method">
-        <span class="label">Payment Method:</span>
-        <span class="checkbox">{{ $paymentMethod === 'cash' ? '✓' : '' }}</span> Cash
-        <span class="checkbox">{{ $paymentMethod === 'cheque' ? '✓' : '' }}</span> Cheque
-        <span class="checkbox">{{ $paymentMethod === 'bank_transfer' ? '✓' : '' }}</span> Bank Transfer
-    </div>
-
-    <div class="signature-section">
-        <div class="sig-col">
-            <span class="label">Received by (Company):</span>
-            <span style="margin-left:8px;">Abou Saleh General Trading</span><br><br>
-            <span class="label">Authorised Signature:</span>
-            <div style="display:inline-block;">
-                @if($signatureB64)
-                <img class="signature-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
-                @endif
-            </div>
-        </div>
-        <div class="sig-col-right">
-            <div class="stamp-box"></div>
-        </div>
-    </div>
-
-    <div class="info-note">
-        This receipt confirms that the above payment has been received.
-        Please retain this document for your records.
-    </div>
-
-    <div class="footer-line"></div>
+    <div class="note"><span class="ar" style="display:inline;">{{ $arNote }}</span></div>
 </body>
 
 </html>

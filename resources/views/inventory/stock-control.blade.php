@@ -96,6 +96,7 @@
 
                                     <td class="stock-control__td stock-control__td--actions">
                                         <a href="{{ route('inventory.edit-item', $item->id) }}">
+                                            @if(auth()->user()->isOwner())
                                             <button class="stock-control__icon-btn stock-control__icon-btn--edit"
                                                 type="button">✎</button>
                                         </a>
@@ -105,6 +106,7 @@
                                             @csrf
                                             <button class="stock-control__icon-btn stock-control__icon-btn--delete"
                                                 type="submit">🗑</button>
+                                            @endif
                                         </form>
                                     </td>
                                 </tr>

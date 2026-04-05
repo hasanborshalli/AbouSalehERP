@@ -208,13 +208,14 @@
                                             <td class="clients-index__td clients-index__td--actions">
                                                 <button class="clients-index__btn clients-index__btn--view"
                                                     type="button">
-                                                    View
+                                                    {{ __('ui.view') }}
                                                 </button>
 
+                                                @if(auth()->user()->isOwner())
                                                 @if(!$hasPaidInvoice)
                                                 <a class="clients-index__icon-btn clients-index__icon-btn--edit"
                                                     href="{{ route('clients.edit-client',$user->id) }}"
-                                                    aria-label="Edit client">✎</a>
+                                                    aria-label="{{ __('ui.edit') }}">✎</a>
                                                 @else
                                                 <span
                                                     class="clients-index__icon-btn clients-index__icon-btn--edit clients-index__icon-btn--disabled"
@@ -223,10 +224,11 @@
                                                 @endif
 
                                                 <button class="clients-index__icon-btn clients-index__icon-btn--delete"
-                                                    type="button" aria-label="Delete client"
+                                                    type="button" aria-label="{{ __('ui.delete') }}"
                                                     data-delete="{{$user->id }}">
                                                     🗑
                                                 </button>
+                                                @endif
                                             </td>
                                         </tr>
                                         @endforeach
