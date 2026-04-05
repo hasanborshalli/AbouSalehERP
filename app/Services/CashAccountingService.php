@@ -39,7 +39,12 @@ class CashAccountingService
      * CASH BASIS:
      * When an invoice is marked PAID, we post cash-in revenue.
      */
-    public function postInvoicePaid(Invoice $invoice, ?Carbon $paidAt = null, ?int $userId = null): void
+    /**
+     * @param float|null $ledgerAmount  When provided, overrides the invoice face value.
+     *                                   Used by the controller to pass the actual cash
+     *                                   received (amount_paid) on the last overpayment.
+     */
+    public function postInvoicePaid(Invoice $invoice, ?Carbon $paidAt = null, ?int $userId = null, ?float $ledgerAmount = null): void
     {
         $paidAt = $paidAt ?? now();
 
@@ -49,8 +54,15 @@ class CashAccountingService
             ->exists();
 
         if ($exists) return;
-        $totalPaid=(float)$invoice->amount + (float)$invoice->late_fee_amount;
-        DB::transaction(function () use ($invoice, $paidAt, $userId,$totalPaid) {
+
+        // Use the explicitly passed ledger amount when the controller determined the client
+        // paid more than the face value. Falls back to face value for normal payments.
+        $faceValue = (float) $invoice->amount + (float) $invoice->late_fee_amount;
+        $totalPaid = ($ledgerAmount !== null && $ledgerAmount > $faceValue + 0.009)
+                        ? $ledgerAmount
+                        : $faceValue;
+
+        DB::transaction(function () use ($invoice, $paidAt, $userId, $totalPaid) {
             LedgerEntry::create([
                 'posted_at' => $paidAt,
                 'account_id' => $this->revenueAccount()->id,

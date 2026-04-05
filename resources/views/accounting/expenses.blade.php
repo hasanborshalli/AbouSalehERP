@@ -78,8 +78,6 @@
                                     @endforeach
                                 </select>
                                 @error('category') <p style="color:red">{{ $message }}</p> @enderror
-                                <small style="opacity:.7;">If you need custom categories later, we can store them in
-                                    DB.</small>
                             </div>
 
                             <div class="add-item__field add-item__field--wide">

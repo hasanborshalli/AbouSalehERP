@@ -59,7 +59,8 @@ class ClientsController extends Controller
             ],
 
             'contract_date' => ['required', 'date'],
-            'payment_start_date' => ['required_if:payment_type,cash', 'nullable', 'date', 'after_or_equal:contract_date'],
+            'payment_start_date' => ['required_if:payment_type,cash', 'date', 'after_or_equal:contract_date', 'nullable'],
+            'payment_full_date'  => ['required_if:payment_type,cash_full', 'date', 'nullable'],
 
             'discount' => ['nullable', 'numeric', 'min:0'],
             'down_payment' => ['required_if:payment_type,cash', 'nullable', 'numeric', 'min:0'],
@@ -70,7 +71,7 @@ class ClientsController extends Controller
             'late_fee' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
-            'payment_type'  => ['required', 'in:cash,in_kind'],
+            'payment_type'  => ['required', 'in:cash,cash_full,in_kind'],
             'in_kind_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -90,6 +91,13 @@ class ClientsController extends Controller
         $contractFields['project_id']=$apartment->project_id;
         $contractFields['created_by']=auth()->id();
         $totalPrice = (float) $apartment->price_total; // or price_total if that’s your column
+        // cash requires a payment_start_date — enforce here because Laravel's
+        // required_if + nullable combination allows null through validation silently.
+        if ($contractFields['payment_type'] === 'cash'
+            && empty($contractFields['payment_start_date'])) {
+            return back()->withInput()->with('error', 'Payment start date is required.');
+        }
+
         // For in-kind contracts payment_start_date is irrelevant but column is NOT NULL
         if ($contractFields['payment_type'] === 'in_kind') {
             $contractFields['payment_start_date'] = $contractFields['contract_date'];
@@ -104,27 +112,53 @@ class ClientsController extends Controller
         }
 
         $contractFields['final_price'] = $totalPrice - $discount;
+
         if ($apartment->status === 'sold') {
-        return back()
-        ->withInput()
-        ->with(['error' => 'This apartment is already sold.']);
+            return back()->withInput()->with(['error' => 'This apartment is already sold.']);
         }
 
-        if ($contractFields['payment_type'] === 'cash') {
-            $down         = (float) ($contractFields['down_payment'] ?? 0);
-            $months       = (int)   ($contractFields['installment_months'] ?? 0);
-            $inst         = (float) ($contractFields['installment_amount'] ?? 0);
-            $monthly      = (float) $request->installment_amount;
-            $totalPlanned = $down + ($months * $inst);
+        $paymentType = $contractFields['payment_type']; // still 'cash', 'cash_full', or 'in_kind' here
 
-            if ($totalPlanned > $contractFields['final_price'] + 0.00001) {
+        if ($paymentType === 'cash_full') {
+            // Single invoice for the full net price — no down payment, no installments
+            $contractFields['down_payment']       = 0;
+            $contractFields['installment_months'] = 1;
+            $contractFields['installment_amount'] = $contractFields['final_price'];
+            // Map the full-payment date input (separate name to avoid conflict with cash section)
+            $contractFields['payment_start_date'] = $request->input('payment_full_date')
+                ?? $contractFields['contract_date'];
+            $months  = 1;
+            $monthly = (float) $contractFields['final_price'];
+
+        } elseif ($paymentType === 'cash') {
+            $down    = (float) ($contractFields['down_payment']       ?? 0);
+            $months  = (int)   ($contractFields['installment_months'] ?? 0);
+            $monthly = (float) ($contractFields['installment_amount'] ?? 0);
+
+            // With reverse calc the last invoice is fractional, so months × monthly
+            // can slightly exceed final_price — validate against down payment only.
+            // The invoice generator always makes total invoices = remaining exactly.
+            $remaining = $contractFields['final_price'] - $down;
+            if ($down > $contractFields['final_price'] + 0.00001) {
                 return back()->withInput()->with([
-                    'error' => 'Total payments exceed the final price.',
+                    'error' => 'Down payment cannot exceed the final price.',
                 ]);
             }
+            if ($remaining < 0) {
+                return back()->withInput()->with([
+                    'error' => 'Down payment cannot exceed the final price.',
+                ]);
+            }
+
         } else {
+            // in_kind
             $months  = 0;
             $monthly = 0;
+        }
+
+        // Normalise cash_full → 'cash' for DB storage (DB only knows cash / in_kind)
+        if ($contractFields['payment_type'] === 'cash_full') {
+            $contractFields['payment_type'] = 'cash';
         }
         
         $user = null;
@@ -262,12 +296,37 @@ DB::transaction(function () use (
         return; // exit transaction closure early — cash path below
     }
 
-    // ── CASH: 4) Create invoices ──────────────────────────────────────────
+    // ── CASH / CASH_FULL: 4) Create invoices ─────────────────────────────
     $start = Carbon::parse($contract->payment_start_date)->startOfDay();
 
-    for ($i = 0; $i < $months; $i++) {
+    // For full payment: 1 invoice for the entire net price (no down payment logic)
+    if ($contractFields['payment_type'] === 'cash_full') {
+        $months  = 1;
+        $monthly = $contractFields['final_price'];
+    }
+
+    // Fractional last invoice: if remaining / monthly is not a whole number,
+    // the last invoice gets only the remainder.
+    // e.g. remaining=7560, monthly=100 → 75 full + 1 invoice of 60
+    $remaining    = (float) $contractFields['final_price'] - (float) ($contractFields['down_payment'] ?? 0);
+    $exactMonths  = ($monthly > 0 && $contractFields['payment_type'] !== 'cash_full')
+                    ? $remaining / $monthly
+                    : $months;
+    $fullInvoices = ($contractFields['payment_type'] === 'cash_full') ? 1 : (int) floor($exactMonths);
+    $lastAmount   = ($contractFields['payment_type'] === 'cash_full')
+                    ? $monthly
+                    : round($remaining - ($fullInvoices * $monthly), 2);
+    // If the division is exact, lastAmount rounds to 0 — fold it into fullInvoices
+    if (abs($lastAmount) < 0.01) {
+        $lastAmount = 0;
+    }
+    $totalInvoices = $fullInvoices + ($lastAmount > 0.01 ? 1 : 0);
+
+    for ($i = 0; $i < $totalInvoices; $i++) {
         $issueDate = $start->copy()->addMonths($i);
-        $dueDate = $issueDate->copy()->addDays(7);
+        $dueDate   = $issueDate->copy()->addDays(7);
+        $isLast    = ($i === $totalInvoices - 1);
+        $amount    = ($isLast && $lastAmount > 0.01) ? $lastAmount : $monthly;
 
         $invoiceNumber = sprintf(
             "INV-%06d-%s-%03d",
@@ -277,12 +336,12 @@ DB::transaction(function () use (
         );
 
         $inv = Invoice::create([
-            'contract_id' => $contract->id,
+            'contract_id'    => $contract->id,
             'invoice_number' => $invoiceNumber,
-            'issue_date' => $issueDate->toDateString(),
-            'due_date' => $dueDate->toDateString(),
-            'amount' => $monthly,
-            'status' => 'pending',
+            'issue_date'     => $issueDate->toDateString(),
+            'due_date'       => $dueDate->toDateString(),
+            'amount'         => $amount,
+            'status'         => 'pending',
         ]);
 
         $invoiceIds[] = $inv->id;

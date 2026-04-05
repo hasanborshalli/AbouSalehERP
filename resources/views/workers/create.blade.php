@@ -223,18 +223,38 @@
                                     <p style="font-size:11px; opacity:.5; margin-top:4px;">Auto-calculated from
                                         assignments. You can override if no assignments.</p>
                                 </div>
+                                {{-- Calc mode toggle --}}
+                                <div class="add-client__field add-client__field--wide">
+                                    <div style="display:flex;gap:10px;">
+                                        <button type="button" id="wrkBtnByMonths"
+                                            class="add-client__type-btn add-client__type-btn--active">
+                                            📅 Set months → get monthly
+                                        </button>
+                                        <button type="button" id="wrkBtnByAmount" class="add-client__type-btn">
+                                            💲 Set monthly → get months
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="add-client__field">
                                     <label class="add-client__label" for="payment_months">Number of monthly
                                         payments</label>
                                     <input class="add-client__input" id="payment_months" name="payment_months"
                                         type="number" min="1" max="120" placeholder="e.g. 10" required
                                         value="{{ old('payment_months') }}" />
+                                    <div style="font-size:11px;opacity:.5;margin-top:3px;" id="wrkMonthsHint">Enter
+                                        months to auto-calculate monthly amount.</div>
                                 </div>
                                 <div class="add-client__field">
-                                    <label class="add-client__label">Monthly amount (auto-calculated)</label>
+                                    <label class="add-client__label">Monthly amount</label>
                                     <input class="add-client__input" id="monthly_preview" type="text" readonly
-                                        placeholder="Fill total + months above" style="opacity:.7;" />
+                                        placeholder="Auto-calculated" style="opacity:.7;" />
+                                    <div style="font-size:11px;opacity:.5;margin-top:3px;" id="wrkAmountHint">
+                                        Auto-calculated from months above.</div>
                                 </div>
+                                {{-- Hidden: carries the user-entered monthly amount to the server in by_amount mode
+                                --}}
+                                <input type="hidden" name="monthly_amount_input" id="monthly_amount_input" value="">
                                 <div class="add-client__field">
                                     <label class="add-client__label" for="first_payment_date">First payment date</label>
                                     <input class="add-client__input" id="first_payment_date" name="first_payment_date"
@@ -280,14 +300,74 @@
             recalcMonthly();
         }
 
+        var wrkCalcMode = 'by_months';
+
+        document.getElementById('wrkBtnByMonths')?.addEventListener('click', function () {
+            wrkCalcMode = 'by_months';
+            this.classList.add('add-client__type-btn--active');
+            document.getElementById('wrkBtnByAmount')?.classList.remove('add-client__type-btn--active');
+            var mEl = document.getElementById('payment_months');
+            if (mEl) { mEl.readOnly = false; mEl.style.background = ''; mEl.style.cursor = ''; }
+            var pEl = document.getElementById('monthly_preview');
+            if (pEl) { pEl.style.opacity = '.7'; pEl.readOnly = true; pEl.type = 'text'; pEl.placeholder = 'Auto-calculated'; }
+            // Clear hidden override — server will use total/months calculation
+            var hEl = document.getElementById('monthly_amount_input');
+            if (hEl) hEl.value = '';
+            document.getElementById('wrkMonthsHint').textContent = 'Enter months to auto-calculate monthly amount.';
+            document.getElementById('wrkAmountHint').textContent  = 'Auto-calculated from months above.';
+            recalcMonthly();
+        });
+
+        document.getElementById('wrkBtnByAmount')?.addEventListener('click', function () {
+            wrkCalcMode = 'by_amount';
+            this.classList.add('add-client__type-btn--active');
+            document.getElementById('wrkBtnByMonths')?.classList.remove('add-client__type-btn--active');
+            var mEl = document.getElementById('payment_months');
+            if (mEl) { mEl.readOnly = true; mEl.style.background = '#f3f4f6'; mEl.style.cursor = 'not-allowed'; }
+            var pEl = document.getElementById('monthly_preview');
+            if (pEl) { pEl.style.opacity = '1'; pEl.readOnly = false; pEl.type = 'number'; pEl.step = '0.01'; pEl.min = '0'; pEl.placeholder = 'Enter monthly amount'; }
+            document.getElementById('wrkMonthsHint').textContent = 'Auto-calculated from monthly amount.';
+            document.getElementById('wrkAmountHint').textContent  = 'Enter monthly amount to auto-calculate months.';
+            recalcMonthly();
+        });
+
         function recalcMonthly() {
             var total   = parseFloat(document.getElementById('total_amount')?.value) || 0;
-            var months  = parseInt(document.getElementById('payment_months')?.value) || 0;
             var preview = document.getElementById('monthly_preview');
-            if (preview) {
-                preview.value = (total > 0 && months > 0)
-                    ? '$' + (total / months).toFixed(2) + ' / month'
-                    : '';
+            var mEl     = document.getElementById('payment_months');
+
+            if (wrkCalcMode === 'by_months') {
+                var months = parseInt(mEl?.value) || 0;
+                if (preview) {
+                    preview.value = (total > 0 && months > 0)
+                        ? '$' + (total / months).toFixed(2) + ' / month'
+                        : '';
+                }
+            } else {
+                // by_amount: parse monthly from the preview field (now editable number)
+                var monthly = parseFloat(preview?.value) || 0;
+                var hiddenMonthly = document.getElementById('monthly_amount_input');
+                if (monthly > 0 && total > 0) {
+                    var exact      = total / monthly;
+                    var full       = Math.floor(exact);
+                    var fraction   = exact - full;
+                    var totalInv   = full + (fraction > 0.001 ? 1 : 0);
+                    if (mEl) mEl.value = totalInv;
+                    // Pass the exact monthly amount to the server via hidden field
+                    if (hiddenMonthly) hiddenMonthly.value = monthly.toFixed(2);
+                    // Show breakdown hint
+                    if (fraction > 0.001) {
+                        var last = parseFloat((fraction * monthly).toFixed(2));
+                        document.getElementById('wrkAmountHint').textContent =
+                            totalInv + ' payments: ' + full + ' × $' + monthly.toFixed(2) + ' + last $' + last.toFixed(2);
+                    } else {
+                        document.getElementById('wrkAmountHint').textContent =
+                            totalInv + ' equal payments of $' + monthly.toFixed(2);
+                    }
+                } else {
+                    if (mEl) mEl.value = '';
+                    if (hiddenMonthly) hiddenMonthly.value = '';
+                }
             }
         }
 
@@ -381,6 +461,7 @@
         // ── Manual total / months change ──────────────────────────────────
         document.getElementById('total_amount')?.addEventListener('input', recalcMonthly);
         document.getElementById('payment_months')?.addEventListener('input', recalcMonthly);
+        document.getElementById('monthly_preview')?.addEventListener('input', recalcMonthly);
 
         // ── Init: hide all cost inputs ────────────────────────────────────
         document.querySelectorAll('.assign-cost').forEach(function (div) {

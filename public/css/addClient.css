@@ -279,3 +279,24 @@
 .add-client__ik-total strong {
     font-weight: 800;
 }
+
+/* ── Calc mode toggle buttons ──────────────────────────── */
+.add-client__type-btn {
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.03);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: rgba(0, 0, 0, 0.55);
+}
+.add-client__type-btn--active {
+    background: rgba(42, 127, 176, 0.1);
+    border-color: rgba(42, 127, 176, 0.4);
+    color: rgba(42, 127, 176, 0.95);
+}
+.add-client__type-btn:hover:not(.add-client__type-btn--active) {
+    background: rgba(0, 0, 0, 0.06);
+}

@@ -16,14 +16,17 @@ class WorkerPayment extends Model
         'due_date',
         'paid_at',
         'amount',
+        'amount_paid',
         'status',
         'receipt_path',
         'marked_paid_by',
     ];
 
     protected $casts = [
-        'due_date' => 'date',
-        'paid_at'  => 'date',
+        'due_date'    => 'date',
+        'paid_at'     => 'date',
+        'amount'      => 'decimal:2',
+        'amount_paid' => 'decimal:2',
     ];
 
     public function contract()

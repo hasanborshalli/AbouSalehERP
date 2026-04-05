@@ -126,8 +126,19 @@ class WorkersController extends Controller
                 'avatar'     => '/img/default-avatar.png',
             ]);
 
-            $months        = (int) $contractData['payment_months'];
-            $monthlyAmount = round($totalAmount / $months, 2);
+            $months = (int) $contractData['payment_months'];
+            // If the user used reverse-calc mode (set monthly → get months), the form
+            // submits the intended monthly amount via the hidden monthly_amount_input field.
+            // Use that directly so 10 × $20,000 + last $5,000 stays correct.
+            // Without it, total/months recalculation produces the wrong per-payment amount.
+            $submittedMonthly = (float) ($request->input('monthly_amount_input', 0));
+            if ($submittedMonthly > 0) {
+                $monthlyAmount = round($submittedMonthly, 2);
+            } else {
+                $monthlyAmount = $months > 0 ? round($totalAmount / $months, 2) : $totalAmount;
+            }
+            // Last payment absorbs the remainder (handles fractional months exactly)
+            $lastAmount = round($totalAmount - ($monthlyAmount * ($months - 1)), 2);
 
             $contract = WorkerContract::create([
                 'worker_user_id'         => $worker->id,
@@ -243,7 +254,8 @@ class WorkersController extends Controller
         abort_if($payment->status === 'paid', 422, 'Already paid.');
 
         $data = $request->validate([
-            'paid_at' => ['nullable', 'date'],
+            'paid_at'     => ['nullable', 'date'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $audit = new AuditLog();
@@ -255,30 +267,90 @@ class WorkersController extends Controller
         $audit->record = 'WRK-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
 
-        $paidAt = $data['paid_at'] ? Carbon::parse($data['paid_at']) : now();
+        $paidAt     = ($data['paid_at'] ?? null) ? Carbon::parse($data['paid_at']) : now();
+        $amountDue  = round((float) $payment->amount, 2);
+        $amountPaid = isset($data['amount_paid']) && $data['amount_paid'] !== null
+            ? round((float) $data['amount_paid'], 2)
+            : $amountDue; // blank = exact payment
 
         $payment->update([
             'status'         => 'paid',
+            'amount_paid'    => $amountPaid,
             'paid_at'        => $paidAt->toDateString(),
             'marked_paid_by' => auth()->id(),
         ]);
 
-        // Post as cash-out (we pay the worker)
+        // Post as cash-out for the amount actually paid
         $contract = $payment->contract()->with('worker', 'project')->first();
         $cash->createOperatingExpense([
             'expense_date' => $paidAt->toDateString(),
             'category'     => 'worker_payment',
-            'amount'       => (float) $payment->amount,
+            'amount'       => $amountPaid,
             'description'  => "Worker payment {$payment->payment_number} – {$contract->worker->name}" .
                               ($contract->project ? " (Project: {$contract->project->name})" : ''),
         ], auth()->id());
 
-        // Generate receipt PDF then send email
-        DB::afterCommit(function () use ($payment) {
+        // ── Apply over/underpayment to next pending payments ─────────────
+        // Credit cascades forward; deficit hits the next payment only.
+        $credit          = round($amountPaid - $amountDue, 2);
+        $autoPaidIds     = []; // IDs of payments auto-covered by the credit
+
+        if ($credit >= 0.01) {
+            // Overpayment: mark subsequent pending payments as paid until credit runs out.
+            // IMPORTANT: do NOT post additional expenses here — the $amountPaid already
+            // represents the full cash-out. Auto-paid payments are just allocation of that
+            // credit, not a new outflow.
+            $upcoming = WorkerPayment::where('worker_contract_id', $payment->worker_contract_id)
+                ->where('status', 'pending')
+                ->where('due_date', '>', $payment->due_date)
+                ->orderBy('due_date')
+                ->get();
+
+            foreach ($upcoming as $next) {
+                if ($credit < 0.01) break;
+                $nextDue = round((float) $next->amount, 2);
+
+                if ($credit >= $nextDue) {
+                    $credit -= $nextDue;
+                    $credit  = round($credit, 2);
+                    $next->update([
+                        'status'         => 'paid',
+                        'amount_paid'    => $nextDue,
+                        'paid_at'        => $paidAt->toDateString(),
+                        'marked_paid_by' => auth()->id(),
+                    ]);
+                    $autoPaidIds[] = $next->id;
+                } else {
+                    // Partial credit — reduce the next payment's amount, no status change
+                    $next->update(['amount' => round($nextDue - $credit, 2)]);
+                    $credit = 0;
+                }
+            }
+
+        } elseif ($credit <= -0.01) {
+            // Underpayment: add deficit to the very next pending payment only
+            $next = WorkerPayment::where('worker_contract_id', $payment->worker_contract_id)
+                ->where('status', 'pending')
+                ->where('due_date', '>', $payment->due_date)
+                ->orderBy('due_date')
+                ->first();
+            if ($next) {
+                $next->update(['amount' => round((float) $next->amount + abs($credit), 2)]);
+            }
+        }
+
+        // Receipt PDF + email for the manually paid payment, then receipts for auto-paid ones
+        // The job reads amount_paid from the DB and uses it when it exceeds the face value.
+        DB::afterCommit(function () use ($payment, $autoPaidIds) {
             Bus::chain([
                 new GenerateWorkerPaymentReceiptJob($payment->id),
                 new SendWorkerPaymentReceiptMailJob($payment->id),
             ])->dispatch();
+
+            // Generate receipts for auto-paid payments
+            foreach ($autoPaidIds as $autoPaidId) {
+                GenerateWorkerPaymentReceiptJob::dispatch($autoPaidId);
+            }
         });
 
         // Notify the worker
@@ -288,13 +360,13 @@ class WorkersController extends Controller
             'key'         => 'worker_payment_received_' . $payment->id,
             'type'        => 'payment_received',
             'title'       => 'Payment Received',
-            'message'     => 'Payment #' . $payment->installment_index . ' of $' . number_format($payment->amount, 2) . ' has been processed for: ' . $payment->contract->scope_of_work,
+            'message'     => 'Payment #' . $payment->installment_index . ' of $' . number_format($amountPaid, 2) . ' has been processed for: ' . $payment->contract->scope_of_work,
             'url'         => '/worker/payments',
             'entity_type' => 'worker_payment',
             'entity_id'   => $payment->id,
         ]);
 
-        $audit->details = "Worker payment {$payment->payment_number} marked as paid (\${$payment->amount}).";
+        $audit->details = "Worker payment {$payment->payment_number} marked as paid (\${$amountPaid}).";
         $audit->save();
 
         return back()->with('success', 'Payment marked as paid and receipt emailed to worker.');
@@ -356,9 +428,20 @@ class WorkersController extends Controller
         $audit->record = 'WRK-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
 
-        DB::transaction(function () use ($worker,$managedPropertyIds,$managedPropertyCosts, $contractData, $audit, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
-            $months        = (int) $contractData['payment_months'];
-            $monthlyAmount = round($totalAmount / $months, 2);
+        DB::transaction(function () use ($request,$worker,$managedPropertyIds,$managedPropertyCosts, $contractData, $audit, $totalAmount, $projectIds, $apartmentIds, $projectCosts, $apartmentCosts) {
+            $months = (int) $contractData['payment_months'];
+            // If the user used reverse-calc mode (set monthly → get months), the form
+            // submits the intended monthly amount via the hidden monthly_amount_input field.
+            // Use that directly so 10 × $20,000 + last $5,000 stays correct.
+            // Without it, total/months recalculation produces the wrong per-payment amount.
+            $submittedMonthly = (float) ($request->input('monthly_amount_input', 0));
+            if ($submittedMonthly > 0) {
+                $monthlyAmount = round($submittedMonthly, 2);
+            } else {
+                $monthlyAmount = $months > 0 ? round($totalAmount / $months, 2) : $totalAmount;
+            }
+            // Last payment absorbs the remainder (handles fractional months exactly)
+            $lastAmount = round($totalAmount - ($monthlyAmount * ($months - 1)), 2);
 
             $contract = WorkerContract::create([
                 'worker_user_id'         => $worker->id,

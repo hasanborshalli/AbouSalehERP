@@ -123,10 +123,20 @@
                                     <form class="settle-form" method="post"
                                         action="{{ route('workers.payments.markPaid', $p) }}">
                                         @csrf @method('PATCH')
-                                        <input type="date" name="paid_at" value="{{ now()->format('Y-m-d') }}">
-                                        <button type="submit" class="btn-submit"
-                                            style="padding:6px 14px; border-radius:999px; border:none; background:rgba(21,128,61,.12); color:#15803d; font-size:12px; font-weight:700; cursor:pointer;">✔
-                                            Mark Paid</button>
+                                        <div style="display:flex;flex-direction:column;gap:5px;">
+                                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                                <input type="date" name="paid_at" value="{{ now()->format('Y-m-d') }}">
+                                                <input type="number" name="amount_paid" class="amt-paid-input"
+                                                    data-due="{{ $p->amount }}" value="{{ $p->amount }}" step="0.01"
+                                                    min="0"
+                                                    style="width:110px;padding:5px 8px;border-radius:8px;border:2px solid rgba(0,0,0,0.12);font-size:12px;">
+                                                <button type="submit" class="btn-submit"
+                                                    style="padding:6px 14px;border-radius:999px;border:none;background:rgba(21,128,61,.12);color:#15803d;font-size:12px;font-weight:700;cursor:pointer;">✔
+                                                    Mark Paid</button>
+                                            </div>
+                                            <div class="amt-paid-diff"
+                                                style="font-size:11px;font-weight:700;min-height:14px;"></div>
+                                        </div>
                                     </form>
                                     @elseif($p->receipt_path)
                                     <a class="link-btn" href="{{ route('workers.payments.receipt', $p) }}">↓ Receipt</a>
@@ -414,6 +424,29 @@
         });
         document.getElementById('nc_total')?.addEventListener('input', recalcMonthly);
         document.getElementById('nc_months')?.addEventListener('input', recalcMonthly);
+    });
+    </script>
+    <script>
+        document.querySelectorAll('.amt-paid-input').forEach(function (input) {
+        var due  = parseFloat(input.dataset.due) || 0;
+        var diff = input.closest('form').querySelector('.amt-paid-diff');
+        function update() {
+            var paid = parseFloat(input.value) || 0;
+            var d    = parseFloat((paid - due).toFixed(2));
+            if (!diff) return;
+            if (Math.abs(d) < 0.01) {
+                diff.style.color = '#059669';
+                diff.textContent = '✓ Exact payment';
+            } else if (d > 0) {
+                diff.style.color = '#2563eb';
+                diff.textContent = 'Overpayment $' + d.toFixed(2) + ' — credited to next payment(s)';
+            } else {
+                diff.style.color = '#d97706';
+                diff.textContent = 'Underpayment $' + Math.abs(d).toFixed(2) + ' — added to next payment';
+            }
+        }
+        input.addEventListener('input', update);
+        update();
     });
     </script>
 </body>

@@ -149,13 +149,14 @@ class InvoicesController extends Controller
         // We do everything DB-related here — marking paid, ledger entries,
         // apartment status — BEFORE touching any PDF generation.
         // Collecting IDs of invoices whose PDFs need regenerating.
-        $adjustedInvoices  = [];
-        $pdfInvoiceIds     = []; // will be regenerated after DB work
+        $adjustedInvoices   = [];
+        $pdfInvoiceIds      = []; // will be regenerated after DB work
+        $autoPaidInvoiceIds = []; // auto-paid via credit — need receipt PDFs too
         $userId            = auth()->id();
 
         DB::transaction(function () use (
             $invoice, $data, $acct, $totalDue, $amountPaid, $userId,
-            &$adjustedInvoices, &$pdfInvoiceIds
+            &$adjustedInvoices, &$pdfInvoiceIds, &$autoPaidInvoiceIds
         ) {
             $paidAt = (isset($data['paid_at']) && $data['paid_at'])
                 ? Carbon::parse($data['paid_at'])
@@ -169,8 +170,10 @@ class InvoicesController extends Controller
 
             $pdfInvoiceIds[] = $invoice->id;
 
-            // Ledger entry for current invoice
-            $acct->postInvoicePaid($invoice, $paidAt, $userId);
+            // Ledger entry for current invoice.
+            // Pass amountPaid when it exceeds the face value so the ledger reflects actual cash received.
+            $ledgerAmount = ($amountPaid > $totalDue + 0.009) ? $amountPaid : null;
+            $acct->postInvoicePaid($invoice, $paidAt, $userId, $ledgerAmount);
 
             // Apartment sold on first payment
             $invoice->loadMissing('contract.apartment');
@@ -212,7 +215,8 @@ class InvoicesController extends Controller
                         // Ledger entry for auto-paid invoice
                         $acct->postInvoicePaid($upcoming, $paidAt, $userId);
 
-                        $pdfInvoiceIds[] = $upcoming->id; // queue PDF, don't block
+                        $pdfInvoiceIds[]      = $upcoming->id; // queue PDF, don't block
+                        $autoPaidInvoiceIds[] = $upcoming->id; // also needs a receipt
 
                         $adjustedInvoices[] = [
                             'id'     => $upcoming->id,
@@ -270,7 +274,7 @@ class InvoicesController extends Controller
         // background and the HTTP response returns immediately.
         // With QUEUE_CONNECTION=sync they run here, but at least all DB
         // work finished first so the data is always correct.
-        DB::afterCommit(function () use ($pdfInvoiceIds, $userId, $invoice) {
+        DB::afterCommit(function () use ($pdfInvoiceIds, $autoPaidInvoiceIds, $userId, $invoice) {
             // Regenerate all affected invoice PDFs in one batch
             $pdfJobs = array_map(
                 fn($id) => new GenerateInvoicePdfJob($id),
@@ -281,11 +285,16 @@ class InvoicesController extends Controller
                 ->name("Invoice PDFs after payment #{$invoice->id}")
                 ->dispatch();
 
-            // Receipt + email only for the invoice the user manually paid
+            // Receipt + email for the manually paid invoice
             Bus::chain([
                 new GenerateReceiptPdfJob($invoice->id, $userId),
                 new SendInvoiceReceiptMailJob($invoice->id),
             ])->dispatch();
+
+            // Receipts for every auto-paid invoice
+            foreach ($autoPaidInvoiceIds as $autoPaidId) {
+                GenerateReceiptPdfJob::dispatch($autoPaidId, $userId);
+            }
         });
 
         $audit->details = 'Marking invoice (' . $invoice->invoice_number . ') as paid succeeded. Amount paid: $' . $amountPaid;
