@@ -38,6 +38,9 @@ class GenerateWorkerPaymentReceiptJob implements ShouldQueue
                     ? $payment->paid_at->format('Y-m-d')
                     : now()->format('Y-m-d');
 
+        $scopeAr      = $contract->scope_of_work_ar ?? $contract->scope_of_work;
+        $projectNameAr = $contract->project ? ($contract->project->name_ar ?? $contract->project->name) : null;
+
         $pdf = Pdf::loadView('pdfs.worker-receipt', [
             'receiptNo'     => 'WP-' . $payment->payment_number,
             'date'          => $date,
@@ -46,6 +49,8 @@ class GenerateWorkerPaymentReceiptJob implements ShouldQueue
             'amountNumbers' => '$' . number_format($amount, 2),
             'forWhat'       => "Payment #{$payment->installment_index} – {$contract->scope_of_work}" .
                                ($contract->project ? " (Project: {$contract->project->name})" : ''),
+            'forWhatAr'     => "دفعة رقم {$payment->installment_index} ({$scopeAr})" .
+                               ($projectNameAr ? " - مشروع: {$projectNameAr}" : ''),
             'paymentMethod' => 'cash',
         ])->setPaper('a4');
 

@@ -8,6 +8,7 @@ class Project extends Model
 {
 protected $fillable=[
     'name',
+    'name_ar',
     'code',
     'city',
     'area',

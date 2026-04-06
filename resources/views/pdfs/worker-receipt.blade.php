@@ -28,10 +28,11 @@
     $arTransfer = ArabicPdf::shape('تحويل بنكي');
     $arPaidBy = ArabicPdf::shape('دفعت بواسطة');
     $arAuthSig = ArabicPdf::shape('التوقيع المخوّل');
-    $arNote = ArabicPdf::shape('يؤكد هذا السند إتمام الدفعة للمقاول يرجى الاحتفاظ به للسجلات');
+    $arNote1 = ArabicPdf::shape('يؤكد هذا السند إتمام الدفعة للمقاول');
+    $arNote2 = ArabicPdf::shape('يرجى الاحتفاظ به للسجلات');
 
     $arPayeeName = ArabicPdf::shape($payeeName);
-    $arForWhat = ArabicPdf::shape($forWhat);
+    $arForWhat = ArabicPdf::shape($forWhatAr);
     $arPayMethod = ArabicPdf::shape(match($paymentMethod) {
     'cash' => 'نقداً',
     'cheque' => 'شيك',
@@ -168,6 +169,37 @@
             padding-top: 6px;
             border-top: 1px dashed #e5e7eb;
         }
+
+        .field-lbl {
+            font-weight: 700;
+            font-size: 10.5px;
+            color: #555;
+            margin-bottom: 3px;
+        }
+
+        .field-val {
+            font-size: 12px;
+        }
+
+        .ar-lbl {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+            font-weight: bold;
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 1px;
+        }
+
+        .ar-val {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+        }
     </style>
 </head>
 
@@ -194,35 +226,74 @@
 
     <table class="bi">
         <tr>
-            <td class="en"><span class="label">Receipt No:</span> {{ $receiptNo }}</td>
-            <td><span class="ar">{{ $receiptNo }} : {{ $arNo }}</span></td>
-        </tr>
-        <tr>
-            <td class="en"><span class="label">Date:</span> {{ $date }}</td>
-            <td><span class="ar">{{ $date }} : {{ $arDate }}</span></td>
-        </tr>
-        <tr>
-            <td class="en"><span class="label">Paid To:</span><br>{{ $payeeName }}</td>
-            <td><span class="ar">{{ $arPayeeName }} : {{ $arPaidTo }}</span></td>
-        </tr>
-        <tr>
-            <td class="en"><span class="label">The Sum of:</span><br><strong>{{ $sumOf }}</strong></td>
-            <td><span class="ar">{{ $arAmountWords }} : {{ $arSumOf }}</span></td>
-        </tr>
-        <tr>
-            <td class="en"><span class="label">Amount:</span><br><strong>{{ $amountNumbers }}</strong></td>
-            <td><span class="ar">{{ $amountNumbers }} : {{ $arAmount }}</span></td>
-        </tr>
-        <tr>
-            <td class="en"><span class="label">For:</span><br>{{ $forWhat }}</td>
-            <td><span class="ar">{{ $arForWhat }} : {{ $arFor }}</span></td>
-        </tr>
-        <tr>
-            <td class="en">
-                <span class="label">Payment Method: {{$paymentMethod}}</span><br>
-
+            <td>
+                <div class="field-lbl">Receipt No</div>
+                <div class="field-val">{{ $receiptNo }}</div>
             </td>
-            <td><span class="ar">{{ $arPayMethod }} : {{ $arMethod }}</span></td>
+            <td>
+                <span class="ar-lbl">{{ $arNo }}</span>
+                <span class="ar-val">{{ $receiptNo }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">Date</div>
+                <div class="field-val">{{ $date }}</div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arDate }}</span>
+                <span class="ar-val">{{ $date }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">Paid To</div>
+                <div class="field-val"><b>{{ $payeeName }}</b></div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arPaidTo }}</span>
+                <span class="ar-val">{{ $arPayeeName }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">The Sum of</div>
+                <div class="field-val"><b>{{ $sumOf }}</b></div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arSumOf }}</span>
+                <span class="ar-val">{{ $arAmountWords }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">Amount</div>
+                <div class="field-val"><b>{{ $amountNumbers }}</b></div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arAmount }}</span>
+                <span class="ar-val">{{ $amountNumbers }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">For</div>
+                <div class="field-val">{{ $forWhat }}</div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arFor }}</span>
+                <span class="ar-val">{{ $arForWhat }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-lbl">Payment Method</div>
+                <div class="field-val">{{ $paymentMethod }}</div>
+            </td>
+            <td>
+                <span class="ar-lbl">{{ $arMethod }}</span>
+                <span class="ar-val">{{ $arPayMethod }}</span>
+            </td>
         </tr>
     </table>
 
@@ -243,7 +314,10 @@
         </tr>
     </table>
 
-    <div class="info-note"><span class="ar">{{ $arNote }}</span></div>
+    <div class="info-note">
+        <span class="ar">{{ $arNote1 }}</span>
+        <span class="ar">{{ $arNote2 }}</span>
+    </div>
     <div class="footer-line"></div>
 </body>
 

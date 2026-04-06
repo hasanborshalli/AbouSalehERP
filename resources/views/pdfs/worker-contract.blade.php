@@ -34,10 +34,14 @@
     $arLblManagedP = ArabicPdf::shape('العقارات المدارة');
     $arLblDesc = ArabicPdf::shape('الوصف');
     $arLblCategory = ArabicPdf::shape('الفئة');
+    $arLblTotalAmount = ArabicPdf::shape('المبلغ الاجمالي');
+    $arLblCostDetails = ArabicPdf::shape('تفاصيل التكاليف');
+    $arPaymentMonths = ArabicPdf::shape($contract->payment_months . ' اشهر');
     $arLblStartDate = ArabicPdf::shape('تاريخ البداية');
     $arLblEndDate = ArabicPdf::shape('تاريخ الانتهاء المتوقع');
     $arCompanyName = ArabicPdf::shape('أبو صالح للتجارة العامة');
-    $arScopeOfWork = ArabicPdf::shape($contract->scope_of_work ?? '');
+    $arScopeOfWork = ArabicPdf::shape($contract->scope_of_work_ar ?? $contract->scope_of_work ?? '');
+    $arCategory = ArabicPdf::shape($contract->category ?? '');
     $arWorkerTerms = [
     ArabicPdf::shape('يلتزم المقاول بانجاز العمل بمستوى مهني عالٍ.'),
     ArabicPdf::shape('المقاول مسؤول عن ادواته ومعداته وسلامته في موقع العمل.'),
@@ -186,10 +190,19 @@
         }
 
         .money th {
-            width: 40%;
+            width: 35%;
             text-align: left;
             background: #f8fafc;
             font-weight: 700;
+        }
+
+        .money .ar-col {
+            width: 35%;
+            text-align: right;
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            background: #f8fafc;
         }
 
         .money td {
@@ -200,6 +213,11 @@
         .money .final td {
             background: #f1f5f9;
             font-weight: 800;
+        }
+
+        .money .final .ar-col {
+            font-family: 'Amiri', sans-serif;
+            font-weight: 700;
         }
 
         .schedule th,
@@ -223,12 +241,36 @@
             page-break-inside: avoid;
         }
 
-        .header td {
-            vertical-align: top;
+        .logo-top {
+            text-align: center;
+            margin-bottom: 8px;
         }
 
-        .logo {
+        .logo-top img {
             width: 110px;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .header-table td {
+            padding: 0 4px;
+            vertical-align: middle;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .voucher-bar {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 0 14px;
+            text-align: center;
         }
 
         .sig-wrap {
@@ -298,28 +340,34 @@
     @endif
 
     <!-- HEADER -->
-    <table class="header" style="margin-bottom:10px;">
+    <div class="logo-top">
+        @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif
+    </div>
+
+    <table class="header-table">
         <tr>
-            <td style="padding-right:10px;">
-                <div class="h1">Service / Work Contract</div>
-                <div
-                    style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;text-align:center;font-size:16px;font-weight:bold;margin-top:4px;">
-                    {{ $arDocTitle }}</div>
-                <div class="muted small" style="margin-top:2px;">
-                    Contract ID: <b>#{{ $contract->id }}</b> &nbsp;•&nbsp;
-                    Date: <b>{{ $contract->contract_date->format('Y-m-d') }}</b><br>
-                    Generated: <b>{{ now()->timezone('Asia/Beirut')->format('Y-m-d H:i') }}</b>
-                </div>
-            </td>
+            <td>ABOU SALEH GENERAL TRADING</td>
             <td style="text-align:right;">
-                @if($logoB64)
-                <img src="data:image/png;base64,{{ $logoB64 }}" class="logo" alt="Logo">
-                @endif
+                <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{ $arCompanyAr
+                    }}</span>
             </td>
+        </tr>
+        <tr>
+            <td style="font-size:11px;font-weight:normal;">Email: info@abousaleh.me</td>
+            <td style="font-size:11px;font-weight:normal;text-align:right;">Tel: +961 71 999 219</td>
         </tr>
     </table>
 
-    <div class="line"></div>
+    <div class="voucher-bar">
+        SERVICE / WORK CONTRACT &nbsp;|&nbsp;
+        <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{ $arDocTitle }}</span>
+    </div>
+
+    <div class="muted small" style="margin-bottom:10px;">
+        Contract ID: <b>#{{ $contract->id }}</b> &nbsp;•&nbsp;
+        Date: <b>{{ $contract->contract_date->format('Y-m-d') }}</b>
+        &nbsp;•&nbsp; Generated: <b>{{ now()->timezone('Asia/Beirut')->format('Y-m-d H:i') }}</b>
+    </div>
 
     <!-- PARTIES -->
     <div class="card">
@@ -389,8 +437,8 @@
                 </td>
                 <td style="text-align:right;">
                     <span class="ar-lbl">{{ $arLblProjects }}</span>
-                    <span class="ar-val">@foreach($linkedProjects as $proj){{ ArabicPdf::shape($proj->name)
-                        }}@if(!$loop->last)، @endif @endforeach</span>
+                    <span class="ar-val">@foreach($linkedProjects as $proj){{ ArabicPdf::shape($proj->name_ar ??
+                        $proj->name) }}@if(!$loop->last)، @endif @endforeach</span>
                 </td>
             </tr>
             @endif
@@ -404,7 +452,9 @@
                 </td>
                 <td style="text-align:right;">
                     <span class="ar-lbl">{{ $arLblUnits }}</span>
-                    <span class="ar-val">{{ $arLblUnits }}</span>
+                    <span class="ar-val">@foreach($linkedApartments as $apt){{ ArabicPdf::shape('وحدة ' .
+                        ($apt->unit_number ?? '#'.$apt->id) . ($apt->project ? ' - ' . ($apt->project->name_ar ??
+                        $apt->project->name) : '')) }}@if(!$loop->last)، @endif @endforeach</span>
                 </td>
             </tr>
             @endif
@@ -456,7 +506,7 @@
                 </td>
                 <td style="text-align:right;">
                     <span class="ar-lbl">{{ $arLblCategory }}</span>
-                    <span class="ar-val">{{ ArabicPdf::shape($contract->category) }}</span>
+                    <span class="ar-val">{{ $arCategory }}</span>
                 </td>
             </tr>
             @endif
@@ -492,7 +542,15 @@
     <!-- ASSIGNMENT & COST BREAKDOWN -->
     @if($linkedProjects->isNotEmpty() || $linkedApartments->isNotEmpty() || $linkedManagedProps->isNotEmpty())
     <div class="card">
-        <div class="h2">Assignment & Cost Breakdown</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Assignment & Cost Breakdown</div>
+                </td>
+                <td style="border:0;"></td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arLblCostDetails }}</span></td>
+            </tr>
+        </table>
         <table class="money">
             @foreach($linkedProjects as $proj)
             <tr>
@@ -500,46 +558,44 @@
                 <td>
                     @if(isset($projectCosts[$proj->id]) && $projectCosts[$proj->id] > 0)
                     USD ${{ number_format($projectCosts[$proj->id], 2) }}
-                    @else
-                    <span style="color:#6b7280;">—</span>
+                    @else <span style="color:#6b7280;">—</span>
                     @endif
                 </td>
+                <td class="ar-col">{{ ArabicPdf::shape('مشروع: ' . ($proj->name_ar ?? $proj->name)) }}</td>
             </tr>
             @endforeach
             @foreach($linkedApartments as $apt)
             <tr>
-                <th>
-                    Unit {{ $apt->unit_number ?? '#'.$apt->id }}
-                    @if($apt->project) <span style="font-weight:400;color:#6b7280;">({{ $apt->project->name
-                        }})</span>@endif
-                </th>
+                <th>Unit {{ $apt->unit_number ?? '#'.$apt->id }}@if($apt->project) <span
+                        style="font-weight:400;color:#6b7280;">({{ $apt->project->name }})</span>@endif</th>
                 <td>
                     @if(isset($apartmentCosts[$apt->id]) && $apartmentCosts[$apt->id] > 0)
                     USD ${{ number_format($apartmentCosts[$apt->id], 2) }}
-                    @else
-                    <span style="color:#6b7280;">—</span>
+                    @else <span style="color:#6b7280;">—</span>
                     @endif
                 </td>
+                <td class="ar-col">{{ ArabicPdf::shape('وحدة ' . ($apt->unit_number ?? '#'.$apt->id) . ($apt->project ?
+                    ' - ' . ($apt->project->name_ar ?? $apt->project->name) : '')) }}</td>
             </tr>
             @endforeach
             @foreach($linkedManagedProps as $mp)
             <tr>
-                <th>
-                    Property: {{ $mp->address }}@if($mp->city), {{ $mp->city }}@endif
-                    <span style="font-weight:400;color:#6b7280;">({{ ucfirst($mp->type) }})</span>
-                </th>
+                <th>Property: {{ $mp->address }}@if($mp->city), {{ $mp->city }}@endif <span
+                        style="font-weight:400;color:#6b7280;">({{ ucfirst($mp->type) }})</span></th>
                 <td>
                     @if(isset($managedPropertyCosts[$mp->id]) && $managedPropertyCosts[$mp->id] > 0)
                     USD ${{ number_format($managedPropertyCosts[$mp->id], 2) }}
-                    @else
-                    <span style="color:#6b7280;">—</span>
+                    @else <span style="color:#6b7280;">—</span>
                     @endif
+                </td>
+                <td class="ar-col">{{ ArabicPdf::shape('عقار: ' . $mp->address . ($mp->city ? '، ' . $mp->city : '')) }}
                 </td>
             </tr>
             @endforeach
             <tr class="final">
                 <th>Total Contract Amount</th>
                 <td>USD ${{ number_format($contract->total_amount, 2) }}</td>
+                <td class="ar-col">{{ $arLblTotalAmount }}</td>
             </tr>
         </table>
     </div>
@@ -587,7 +643,7 @@
                 </td>
                 <td style="text-align:right;">
                     <span class="ar-lbl">{{ $arLblMonths }}</span>
-                    <span class="ar-val">{{ $contract->payment_months }}</span>
+                    <span class="ar-val">{{ $arPaymentMonths }}</span>
                 </td>
             </tr>
             <tr>

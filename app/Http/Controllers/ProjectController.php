@@ -31,7 +31,8 @@ class ProjectController extends Controller
         $audit->save();
          $validated = $request->validate([
             // project
-            'project_name' => ['required', 'string', 'max:255'],
+            'project_name'    => ['required', 'string', 'max:255'],
+            'project_name_ar' => ['nullable', 'string', 'max:255'],
             'project_code' => ['nullable', 'string', 'max:50','unique:projects,code'],
             'city' => ['required', 'string', 'max:100'],
             'area' => ['nullable', 'string', 'max:150'],
@@ -88,7 +89,8 @@ class ProjectController extends Controller
         return DB::transaction(function () use ($request, $validated, $audit, $cash) {
             // ✅ Create Project (map your columns)
             $project = Project::create([
-                'name' => $validated['project_name'],
+                'name'    => $validated['project_name'],
+                'name_ar' => $validated['project_name_ar'] ?? null,
                 'code' => $validated['project_code'] ?? null,
                 'city'=>$validated['city']??null,
                 'area'=>$validated['area']??null,
@@ -306,7 +308,8 @@ class ProjectController extends Controller
         $audit->save();
         $validated = $request->validate([
         // project fields
-        'project_name' => ['required', 'string', 'max:255'],
+        'project_name'    => ['required', 'string', 'max:255'],
+        'project_name_ar' => ['nullable', 'string', 'max:255'],
         'project_code' => [
             'nullable', 'string', 'max:60',
             Rule::unique('projects', 'code')->ignore($project->id),
@@ -347,7 +350,8 @@ class ProjectController extends Controller
         // A) Update project main info
         // ---------------------------
         $project->update([
-            'name' => $validated['project_name'],
+            'name'    => $validated['project_name'],
+            'name_ar' => $validated['project_name_ar'] ?? null,
             'code' => $validated['project_code'] ?? null,
             'city' => $validated['city'] ?? null,
             'area' => $validated['area'] ?? null,

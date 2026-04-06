@@ -59,6 +59,12 @@
                                         type="text" placeholder="e.g. Abou Saleh Tower" required
                                         value="{{ old('project_name', $project->name) }}">
                                 </div>
+                                <div class="create-project__field create-project__field--wide">
+                                    <label class="create-project__label" for="project_name_ar">Project name (Arabic)</label>
+                                    <input class="create-project__input" id="project_name_ar" name="project_name_ar"
+                                        type="text" placeholder="مثال: برج أبو صالح" dir="rtl"
+                                        value="{{ old('project_name_ar', $project->name_ar) }}">
+                                </div>
 
                                 <div class="create-project__field">
                                     <label class="create-project__label" for="project_code">Project code

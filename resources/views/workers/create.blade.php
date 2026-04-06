@@ -75,6 +75,12 @@
                                         placeholder="e.g. Electricity wiring – Floors 1–5" required
                                         value="{{ old('scope_of_work') }}" />
                                 </div>
+                                <div class="add-client__field add-client__field--wide">
+                                    <label class="add-client__label" for="scope_of_work_ar">Scope of work (Arabic)</label>
+                                    <input class="add-client__input" id="scope_of_work_ar" name="scope_of_work_ar" type="text"
+                                        placeholder="مثال: أعمال الكهرباء – الطوابق 1–5" dir="rtl"
+                                        value="{{ old('scope_of_work_ar') }}" />
+                                </div>
                                 <div class="add-client__field">
                                     <label class="add-client__label" for="category">Category</label>
                                     <input class="add-client__input" id="category" name="category" type="text"

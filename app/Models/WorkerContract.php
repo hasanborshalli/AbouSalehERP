@@ -17,6 +17,7 @@ class WorkerContract extends Model
         'managed_property_ids',
         'managed_property_costs',
         'scope_of_work',
+        'scope_of_work_ar',
         'category',
         'contract_date',
         'start_date',
