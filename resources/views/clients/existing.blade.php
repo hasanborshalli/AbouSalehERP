@@ -208,7 +208,7 @@
                                             <td class="clients-index__td clients-index__td--actions">
                                                 <button class="clients-index__btn clients-index__btn--view"
                                                     type="button">
-                                                    {{ __('ui.view') }}
+                                                    {{ __('view') }}
                                                 </button>
 
                                                 @if(auth()->user()->isOwner())

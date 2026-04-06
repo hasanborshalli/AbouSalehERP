@@ -14,8 +14,8 @@
     $lateFee = (float) ($invoice->late_fee_amount ?? 0);
     $totalDue = $baseAmount + $lateFee;
 
-    $arInvoice = ArabicPdf::shape('فاتورة');
-    $arNo = ArabicPdf::shape('الرقم');
+    $arTitle = ArabicPdf::shape('فاتورة');
+    $arNo = ArabicPdf::shape('رقم الفاتورة');
     $arStatus = ArabicPdf::shape('الحالة');
     $arIssue = ArabicPdf::shape('تاريخ الإصدار');
     $arDue = ArabicPdf::shape('تاريخ الاستحقاق');
@@ -25,17 +25,26 @@
     $arContract = ArabicPdf::shape('رقم العقد');
     $arBase = ArabicPdf::shape('المبلغ الأساسي');
     $arLateFee = ArabicPdf::shape('رسوم التأخير');
-    $arTotal = ArabicPdf::shape('المجموع');
-    $arDesc = ArabicPdf::shape('الوصف');
-    $arInstallment= ArabicPdf::shape('قسط شهري');
-    $arSignature = ArabicPdf::shape('التوقيع المخوّل');
+    $arTotal = ArabicPdf::shape('المجموع المستحق');
+    $arDesc = ArabicPdf::shape('قسط شهري');
+    $arSig = ArabicPdf::shape('التوقيع المخوّل');
     $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+
+    $arClientName = ArabicPdf::shape($contract->client->name ?? '');
+    $arProjectName= ArabicPdf::shape($contract->project->name ?? '-');
+    $arUnitNum = ArabicPdf::shape($contract->apartment->unit_number ?? '-');
+    $arStatusVal = ArabicPdf::shape(match(strtolower($invoice->status)) {
+    'paid' => 'مدفوع',
+    'pending' => 'قيد الانتظار',
+    'overdue' => 'متأخر',
+    default => strtoupper($invoice->status),
+    });
     @endphp
 
     @include('pdfs._arabic_font')
 
     <style>
-        @page {
+        @@page {
             margin: 26px 22px 55px 22px;
         }
 
@@ -67,58 +76,51 @@
             font-size: 10.5px;
         }
 
-        .box {
-            border: 1px solid #eee;
-            padding: 0;
-            margin-top: 10px;
-        }
-
-        .title-row {
-            margin-bottom: 10px;
+        .title-bar {
             font-size: 18px;
-            font-weight: 900;
+            font-weight: bold;
+            margin-bottom: 6px;
         }
 
         .ar {
             font-family: 'Amiri', sans-serif;
-            direction: rtl;
+            direction: ltr;
+            unicode-bidi: bidi-override;
             text-align: right;
+            display: inline-block;
+            width: 100%;
         }
 
-        .bi-table {
+        .box {
+            border: 1px solid #eee;
+            margin-top: 10px;
+        }
+
+        .bi {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .bi-table td {
+        .bi td {
             padding: 7px 10px;
             border-bottom: 1px solid #f0f0f0;
             width: 50%;
             vertical-align: top;
         }
 
-        .bi-table tr:last-child td {
+        .bi tr:last-child td {
             border-bottom: none;
         }
 
-        .bi-table .en {
+        .en {
             text-align: left;
             direction: ltr;
-        }
-
-        .bi-table .ar {
-            text-align: right;
-            direction: rtl;
-            font-family: 'Amiri', sans-serif;
-        }
-
-        .sig-section {
-            margin-top: 40px;
         }
 
         .sig-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 40px;
         }
 
         .sig-table td {
@@ -131,13 +133,6 @@
             width: 240px;
             border-bottom: 1px solid #111;
             margin-top: 6px;
-        }
-
-        .sig-line-ar {
-            width: 240px;
-            border-bottom: 1px solid #111;
-            margin-top: 6px;
-            margin-left: auto;
         }
 
         .sig-img {
@@ -155,94 +150,93 @@
     <img class="logo" src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
     @endif
 
-    <div class="title-row">Invoice &nbsp;|&nbsp; <span class="ar">{{ $arInvoice }}</span></div>
+    <div class="title-bar">Invoice &nbsp;|&nbsp; <span class="ar" style="font-size:18px;font-weight:bold;">{{ $arTitle
+            }}</span></div>
     <div class="muted">Generated: {{ ($generatedAt ?? now())->timezone('Asia/Beirut')->format('Y-m-d H:i') }}</div>
 
     <div class="box">
-        <table class="bi-table">
+        <table class="bi">
             <tr>
                 <td class="en"><strong>No:</strong> {{ $invoice->invoice_number }}</td>
-                <td class="ar"><strong>{{ $arNo }}:</strong> {{ $invoice->invoice_number }}</td>
+                <td><span class="ar">{{ $invoice->invoice_number }} : {{ $arNo }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Status:</strong> {{ strtoupper($invoice->status) }}</td>
-                <td class="ar"><strong>{{ $arStatus }}:</strong> {{ strtoupper($invoice->status) }}</td>
+                <td><span class="ar">{{ $arStatusVal }} : {{ $arStatus }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Issue date:</strong> {{ $invoice->issue_date }}</td>
-                <td class="ar"><strong>{{ $arIssue }}:</strong> {{ $invoice->issue_date }}</td>
+                <td><span class="ar">{{ $invoice->issue_date }} : {{ $arIssue }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Due date:</strong> {{ $invoice->due_date }}</td>
-                <td class="ar"><strong>{{ $arDue }}:</strong> {{ $invoice->due_date }}</td>
+                <td><span class="ar">{{ $invoice->due_date }} : {{ $arDue }}</span></td>
             </tr>
         </table>
     </div>
 
-    <div class="box" style="margin-top:10px;">
-        <table class="bi-table">
+    <div class="box">
+        <table class="bi">
             <tr>
                 <td class="en"><strong>Client:</strong> {{ $contract->client->name }}</td>
-                <td class="ar"><strong>{{ $arClient }}:</strong> {{ $contract->client->name }}</td>
+                <td><span class="ar">{{ $arClientName }} : {{ $arClient }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Project:</strong> {{ $contract->project->name ?? '-' }}</td>
-                <td class="ar"><strong>{{ $arProject }}:</strong> {{ $contract->project->name ?? '-' }}</td>
+                <td><span class="ar">{{ $arProjectName }} : {{ $arProject }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Apartment:</strong> {{ $contract->apartment->unit_number ?? '-' }}</td>
-                <td class="ar"><strong>{{ $arApartment }}:</strong> {{ $contract->apartment->unit_number ?? '-' }}</td>
+                <td><span class="ar">{{ $arUnitNum }} : {{ $arApartment }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Contract ID:</strong> #{{ $contract->id }}</td>
-                <td class="ar"><strong>{{ $arContract }}:</strong> #{{ $contract->id }}</td>
+                <td><span class="ar">#{{ $contract->id }} : {{ $arContract }}</span></td>
             </tr>
         </table>
     </div>
 
-    <div class="box" style="margin-top:10px;">
-        <table class="bi-table">
+    <div class="box">
+        <table class="bi">
             <tr>
                 <td class="en"><strong>Base amount:</strong> ${{ number_format($baseAmount, 2) }}</td>
-                <td class="ar"><strong>{{ $arBase }}:</strong> ${{ number_format($baseAmount, 2) }}</td>
+                <td><span class="ar">${{ number_format($baseAmount, 2) }} : {{ $arBase }}</span></td>
             </tr>
             @if(strtolower($invoice->status) === 'overdue' && $lateFee > 0)
             <tr>
                 <td class="en"><strong>Late fee:</strong> ${{ number_format($lateFee, 2) }}</td>
-                <td class="ar"><strong>{{ $arLateFee }}:</strong> ${{ number_format($lateFee, 2) }}</td>
+                <td><span class="ar">${{ number_format($lateFee, 2) }} : {{ $arLateFee }}</span></td>
             </tr>
             @endif
             <tr>
                 <td class="en"><strong>Total due:</strong> ${{ number_format($totalDue, 2) }}</td>
-                <td class="ar"><strong>{{ $arTotal }}:</strong> ${{ number_format($totalDue, 2) }}</td>
+                <td><span class="ar">${{ number_format($totalDue, 2) }} : {{ $arTotal }}</span></td>
             </tr>
             <tr>
                 <td class="en"><strong>Description:</strong> Monthly installment</td>
-                <td class="ar"><strong>{{ $arDesc }}:</strong> {{ $arInstallment }}</td>
+                <td><span class="ar">{{ $arDesc }}</span></td>
             </tr>
         </table>
     </div>
 
-    <div class="sig-section">
-        <table class="sig-table">
-            <tr>
-                <td>
-                    <strong>Authorized Signature</strong>
-                    @if($signatureB64)
-                    <img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">
-                    @else
-                    <div class="sig-line"></div>
-                    @endif
-                    <div style="margin-top:4px; font-weight:600;">Abou Saleh Real Estate</div>
-                </td>
-                <td style="text-align:right; direction:rtl; font-family:'Amiri',sans-serif;">
-                    <strong>{{ $arSignature }}</strong>
-                    <div class="sig-line-ar"></div>
-                    <div style="margin-top:4px; font-weight:600;">{{ $arCompany }}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
+    <table class="sig-table">
+        <tr>
+            <td class="en">
+                <strong>Authorized Signature</strong>
+                @if($signatureB64)
+                <img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">
+                @else
+                <div class="sig-line"></div>
+                @endif
+                <div style="margin-top:4px;font-weight:600;">Abou Saleh Real Estate</div>
+            </td>
+            <td style="text-align:right;">
+                <span class="ar">{{ $arSig }}</span>
+                <div class="sig-line" style="margin-left:auto;margin-right:0;"></div>
+                <span class="ar" style="font-weight:600;">{{ $arCompany }}</span>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>

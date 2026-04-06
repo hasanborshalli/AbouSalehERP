@@ -110,6 +110,16 @@ SAVE AS: resources/views/emails/managed-sale.blade.php
             <p>Our team will be in touch to finalize all legal paperwork. For any questions please contact us at <a
                     href="mailto:info@abousaleh.me">info@abousaleh.me</a>.</p>
         </div>
+        <div style="padding:20px 32px; direction:rtl; text-align:right; border-top:2px solid #e5e7eb;">
+            <p>عزيزي/عزيزتي <strong>{{ $sale->buyer_name }}</strong>،</p>
+            <p>تهانينا! تم تأكيد شراءكم للعقار أدناه من شركة أبو صالح للتجارة العامة.</p>
+            <p><strong>العقار:</strong> {{ $property->address }}</p>
+            <p><strong>تاريخ البيع:</strong> {{ $sale->sale_date->format('d M Y') }}</p>
+            <p><strong>سعر الشراء:</strong> ${{ number_format($sale->sale_price, 2) }}</p>
+            <p>سيتواصل معكم فريقنا لإتمام الإجراءات القانونية. لأي استفسار: <a
+                    href="mailto:info@abousaleh.me">info@abousaleh.me</a></p>
+            <p>مع تحياتنا — <strong>أبو صالح للتجارة العامة</strong></p>
+        </div>
         <div class="footer">Abou Saleh General Trading &nbsp;·&nbsp; +961 71 999 219 &nbsp;·&nbsp; info@abousaleh.me
         </div>
     </div>

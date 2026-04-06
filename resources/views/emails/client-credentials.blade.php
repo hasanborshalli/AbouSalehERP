@@ -4,72 +4,139 @@
 <head>
     <meta charset="utf-8">
     <title>Account Access Details | تفاصيل الوصول إلى الحساب</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .divider {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 30px 0;
+        }
+
+        .section-ar {
+            direction: rtl;
+            text-align: right;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 6px 12px;
+        }
+
+        td:first-child {
+            font-weight: bold;
+        }
+
+        .footer {
+            font-size: 11px;
+            color: #777;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
-<body style="font-family: Arial, Helvetica, sans-serif; color:#333; line-height:1.8;">
+<body>
+    <div class="container">
 
-    {{-- ── English ───────────────────────────────────── --}}
-    <p>Dear {{ $user->name }},</p>
-    <p>As part of our real estate agreement process, we have created a secure account for you to access your contract
-        and related information.</p>
+        {{-- ══ ENGLISH ══════════════════════════════════════════════ --}}
+        <p>Dear <strong>{{ $user->name }}</strong>,</p>
+        <p>As part of our real estate agreement process, we have created a secure account for you to access your
+            contract and related information.</p>
 
-    <p><strong>Your login credentials:</strong></p>
-    <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
-        <tr>
-            <td><strong>Email:</strong></td>
-            <td>{{ $user->email }}</td>
-        </tr>
-        <tr>
-            <td><strong>Temporary Password:</strong></td>
-            <td>{{ $rawPassword }}</td>
-        </tr>
-    </table>
-
-    <p>Login here: <a href="{{ url('/login') }}" style="color:#1a73e8;">{{ url('/login') }}</a></p>
-    <p><strong>Important:</strong> Please change your password after your first login.</p>
-    @if($contractPath)
-    <p>A copy of your <strong>real estate contract (PDF)</strong> is attached to this email. Please review it carefully.
-    </p>
-    @endif
-
-    <hr style="margin:24px 0; border:none; border-top:1px solid #eee;">
-
-    {{-- ── Arabic ────────────────────────────────────── --}}
-    <div dir="rtl" style="text-align:right; font-family: Arial, sans-serif;">
-        <p>عزيزي/عزيزتي {{ $user->name }}،</p>
-        <p>في إطار اتفاقيتنا العقارية، تم إنشاء حساب آمن لك للاطلاع على عقدك ومعلوماتك.</p>
-
-        <p><strong>بيانات تسجيل الدخول:</strong></p>
-        <table cellpadding="6" cellspacing="0" style="border-collapse:collapse; direction:rtl;">
+        <p><strong>Your login credentials:</strong></p>
+        <table>
             <tr>
-                <td><strong>البريد الإلكتروني:</strong></td>
+                <td>Email:</td>
                 <td>{{ $user->email }}</td>
             </tr>
             <tr>
-                <td><strong>كلمة المرور المؤقتة:</strong></td>
-                <td>{{ $rawPassword }}</td>
+                <td>Temporary Password:</td>
+                <td><strong>{{ $rawPassword }}</strong></td>
             </tr>
         </table>
 
-        <p>رابط تسجيل الدخول: <a href="{{ url('/login') }}" style="color:#1a73e8;">{{ url('/login') }}</a></p>
-        <p><strong>ملاحظة:</strong> يُرجى تغيير كلمة المرور فور تسجيل الدخول للمرة الأولى.</p>
+        <p style="margin-top:16px;">
+            <a href="{{ url('/login') }}" class="btn">Login to your account</a>
+        </p>
+        <p><strong>Important:</strong> Please change your password after your first login for security.</p>
+
         @if($contractPath)
-        <p>نسخة من <strong>عقدك العقاري (PDF)</strong> مرفقة بهذا البريد. يُرجى مراجعتها بعناية.</p>
+        <p>📎 A copy of your <strong>real estate contract (PDF)</strong> is attached to this email. Please review it
+            carefully and keep it for your records.</p>
         @endif
 
-        <p>مع تحياتنا،</p>
-        <p>
-            <strong>أبو صالح</strong><br>
-            إدارة العقارات<br>
-            هاتف: 219 999 71 961+<br>
-            البريد: info@abousaleh.me
-        </p>
-    </div>
+        <p>If you have any questions, feel free to contact us at <a
+                href="mailto:info@abousaleh.me">info@abousaleh.me</a> or call +961 71 999 219.</p>
 
-    <hr style="margin-top:30px;">
-    <p style="font-size:11px; color:#777;">
-        This email contains confidential information. | هذا البريد يحتوي على معلومات سرية.
-    </p>
+        <p>Kind regards,<br><strong>Abou Saleh Real Estate</strong></p>
+
+        <hr class="divider">
+
+        {{-- ══ ARABIC ════════════════════════════════════════════════ --}}
+        <div class="section-ar">
+            <p>عزيزي/عزيزتي <strong>{{ $user->name }}</strong>،</p>
+            <p>في إطار اتفاقيتنا العقارية، تم إنشاء حساب آمن لك للاطلاع على عقدك ومعلوماتك.</p>
+
+            <p><strong>بيانات تسجيل الدخول:</strong></p>
+            <table>
+                <tr>
+                    <td>البريد الإلكتروني:</td>
+                    <td>{{ $user->email }}</td>
+                </tr>
+                <tr>
+                    <td>كلمة المرور المؤقتة:</td>
+                    <td><strong>{{ $rawPassword }}</strong></td>
+                </tr>
+            </table>
+
+            <p style="margin-top:16px;">
+                <a href="{{ url('/login') }}" class="btn">تسجيل الدخول إلى حسابك</a>
+            </p>
+            <p><strong>ملاحظة مهمة:</strong> يُرجى تغيير كلمة المرور فور تسجيل الدخول للمرة الأولى.</p>
+
+            @if($contractPath)
+            <p>📎 نسخة من <strong>عقدك العقاري (PDF)</strong> مرفقة بهذا البريد. يُرجى مراجعتها بعناية والاحتفاظ بها.
+            </p>
+            @endif
+
+            <p>لأي استفسار، تواصل معنا على <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> أو على الرقم 219 999
+                71 961+.</p>
+
+            <p>مع تحياتنا،<br><strong>أبو صالح للعقارات</strong></p>
+        </div>
+
+        <div class="footer">
+            This email contains confidential information intended only for the recipient. |
+            هذا البريد يحتوي على معلومات سرية مخصصة للمستلم فقط.
+        </div>
+
+    </div>
 </body>
 
 </html>

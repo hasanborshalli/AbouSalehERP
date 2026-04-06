@@ -72,6 +72,14 @@
         If you are not the intended recipient, please delete this email immediately.
     </p>
 
+
+    <hr style="border:none;border-top:2px solid #e5e7eb;margin:30px 0;">
+    <div style="direction:rtl;text-align:right;font-family:Arial,sans-serif;color:#333;line-height:1.8;">
+        <p>عزيزي المسؤول،</p>
+        <p>تم إنشاء حساب مسؤول لك على نظام إدارة أبو صالح العقاري.</p>
+        <p>يُرجى تسجيل الدخول وتغيير كلمة المرور فوراً.</p>
+        <p>مع تحياتنا — <strong>أبو صالح للعقارات</strong></p>
+    </div>
 </body>
 
 </html>

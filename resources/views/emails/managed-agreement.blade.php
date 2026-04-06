@@ -137,7 +137,20 @@
             <p>Please review the attached PDF and keep it for your records. If you have any questions, contact us at <a
                     href="mailto:info@abousaleh.me">info@abousaleh.me</a> or call +961 71 999 219.</p>
         </div>
-        <div class="footer">Abou Saleh General Trading &nbsp;·&nbsp; +961 71 999 219 &nbsp;·&nbsp; info@abousaleh.me
+        <div style="padding:20px 32px; direction:rtl; text-align:right; border-top:1px solid #e5e7eb;">
+            <p>عزيزي/عزيزتي <strong>{{ $property->owner_name }}</strong>،</p>
+            <p>شكراً لثقتكم بشركة أبو صالح للتجارة العامة لإدارة عقاركم. مرفق بهذا البريد نسخة من الاتفاقية الكاملة.</p>
+            @if($property->isFlip())
+            <p><strong>مبلغ الضمان المتفق عليه:</strong> ${{ number_format($property->owner_asking_price, 2) }}</p>
+            @endif
+            @if($property->isRental())
+            <p><strong>الإيجار الشهري المتوقع:</strong> ${{ number_format($property->agreed_rent_price ?? 0, 2) }}</p>
+            @endif
+            <p>لأي استفسار: <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> | 219 999 71 961+</p>
+            <p>مع تحياتنا — <strong>أبو صالح للتجارة العامة</strong></p>
+        </div>
+        <div class="footer">Abou Saleh General Trading &nbsp;·&nbsp; +961 71 999 219 &nbsp;·&nbsp; info@abousaleh.me |
+            أبو صالح للتجارة العامة
         </div>
     </div>
 </body>

@@ -4,11 +4,50 @@
 <head>
     <meta charset="utf-8">
     @php
+    use App\Support\ArabicPdf;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
+
+    // Bilingual Arabic additions
+    $arDocTitle = ArabicPdf::shape('عقد عمل');
+    $arCompanyAr = ArabicPdf::shape('أبو صالح للتجارة العامة');
+    $arParties = ArabicPdf::shape('اطراف العقد');
+    $arWorkDetails = ArabicPdf::shape('تفاصيل العمل');
+    $arPaySchedule = ArabicPdf::shape('جدول الدفع');
+    $arSig = ArabicPdf::shape('التوقيعات');
+    $arTerms = ArabicPdf::shape('الشروط والاحكام');
+    $arLblWorker = ArabicPdf::shape('المقاول / العامل');
+    $arLblPhone = ArabicPdf::shape('الهاتف');
+    $arLblScope = ArabicPdf::shape('نطاق العمل');
+    $arLblTotal = ArabicPdf::shape('المبلغ الاجمالي');
+    $arLblMonthly = ArabicPdf::shape('الدفعة الشهرية');
+    $arLblMonths = ArabicPdf::shape('عدد الاقساط');
+    $arLblFirstDate = ArabicPdf::shape('تاريخ اول دفعة');
+    $arWorkerName = ArabicPdf::shape($contract->worker->name ?? '');
+    $arLblCompany = ArabicPdf::shape('الشركة (صاحب العمل)');
+    $arLblWorker = ArabicPdf::shape('المقاول / العامل');
+    $arLblEmail = ArabicPdf::shape('البريد الإلكتروني');
+    $arLblProjects = ArabicPdf::shape('المشاريع');
+    $arLblUnits = ArabicPdf::shape('الوحدات');
+    $arLblManagedP = ArabicPdf::shape('العقارات المدارة');
+    $arLblDesc = ArabicPdf::shape('الوصف');
+    $arLblCategory = ArabicPdf::shape('الفئة');
+    $arLblStartDate = ArabicPdf::shape('تاريخ البداية');
+    $arLblEndDate = ArabicPdf::shape('تاريخ الانتهاء المتوقع');
+    $arCompanyName = ArabicPdf::shape('أبو صالح للتجارة العامة');
+    $arScopeOfWork = ArabicPdf::shape($contract->scope_of_work ?? '');
+    $arWorkerTerms = [
+    ArabicPdf::shape('يلتزم المقاول بانجاز العمل بمستوى مهني عالٍ.'),
+    ArabicPdf::shape('المقاول مسؤول عن ادواته ومعداته وسلامته في موقع العمل.'),
+    ArabicPdf::shape('يجب اكتمال العمل ضمن الجدول الزمني المتفق عليه.'),
+    ArabicPdf::shape('اي تعديل يجب ان يكون كتابيا وموقعا من الطرفين.'),
+    ArabicPdf::shape('يخضع هذا العقد للقوانين المحلية المعمول بها.'),
+    ];
+
     @endphp
+    @include('pdfs._arabic_font')
     <style>
         @page {
             margin: 26px 22px 55px 22px;
@@ -23,7 +62,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Amiri', DejaVu Sans, sans-serif;
             font-size: 12px;
             color: #111827;
             margin: 0;
@@ -54,6 +93,45 @@
             margin: 0;
         }
 
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .ar-lbl {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+            font-weight: bold;
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 1px;
+        }
+
+        .ar-val {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+        }
+
+        .h2-ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            display: block;
+        }
+
         .h2 {
             font-size: 13px;
             font-weight: 700;
@@ -79,31 +157,36 @@
         }
 
         .info td {
-            padding: 6px 8px;
+            padding: 8px 10px;
             border-bottom: 1px solid #eef2f7;
+            vertical-align: top;
+            width: 50%;
         }
 
         .info tr:last-child td {
             border-bottom: 0;
         }
 
-        .label {
-            width: 34%;
+        .field-lbl {
             font-weight: 700;
+            font-size: 10.5px;
+            color: #555;
+            margin-bottom: 3px;
         }
 
-        .value {
-            width: 66%;
+        .field-val {
+            font-size: 12px;
         }
 
         .money th,
         .money td {
             border: 1px solid #e5e7eb;
             padding: 8px 10px;
+            vertical-align: top;
         }
 
         .money th {
-            width: 55%;
+            width: 40%;
             text-align: left;
             background: #f8fafc;
             font-weight: 700;
@@ -196,6 +279,16 @@
             font-size: 10px;
             font-weight: 700;
         }
+
+        /* Arabic text shaping — direction:ltr because utf8Glyphs pre-orders visually */
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -209,6 +302,9 @@
         <tr>
             <td style="padding-right:10px;">
                 <div class="h1">Service / Work Contract</div>
+                <div
+                    style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;text-align:center;font-size:16px;font-weight:bold;margin-top:4px;">
+                    {{ $arDocTitle }}</div>
                 <div class="muted small" style="margin-top:2px;">
                     Contract ID: <b>#{{ $contract->id }}</b> &nbsp;•&nbsp;
                     Date: <b>{{ $contract->contract_date->format('Y-m-d') }}</b><br>
@@ -227,63 +323,102 @@
 
     <!-- PARTIES -->
     <div class="card">
-        <div class="h2">Contracting Parties</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Contracting Parties</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arParties }}</span></td>
+            </tr>
+        </table>
+        @php
+        $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
+        $linkedApartments = \App\Models\Apartment::whereIn('id', $contract->allApartmentIds())->with('project')->get();
+        $linkedManagedProps = \App\Models\ManagedProperty::whereIn('id', $contract->allManagedPropertyIds())->get();
+        $projectCosts = $contract->project_costs ?? [];
+        $apartmentCosts = $contract->apartment_costs ?? [];
+        $managedPropertyCosts = $contract->managed_property_costs ?? [];
+        @endphp
         <table class="info">
             <tr>
-                <td class="label">Company (Employer)</td>
-                <td class="value">Abou Saleh General Trading</td>
+                <td>
+                    <div class="field-lbl">Company (Employer)</div>
+                    <div class="field-val">Abou Saleh General Trading</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblCompany }}</span>
+                    <span class="ar-val">{{ $arCompanyName }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Contractor / Worker</td>
-                <td class="value"><b>{{ $contract->worker->name }}</b></td>
+                <td>
+                    <div class="field-lbl">Contractor / Worker</div>
+                    <div class="field-val"><b>{{ $contract->worker->name }}</b></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblWorker }}</span>
+                    <span class="ar-val">{{ $arWorkerName }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Phone</td>
-                <td class="value">{{ $contract->worker->phone ?? '—' }}</td>
+                <td>
+                    <div class="field-lbl">Phone</div>
+                    <div class="field-val">{{ $contract->worker->phone ?? '—' }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblPhone }}</span>
+                    <span class="ar-val">{{ $contract->worker->phone ?? '—' }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Email</td>
-                <td class="value">{{ $contract->worker->email ?? '—' }}</td>
+                <td>
+                    <div class="field-lbl">Email</div>
+                    <div class="field-val">{{ $contract->worker->email ?? '—' }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblEmail }}</span>
+                    <span class="ar-val">{{ $contract->worker->email ?? '—' }}</span>
+                </td>
             </tr>
-            @php
-            $linkedProjects = \App\Models\Project::whereIn('id', $contract->allProjectIds())->get();
-            $linkedApartments = \App\Models\Apartment::whereIn('id',
-            $contract->allApartmentIds())->with('project')->get();
-            $linkedManagedProps = \App\Models\ManagedProperty::whereIn('id', $contract->allManagedPropertyIds())->get();
-            $projectCosts = $contract->project_costs ?? [];
-            $apartmentCosts = $contract->apartment_costs ?? [];
-            $managedPropertyCosts = $contract->managed_property_costs ?? [];
-            @endphp
             @if($linkedProjects->isNotEmpty())
             <tr>
-                <td class="label">Project(s)</td>
-                <td class="value">
-                    @foreach($linkedProjects as $proj)
-                    {{ $proj->name }}@if($proj->code) ({{ $proj->code }})@endif @if(!$loop->last), @endif
-                    @endforeach
+                <td>
+                    <div class="field-lbl">Project(s)</div>
+                    <div class="field-val">@foreach($linkedProjects as $proj){{ $proj->name }}@if($proj->code) ({{
+                        $proj->code }})@endif @if(!$loop->last), @endif @endforeach</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblProjects }}</span>
+                    <span class="ar-val">@foreach($linkedProjects as $proj){{ ArabicPdf::shape($proj->name)
+                        }}@if(!$loop->last)، @endif @endforeach</span>
                 </td>
             </tr>
             @endif
             @if($linkedApartments->isNotEmpty())
             <tr>
-                <td class="label">Unit(s)</td>
-                <td class="value">
-                    @foreach($linkedApartments as $apt)
-                    @if($apt->project){{ $apt->project->name }} – @endif Unit {{ $apt->unit_number ?? '#'.$apt->id
-                    }}@if(!$loop->last), @endif
-                    @endforeach
+                <td>
+                    <div class="field-lbl">Unit(s)</div>
+                    <div class="field-val">@foreach($linkedApartments as $apt)@if($apt->project){{ $apt->project->name
+                        }} – @endif Unit {{ $apt->unit_number ?? '#'.$apt->id }}@if(!$loop->last), @endif @endforeach
+                    </div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblUnits }}</span>
+                    <span class="ar-val">{{ $arLblUnits }}</span>
                 </td>
             </tr>
             @endif
             @if($linkedManagedProps->isNotEmpty())
             <tr>
-                <td class="label">Managed Property(ies)</td>
-                <td class="value">
-                    @foreach($linkedManagedProps as $mp)
-                    {{ $mp->address }}@if($mp->city), {{ $mp->city }}@endif
-                    <span style="color:#6b7280;font-size:10.5px;">({{ ucfirst($mp->type) }})</span>@if(!$loop->last);
-                    @endif
-                    @endforeach
+                <td>
+                    <div class="field-lbl">Managed Property(ies)</div>
+                    <div class="field-val">@foreach($linkedManagedProps as $mp){{ $mp->address }}@if($mp->city), {{
+                        $mp->city }}@endif @if(!$loop->last); @endif @endforeach</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblManagedP }}</span>
+                    <span class="ar-val">@foreach($linkedManagedProps as $mp){{ ArabicPdf::shape($mp->address)
+                        }}@if(!$loop->last)؛ @endif @endforeach</span>
                 </td>
             </tr>
             @endif
@@ -294,28 +429,59 @@
 
     <!-- SCOPE -->
     <div class="card">
-        <div class="h2">Scope of Work</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Scope of Work</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arWorkDetails }}</span></td>
+            </tr>
+        </table>
         <table class="info">
             <tr>
-                <td class="label">Description</td>
-                <td class="value"><b>{{ $contract->scope_of_work }}</b></td>
+                <td>
+                    <div class="field-lbl">Description</div>
+                    <div class="field-val"><b>{{ $contract->scope_of_work }}</b></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblDesc }}</span>
+                    <span class="ar-val">{{ $arScopeOfWork }}</span>
+                </td>
             </tr>
             @if($contract->category)
             <tr>
-                <td class="label">Category</td>
-                <td class="value"><span class="badge-cat">{{ strtoupper($contract->category) }}</span></td>
+                <td>
+                    <div class="field-lbl">Category</div>
+                    <div class="field-val"><span class="badge-cat">{{ strtoupper($contract->category) }}</span></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblCategory }}</span>
+                    <span class="ar-val">{{ ArabicPdf::shape($contract->category) }}</span>
+                </td>
             </tr>
             @endif
             @if($contract->start_date)
             <tr>
-                <td class="label">Start Date</td>
-                <td class="value">{{ $contract->start_date->format('Y-m-d') }}</td>
+                <td>
+                    <div class="field-lbl">Start Date</div>
+                    <div class="field-val">{{ $contract->start_date->format('Y-m-d') }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblStartDate }}</span>
+                    <span class="ar-val">{{ $contract->start_date->format('Y-m-d') }}</span>
+                </td>
             </tr>
             @endif
             @if($contract->expected_end_date)
             <tr>
-                <td class="label">Expected Completion</td>
-                <td class="value">{{ $contract->expected_end_date->format('Y-m-d') }}</td>
+                <td>
+                    <div class="field-lbl">Expected Completion</div>
+                    <div class="field-val">{{ $contract->expected_end_date->format('Y-m-d') }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblEndDate }}</span>
+                    <span class="ar-val">{{ $contract->expected_end_date->format('Y-m-d') }}</span>
+                </td>
             </tr>
             @endif
         </table>
@@ -383,25 +549,56 @@
 
     <!-- PAYMENT -->
     <div class="card">
-        <div class="h2">Payment Terms</div>
-        <table class="money">
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Payment Terms</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arPaySchedule }}</span></td>
+            </tr>
+        </table>
+        <table class="info">
             @if($linkedProjects->isEmpty() && $linkedApartments->isEmpty() && $linkedManagedProps->isEmpty())
             <tr>
-                <th>Total Contract Amount</th>
-                <td>USD ${{ number_format($contract->total_amount,2) }}</td>
+                <td>
+                    <div class="field-lbl">Total Contract Amount</div>
+                    <div class="field-val">USD ${{ number_format($contract->total_amount,2) }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblTotal }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->total_amount,2) }}</span>
+                </td>
             </tr>
             @endif
-            <tr class="final">
-                <th>Monthly Payment</th>
-                <td>USD ${{ number_format($contract->monthly_amount,2) }}</td>
+            <tr>
+                <td>
+                    <div class="field-lbl">Monthly Payment</div>
+                    <div class="field-val"><b>USD ${{ number_format($contract->monthly_amount,2) }}</b></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblMonthly }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->monthly_amount,2) }}</span>
+                </td>
             </tr>
             <tr>
-                <th>Number of Payments</th>
-                <td>{{ $contract->payment_months }} months</td>
+                <td>
+                    <div class="field-lbl">Number of Payments</div>
+                    <div class="field-val">{{ $contract->payment_months }} months</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblMonths }}</span>
+                    <span class="ar-val">{{ $contract->payment_months }}</span>
+                </td>
             </tr>
             <tr>
-                <th>First Payment Date</th>
-                <td>{{ $contract->first_payment_date->format('Y-m-d') }}</td>
+                <td>
+                    <div class="field-lbl">First Payment Date</div>
+                    <div class="field-val">{{ $contract->first_payment_date->format('Y-m-d') }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblFirstDate }}</span>
+                    <span class="ar-val">{{ $contract->first_payment_date->format('Y-m-d') }}</span>
+                </td>
             </tr>
         </table>
 
@@ -415,34 +612,16 @@
 
     <div class="sp-12"></div>
 
-    <!-- PAYMENT SCHEDULE TABLE -->
-    <div class="card">
-        <div class="h2">Payment Schedule</div>
-        <table class="schedule">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Due Date</th>
-                    <th>Amount (USD)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($contract->payments->sortBy('installment_index') as $p)
-                <tr>
-                    <td>{{ $p->installment_index }}</td>
-                    <td>{{ $p->due_date->format('Y-m-d') }}</td>
-                    <td style="text-align:right;">${{ number_format($p->amount,2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <div class="sp-12"></div>
-
     <!-- SIGNATURES -->
     <div class="sig-wrap">
-        <div class="h2">Signatures</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Signatures</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arSig }}</span></td>
+            </tr>
+        </table>
         <table style="border:0;">
             <tr>
                 <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
@@ -491,6 +670,18 @@
             <li>This contract is governed by applicable local laws and regulations.</li>
             <li>Both parties acknowledge they have read and accepted all terms herein.</li>
         </ol>
+        <table
+            style="width:100%;border-collapse:collapse;font-family:'Amiri',sans-serif;font-size:11px;margin-top:8px;">
+            @foreach($arWorkerTerms as $i => $term)
+            <tr>
+                <td
+                    style="direction:ltr;unicode-bidi:bidi-override;text-align:right;padding:0 6px 4px 0;vertical-align:top;">
+                    {{ $term }}</td>
+                <td style="width:22px;text-align:right;padding:0 0 4px 4px;vertical-align:top;font-weight:700;">.{{ $i +
+                    1 }}</td>
+            </tr>
+            @endforeach
+        </table>
     </div>
 
     <script type="text/php">

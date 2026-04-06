@@ -4,12 +4,46 @@
 <head>
     <meta charset="utf-8">
     @php
+    use App\Support\ArabicPdf;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
 
+
+    // Bilingual Arabic additions
+    $arDocTitle = ArabicPdf::shape('عقد بيع عقار');
+    $arCompanyAr = ArabicPdf::shape('أبو صالح للعقارات');
+    $arClientUnit = ArabicPdf::shape('بيانات العميل والوحدة');
+    $arPaySummary = ArabicPdf::shape('ملخص الدفع');
+    $arSignatures = ArabicPdf::shape('التوقيعات');
+    $arTerms = ArabicPdf::shape('الشروط والأحكام');
+    $arLblClient = ArabicPdf::shape('العميل');
+    $arLblPhone = ArabicPdf::shape('الهاتف');
+    $arLblProject = ArabicPdf::shape('المشروع');
+    $arLblApt = ArabicPdf::shape('الشقة');
+    $arLblTotal = ArabicPdf::shape('السعر الإجمالي');
+    $arLblDiscount = ArabicPdf::shape('الخصم');
+    $arLblFinal = ArabicPdf::shape('السعر النهائي');
+    $arLblDown = ArabicPdf::shape('الدفعة الاولى');
+    $arLblMonths = ArabicPdf::shape('عدد الاقساط');
+    $arLblMonthly = ArabicPdf::shape('القسط الشهري');
+    $arLblStart = ArabicPdf::shape('تاريخ بدء الدفع');
+    $arLblLateFee = ArabicPdf::shape('رسوم التاخير');
+    $arLblSeller = ArabicPdf::shape('البائع / الشركة');
+    $arClientName = ArabicPdf::shape($contract->client->name ?? '');
+    $arProjectName = ArabicPdf::shape($contract->project->name ?? '-');
+    $arTermsList = [
+    ArabicPdf::shape('يجب سداد جميع المدفوعات وفق الجدول الزمني المتفق عليه.'),
+    ArabicPdf::shape('الدفعة الاولى غير قابلة للاسترداد ما لم ينص على خلاف ذلك كتابيا.'),
+    ArabicPdf::shape('تخضع المدفوعات المتاخرة لرسوم التاخير المذكورة اعلاه (ان وجدت).'),
+    ArabicPdf::shape('اي تعديل على هذا العقد يجب ان يكون كتابيا وموقعا من الطرفين.'),
+    ArabicPdf::shape('يخضع هذا العقد للقوانين واللوائح المحلية المعمول بها.'),
+    ArabicPdf::shape('يقر الطرفان بانهما قرا ووافقا على جميع الشروط الواردة هنا.'),
+    ];
+
     @endphp
+    @include('pdfs._arabic_font')
     <style>
         @page {
             margin: 26px 22px 55px 22px;
@@ -24,7 +58,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Amiri', DejaVu Sans, sans-serif;
             font-size: 12px;
             color: #111827;
             margin: 0;
@@ -62,6 +96,46 @@
             font-size: 13px;
             font-weight: 700;
             margin: 0 0 8px;
+        }
+
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .ar-lbl {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+            font-weight: bold;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 1px;
+        }
+
+        .ar-val {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: block;
+        }
+
+        .h2-ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            display: block;
         }
 
         /* Separators */
@@ -196,6 +270,16 @@
         .sp-12 {
             height: 12px;
         }
+
+        /* Arabic text shaping — direction:ltr because utf8Glyphs pre-orders visually */
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -208,6 +292,9 @@
         <tr>
             <td style="padding-right:10px;">
                 <div class="h1">Sales Contract</div>
+                <div
+                    style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;text-align:center;font-size:16px;font-weight:bold;margin-top:4px;">
+                    {{ $arDocTitle }}</div>
                 <div class="muted small" style="margin-top:2px;">
                     Contract ID: <b>#{{ $contract->id }}</b> &nbsp; • &nbsp;
                     Date: <b>{{ $contract->contract_date }}</b>
@@ -226,23 +313,38 @@
 
     <!-- CLIENT / UNIT -->
     <div class="card">
-        <div class="h2">Client & Unit Details</div>
+        <table style="width:100%;border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2">Client & Unit Details</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arClientUnit }}</span></td>
+            </tr>
+        </table>
         <table class="info">
             <tr>
                 <td class="label">Client</td>
                 <td class="value">{{ $contract->client->name }}</td>
+                <td style="text-align:right;width:25%;"><span class="ar-lbl">{{ $arLblClient }}</span><span
+                        class="ar-val">{{ $arClientName }}</span></td>
             </tr>
             <tr>
                 <td class="label">Phone</td>
                 <td class="value">{{ $contract->client->phone ?? '-' }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblPhone }}</span><span class="ar-val">{{
+                        $contract->client->phone ?? '-' }}</span></td>
             </tr>
             <tr>
                 <td class="label">Project</td>
                 <td class="value">{{ $contract->project->name ?? '-' }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblProject }}</span><span class="ar-val">{{
+                        $arProjectName }}</span></td>
             </tr>
             <tr>
                 <td class="label">Apartment</td>
                 <td class="value">{{ $contract->apartment->unit_number ?? $contract->apartment->unit_code ?? '-' }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblApt }}</span><span class="ar-val">{{
+                        $contract->apartment->unit_number ?? $contract->apartment->unit_code ?? '-' }}</span></td>
             </tr>
         </table>
     </div>
@@ -251,36 +353,50 @@
 
     <!-- PAYMENT SUMMARY -->
     <div class="card">
-        <div class="h2">Payment Summary</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Payment Summary</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arPaySummary }}</span></td>
+            </tr>
+        </table>
 
         <table class="money">
             <tr>
                 <th>Total price</th>
                 <td>USD ${{ number_format($contract->total_price, 2) }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblTotal }}</span></td>
             </tr>
             <tr>
                 <th>Discount</th>
                 <td>USD ${{ number_format($contract->discount, 2) }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblDiscount }}</span></td>
             </tr>
             <tr class="final">
                 <th>Final price</th>
                 <td>USD ${{ number_format($contract->final_price, 2) }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblFinal }}</span></td>
             </tr>
             <tr>
                 <th>Down payment</th>
                 <td>USD ${{ number_format($contract->down_payment, 2) }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblDown }}</span></td>
             </tr>
             <tr>
                 <th>Installment period (months)</th>
                 <td>{{ $contract->installment_months }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblMonths }}</span></td>
             </tr>
             <tr>
                 <th>Monthly installment</th>
                 <td>USD ${{ number_format($contract->installment_amount, 2) }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblMonthly }}</span></td>
             </tr>
             <tr>
                 <th>Payment start date</th>
                 <td>{{ $contract->payment_start_date }}</td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblStart }}</span></td>
             </tr>
             <tr>
                 <th>Late fee (per delay)</th>
@@ -291,6 +407,7 @@
                     No late fee
                     @endif
                 </td>
+                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblLateFee }}</span></td>
             </tr>
         </table>
 
@@ -342,7 +459,14 @@
 
     <!-- SIGNATURES -->
     <div class="sig-wrap">
-        <div class="h2">Signatures</div>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Signatures</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arSignatures }}</span></td>
+            </tr>
+        </table>
 
         <table style="border:0;">
             <tr>
@@ -385,15 +509,36 @@
 
     <!-- TERMS -->
     <div class="card terms">
-        <div class="h2">Terms & Conditions</div>
-        <ol class="small">
-            <li>All payments must be made according to the agreed schedule stated in this contract.</li>
-            <li>Down payment is non-refundable unless otherwise stated in writing.</li>
-            <li>Late payments are subject to the late fee mentioned above (if applicable).</li>
-            <li>Any amendment to this contract must be made in writing and signed by both parties.</li>
-            <li>This contract is governed by applicable local laws and regulations.</li>
-            <li>Both parties acknowledge they have read and accepted all terms herein.</li>
-        </ol>
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
+            <tr>
+                <td style="border:0;">
+                    <div class="h2" style="margin-bottom:0;">Terms & Conditions</div>
+                </td>
+                <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arTerms }}</span></td>
+            </tr>
+        </table>
+        <table style="width:100%;border:0;border-collapse:collapse;">
+            <tr>
+                <td style="border:0;vertical-align:top;width:50%;">
+                    <ol class="small">
+                        <li>All payments must be made according to the agreed schedule stated in this contract.</li>
+                        <li>Down payment is non-refundable unless otherwise stated in writing.</li>
+                        <li>Late payments are subject to the late fee mentioned above (if applicable).</li>
+                        <li>Any amendment to this contract must be made in writing and signed by both parties.</li>
+                        <li>This contract is governed by applicable local laws and regulations.</li>
+                        <li>Both parties acknowledge they have read and accepted all terms herein.</li>
+                    </ol>
+                </td>
+                <td style="border:0;vertical-align:top;width:50%;">
+                    <ol class="small"
+                        style="direction:ltr;unicode-bidi:bidi-override;text-align:right;font-family:'Amiri',sans-serif;padding-right:16px;padding-left:0;">
+                        @foreach($arTermsList as $term)
+                        <li style="margin-bottom:4px;">{{ $term }}</li>
+                        @endforeach
+                    </ol>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <!-- IMPORTANT: DOMPDF FOOTER (ONLY ONE FOOTER SYSTEM) -->

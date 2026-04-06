@@ -5,13 +5,18 @@
     <meta charset="utf-8">
     @php
     use App\Support\ArabicPdf;
+    use App\Support\MoneyToWords;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
 
+    $numericAmount = (float) preg_replace('/[^0-9.]/', '', $amountNumbers);
+    $arAmountWords = ArabicPdf::shape(MoneyToWords::ar($numericAmount, 'USD'));
+
     $arVoucher = ArabicPdf::shape('سند صرف');
-    $arReceiptNo = ArabicPdf::shape('رقم الإيصال');
+    $arCompany = ArabicPdf::shape('أبو صالح للتجارة العامة');
+    $arNo = ArabicPdf::shape('رقم الإيصال');
     $arDate = ArabicPdf::shape('التاريخ');
     $arPaidTo = ArabicPdf::shape('مدفوع لـ (المقاول)');
     $arSumOf = ArabicPdf::shape('المبلغ بالكلمات');
@@ -23,11 +28,22 @@
     $arTransfer = ArabicPdf::shape('تحويل بنكي');
     $arPaidBy = ArabicPdf::shape('دفعت بواسطة');
     $arAuthSig = ArabicPdf::shape('التوقيع المخوّل');
-    $arCompany = ArabicPdf::shape('أبو صالح للتجارة العامة');
-    $arNote = ArabicPdf::shape('يؤكد هذا السند إتمام الدفعة أعلاه للمقاول. يُرجى الاحتفاظ به للسجلات.');
+    $arNote = ArabicPdf::shape('يؤكد هذا السند إتمام الدفعة للمقاول يرجى الاحتفاظ به للسجلات');
+
+    $arPayeeName = ArabicPdf::shape($payeeName);
+    $arForWhat = ArabicPdf::shape($forWhat);
+    $arPayMethod = ArabicPdf::shape(match($paymentMethod) {
+    'cash' => 'نقداً',
+    'cheque' => 'شيك',
+    'bank_transfer' => 'تحويل بنكي',
+    default => $paymentMethod,
+    });
     @endphp
+
+    @include('pdfs._arabic_font')
+
     <style>
-        @page {
+        @@page {
             margin: 32px 40px;
         }
 
@@ -56,41 +72,26 @@
             width: 110px;
         }
 
-        .header {
-            text-align: center;
+        .ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 6px;
         }
 
-        .header .title-en {
-            font-size: 13px;
-            letter-spacing: 1px;
-            font-weight: bold;
-        }
-
-        .header .title-ar {
+        .header-table td {
+            padding: 0 4px;
+            vertical-align: middle;
             font-size: 13px;
             font-weight: bold;
-            direction: rtl;
-        }
-
-        .contact-row {
-            display: table;
-            width: 100%;
-            margin: 8px 0 14px;
-        }
-
-        .contact-en {
-            display: table-cell;
-            width: 50%;
-            font-size: 11px;
-        }
-
-        .contact-ar {
-            display: table-cell;
-            width: 50%;
-            font-size: 11px;
-            text-align: right;
-            direction: rtl;
         }
 
         .voucher-bar {
@@ -99,113 +100,73 @@
             padding: 10px 14px;
             font-weight: bold;
             font-size: 14px;
-            margin-bottom: 18px;
+            margin: 10px 0 16px;
             text-align: center;
         }
 
         .bi {
-            display: table;
             width: 100%;
-            margin-bottom: 10px;
+            border-collapse: collapse;
         }
 
-        .bi-en {
-            display: table-cell;
+        .bi td {
+            padding: 8px 10px;
+            border-bottom: 1px dotted #ccc;
             width: 50%;
             vertical-align: top;
         }
 
-        .bi-ar {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-            text-align: right;
-            direction: rtl;
+        .bi tr:last-child td {
+            border-bottom: none;
+        }
+
+        .en {
+            text-align: left;
+            direction: ltr;
         }
 
         .label {
             font-weight: bold;
         }
 
-        .val-line {
-            border-bottom: 1px dotted #333;
-            display: inline-block;
-            min-width: 200px;
-            padding-bottom: 2px;
-            margin-left: 6px;
-        }
-
-        .wide-line {
-            border-bottom: 1px dotted #333;
-            display: block;
+        .sig-table {
             width: 100%;
-            padding-bottom: 2px;
-            margin-top: 4px;
+            border-collapse: collapse;
+            margin-top: 34px;
         }
 
-        .payment-method {
-            margin-top: 14px;
-        }
-
-        .checkbox {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
-            text-align: center;
-            font-size: 10px;
-            line-height: 12px;
-            margin: 0 6px 0 14px;
-        }
-
-        .sig-section {
-            margin-top: 40px;
-            display: table;
-            width: 100%;
-        }
-
-        .sig-en {
-            display: table-cell;
-            width: 55%;
+        .sig-table td {
             vertical-align: top;
-        }
-
-        .sig-ar {
-            display: table-cell;
-            width: 45%;
-            vertical-align: top;
-            text-align: right;
-            direction: rtl;
-        }
-
-        .sig-img {
-            position: relative;
-            top: -8px;
-            height: 40px;
-            max-width: 220px;
-            display: inline-block;
-            vertical-align: bottom;
+            width: 50%;
+            padding: 0 6px;
         }
 
         .stamp-box {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             border: 1px solid #000;
-            margin-top: 16px;
+            margin-top: 10px;
             display: inline-block;
         }
 
+        .sig-img {
+            height: 38px;
+            max-width: 200px;
+            display: block;
+            margin-top: 4px;
+        }
+
         .footer-line {
-            margin-top: 26px;
+            margin-top: 24px;
             border-top: 3px solid #1e3a5f;
         }
 
         .info-note {
             font-size: 10px;
             color: #6b7280;
-            margin-top: 12px;
+            margin-top: 10px;
+            padding-top: 6px;
             border-top: 1px dashed #e5e7eb;
-            padding-top: 8px;
         }
     </style>
 </head>
@@ -217,88 +178,72 @@
         @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif
     </div>
 
-    <div class="header">
-        <div class="title-en">ABOU SALEH GENERAL TRADING &nbsp;|&nbsp; <span class="title-ar">{{ $arCompany }}</span>
-        </div>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td>ABOU SALEH GENERAL TRADING</td>
+            <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
+        </tr>
+        <tr>
+            <td style="font-size:11px;font-weight:normal;">Email: info@abousaleh.me</td>
+            <td style="font-size:11px;font-weight:normal;text-align:right;">Tel: +961 71 999 219</td>
+        </tr>
+    </table>
 
-    <div class="contact-row">
-        <div class="contact-en">Email: info@abousaleh.me</div>
-        <div class="contact-ar">Tel: +961 71 999 219 &nbsp;|&nbsp; www.abousaleh.me</div>
-    </div>
+    <div class="voucher-bar">PAYMENT VOUCHER &nbsp;|&nbsp; <span class="ar" style="display:inline;">{{ $arVoucher
+            }}</span></div>
 
-    <div class="voucher-bar">PAYMENT VOUCHER &nbsp;|&nbsp; {{ $arVoucher }}</div>
+    <table class="bi">
+        <tr>
+            <td class="en"><span class="label">Receipt No:</span> {{ $receiptNo }}</td>
+            <td><span class="ar">{{ $receiptNo }} : {{ $arNo }}</span></td>
+        </tr>
+        <tr>
+            <td class="en"><span class="label">Date:</span> {{ $date }}</td>
+            <td><span class="ar">{{ $date }} : {{ $arDate }}</span></td>
+        </tr>
+        <tr>
+            <td class="en"><span class="label">Paid To:</span><br>{{ $payeeName }}</td>
+            <td><span class="ar">{{ $arPayeeName }} : {{ $arPaidTo }}</span></td>
+        </tr>
+        <tr>
+            <td class="en"><span class="label">The Sum of:</span><br><strong>{{ $sumOf }}</strong></td>
+            <td><span class="ar">{{ $arAmountWords }} : {{ $arSumOf }}</span></td>
+        </tr>
+        <tr>
+            <td class="en"><span class="label">Amount:</span><br><strong>{{ $amountNumbers }}</strong></td>
+            <td><span class="ar">{{ $amountNumbers }} : {{ $arAmount }}</span></td>
+        </tr>
+        <tr>
+            <td class="en"><span class="label">For:</span><br>{{ $forWhat }}</td>
+            <td><span class="ar">{{ $arForWhat }} : {{ $arFor }}</span></td>
+        </tr>
+        <tr>
+            <td class="en">
+                <span class="label">Payment Method: {{$paymentMethod}}</span><br>
 
-    <div class="bi">
-        <div class="bi-en"><span class="label">Receipt No:</span><span class="val-line">{{ $receiptNo }}</span></div>
-        <div class="bi-ar">{{ $arReceiptNo }}: {{ $receiptNo }}</div>
-    </div>
-    <div class="bi">
-        <div class="bi-en"><span class="label">Date:</span><span class="val-line">{{ $date }}</span></div>
-        <div class="bi-ar">{{ $arDate }}: {{ $date }}</div>
-    </div>
-    <div class="bi">
-        <div class="bi-en"><span class="label">Paid To (Contractor):</span>
-            <div class="wide-line">{{ $payeeName }}</div>
-        </div>
-        <div class="bi-ar">{{ $arPaidTo }}: <div class="wide-line">{{ $payeeName }}</div>
-        </div>
-    </div>
-    <div class="bi">
-        <div class="bi-en"><span class="label">The Sum of:</span>
-            <div class="wide-line">{{ $sumOf }}</div>
-        </div>
-        <div class="bi-ar">{{ $arSumOf }}: <div class="wide-line">{{ $sumOf }}</div>
-        </div>
-    </div>
-    <div class="bi">
-        <div class="bi-en"><span class="label">Amount:</span>
-            <div class="wide-line">{{ $amountNumbers }}</div>
-        </div>
-        <div class="bi-ar">{{ $arAmount }}: <div class="wide-line">{{ $amountNumbers }}</div>
-        </div>
-    </div>
-    <div class="bi">
-        <div class="bi-en"><span class="label">For:</span>
-            <div class="wide-line">{{ $forWhat }}</div>
-        </div>
-        <div class="bi-ar">{{ $arFor }}: <div class="wide-line">{{ $forWhat }}</div>
-        </div>
-    </div>
+            </td>
+            <td><span class="ar">{{ $arPayMethod }} : {{ $arMethod }}</span></td>
+        </tr>
+    </table>
 
-    <div class="payment-method">
-        <div class="bi">
-            <div class="bi-en">
-                <span class="label">Payment Method:</span>
-                <span class="checkbox">{{ $paymentMethod === 'cash' ? '✓' : '' }}</span> Cash
-                <span class="checkbox">{{ $paymentMethod === 'cheque' ? '✓' : '' }}</span> Cheque
-                <span class="checkbox">{{ $paymentMethod === 'bank_transfer' ? '✓' : '' }}</span> Bank Transfer
-            </div>
-            <div class="bi-ar">
-                {{ $arMethod }}: &nbsp;
-                <span class="checkbox">{{ $paymentMethod === 'cash' ? '✓' : '' }}</span> {{ $arCash }}
-                <span class="checkbox">{{ $paymentMethod === 'cheque' ? '✓' : '' }}</span> {{ $arCheque }}
-                <span class="checkbox">{{ $paymentMethod === 'bank_transfer' ? '✓' : '' }}</span> {{ $arTransfer }}
-            </div>
-        </div>
-    </div>
+    <table class="sig-table">
+        <tr>
+            <td class="en">
+                <span class="label">Paid by:</span> Abou Saleh General Trading<br>
+                <span class="label">Authorised Signature:</span>
+                @if($signatureB64)
+                <img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">
+                @endif
+            </td>
+            <td style="text-align:right;">
+                <span class="ar">{{ $arCompany }} : {{ $arPaidBy }}</span><br>
+                <span class="ar">{{ $arAuthSig }}</span>
+                <div class="stamp-box"></div>
+            </td>
+        </tr>
+    </table>
 
-    <div class="sig-section">
-        <div class="sig-en">
-            <span class="label">Paid by (Company):</span> Abou Saleh General Trading<br><br>
-            <span class="label">Authorised Signature:</span>
-            @if($signatureB64)<img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">@endif
-        </div>
-        <div class="sig-ar">
-            <div>{{ $arPaidBy }}: {{ $arCompany }}</div><br>
-            <div>{{ $arAuthSig }}:</div>
-            <div class="stamp-box"></div>
-        </div>
-    </div>
-
-    <div class="info-note">
-        This voucher confirms payment has been made to the contractor. &nbsp;|&nbsp; {{ $arNote }}
-    </div>
+    <div class="info-note"><span class="ar">{{ $arNote }}</span></div>
     <div class="footer-line"></div>
 </body>
 

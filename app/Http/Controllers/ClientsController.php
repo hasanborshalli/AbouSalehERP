@@ -255,15 +255,15 @@ DB::transaction(function () use (
         }
 
         DB::afterCommit(function () use ($contract, $user, $rawPassword, $inKindPaymentId) {
-            Mail::to($user->email)->queue(
-                new ClientCredentialsMail($user, $rawPassword, null)
-            );
-
             Bus::batch([new GenerateContractPdfJob($contract->id)])
                 ->name("Contract {$contract->id} docs")
-                ->then(function () use ($contract) {
+                ->then(function () use ($contract, $user, $rawPassword) {
+                    // Send credentials email WITH contract PDF attached after generation
                     $contract->refresh();
-                    if (Schema::hasColumn('contracts', 'processing_status')) {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->queue(
+                        new \App\Mail\ClientCredentialsMail($user, $rawPassword, $contract->pdf_path)
+                    );
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('contracts', 'processing_status')) {
                         $contract->update([
                             'processing_status'      => 'done',
                             'processing_progress'    => 100,
@@ -359,10 +359,6 @@ DB::transaction(function () use (
     // 6) Dispatch jobs AFTER COMMIT
     DB::afterCommit(function () use ($contract, $user, $invoiceIds, $rawPassword) {
 
-    Mail::to($user->email)->queue(
-        new ClientCredentialsMail($user, $rawPassword, null)
-    );
-
     $jobs = [];
     $jobs[] = new GenerateContractPdfJob($contract->id);
 
@@ -372,10 +368,14 @@ DB::transaction(function () use (
 
     Bus::batch($jobs)
         ->name("Contract {$contract->id} docs")
-        ->then(function () use ($contract) {
+        ->then(function () use ($contract, $user, $rawPassword) {
+            // Send credentials email WITH the contract PDF attached now that it's ready
             $contract->refresh();
+            \Illuminate\Support\Facades\Mail::to($user->email)->queue(
+                new \App\Mail\ClientCredentialsMail($user, $rawPassword, $contract->pdf_path)
+            );
 
-            if (Schema::hasColumn('contracts', 'processing_status')) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('contracts', 'processing_status')) {
                 $contract->update([
                     'processing_status' => 'done',
                     'processing_progress' => 100,

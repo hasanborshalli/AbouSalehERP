@@ -121,6 +121,17 @@
             <p>For any questions contact us at <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> or call +961 71
                 999 219.</p>
         </div>
+        <div style="padding:20px 32px; direction:rtl; text-align:right; border-top:2px solid #e5e7eb;">
+            <p>عزيزي/عزيزتي <strong>{{ $rental->tenant_name }}</strong>،</p>
+            <p>يسعدنا إبلاغكم بتأكيد عقد الإيجار الخاص بكم مع شركة أبو صالح للتجارة العامة.</p>
+            <p><strong>العقار:</strong> {{ $property->address }}</p>
+            <p><strong>مدة الإيجار:</strong> {{ $rental->start_date->format('d M Y') }} ← {{
+                $rental->end_date->format('d M Y') }}</p>
+            <p><strong>الإيجار الشهري:</strong> ${{ number_format($rental->monthly_rent, 2) }}</p>
+            <p>مرفق بهذا البريد نسخة من العقد. يُرجى الاحتفاظ به في سجلاتكم.</p>
+            <p>لأي استفسار: <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> | 219 999 71 961+</p>
+            <p>مع تحياتنا — <strong>أبو صالح للتجارة العامة</strong></p>
+        </div>
         <div class="footer">Abou Saleh General Trading &nbsp;·&nbsp; +961 71 999 219 &nbsp;·&nbsp; info@abousaleh.me
         </div>
     </div>
