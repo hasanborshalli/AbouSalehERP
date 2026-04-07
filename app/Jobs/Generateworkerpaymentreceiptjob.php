@@ -49,8 +49,9 @@ class GenerateWorkerPaymentReceiptJob implements ShouldQueue
             'amountNumbers' => '$' . number_format($amount, 2),
             'forWhat'       => "Payment #{$payment->installment_index} – {$contract->scope_of_work}" .
                                ($contract->project ? " (Project: {$contract->project->name})" : ''),
-            'forWhatAr'     => "دفعة رقم {$payment->installment_index} ({$scopeAr})" .
-                               ($projectNameAr ? " - مشروع: {$projectNameAr}" : ''),
+            'forWhatAr1'    => "دفعة رقم {$payment->installment_index}",
+            'forWhatAr2'    => $scopeAr,
+            'forWhatAr3'    => $projectNameAr ? "مشروع: {$projectNameAr}" : null,
             'paymentMethod' => 'cash',
         ])->setPaper('a4');
 

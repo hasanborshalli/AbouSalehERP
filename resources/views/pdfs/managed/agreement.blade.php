@@ -476,8 +476,6 @@
             @else
             <div class="sig-line"></div>
             @endif
-            <br>
-            <div class="stamp-box"></div>
         </div>
     </div>
 

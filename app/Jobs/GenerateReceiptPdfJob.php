@@ -47,8 +47,13 @@ class GenerateReceiptPdfJob implements ShouldQueue
         $receiptNo     = 'RCPT-' . $invoice->invoice_number;
         $amountNumbers = '$' . number_format($total, 2);
         $sumOf         = MoneyToWords::en($total, 'USD');
-        $forWhat       = 'Payment for invoice ' . $invoice->invoice_number;
+        $forWhat       = 'Payment for invoice ' . $invoice->invoice_number
+                            . ($contract->apartment ? ' – Apt ' . ($contract->apartment->unit_number ?? '') : '')
+                            . ($contract->project   ? ' – ' . $contract->project->name : '');
         $receiverName  = User::find($this->markedByUserId)?->name ?? 'Receiver';
+
+        $projectNameAr = $contract->project ? ($contract->project->name_ar ?? $contract->project->name) : null;
+        $aptUnit       = $contract->apartment->unit_number ?? null;
 
         $pdf = Pdf::loadView('pdfs.receipt', [
             'receiptNo'     => $receiptNo,
@@ -57,6 +62,9 @@ class GenerateReceiptPdfJob implements ShouldQueue
             'sumOf'         => $sumOf,
             'amountNumbers' => $amountNumbers,
             'forWhat'       => $forWhat,
+            'forWhatAr1'    => 'فاتورة رقم ' . $invoice->invoice_number,
+            'forWhatAr2'    => $aptUnit ? 'شقة ' . $aptUnit : null,
+            'forWhatAr3'    => $projectNameAr ? 'مشروع: ' . $projectNameAr : null,
             'paymentMethod' => 'cash',
             'receiverName'  => $receiverName,
         ])->setPaper('a4');

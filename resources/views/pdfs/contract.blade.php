@@ -10,29 +10,34 @@
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
 
-
-    // Bilingual Arabic additions
+    // Bilingual Arabic
     $arDocTitle = ArabicPdf::shape('عقد بيع عقار');
     $arCompanyAr = ArabicPdf::shape('أبو صالح للعقارات');
     $arClientUnit = ArabicPdf::shape('بيانات العميل والوحدة');
     $arPaySummary = ArabicPdf::shape('ملخص الدفع');
     $arSignatures = ArabicPdf::shape('التوقيعات');
     $arTerms = ArabicPdf::shape('الشروط والأحكام');
+    $arLblSeller = ArabicPdf::shape('البائع / الشركة');
     $arLblClient = ArabicPdf::shape('العميل');
     $arLblPhone = ArabicPdf::shape('الهاتف');
     $arLblProject = ArabicPdf::shape('المشروع');
     $arLblApt = ArabicPdf::shape('الشقة');
     $arLblTotal = ArabicPdf::shape('السعر الإجمالي');
-    $arLblDiscount = ArabicPdf::shape('الخصم');
+    $arLblDiscount= ArabicPdf::shape('الخصم');
     $arLblFinal = ArabicPdf::shape('السعر النهائي');
     $arLblDown = ArabicPdf::shape('الدفعة الاولى');
     $arLblMonths = ArabicPdf::shape('عدد الاقساط');
     $arLblMonthly = ArabicPdf::shape('القسط الشهري');
     $arLblStart = ArabicPdf::shape('تاريخ بدء الدفع');
     $arLblLateFee = ArabicPdf::shape('رسوم التاخير');
-    $arLblSeller = ArabicPdf::shape('البائع / الشركة');
+
     $arClientName = ArabicPdf::shape($contract->client->name ?? '');
-    $arProjectName = ArabicPdf::shape($contract->project->name ?? '-');
+    $arProjectName = ArabicPdf::shape($contract->project->name_ar ?? $contract->project->name ?? '-');
+    $arInstMonths = ArabicPdf::shape($contract->installment_months . ' شهر');
+    $arLateFeeVal = $contract->late_fee > 0
+    ? ArabicPdf::shape('USD $' . number_format($contract->late_fee, 2))
+    : ArabicPdf::shape('لا يوجد');
+
     $arTermsList = [
     ArabicPdf::shape('يجب سداد جميع المدفوعات وفق الجدول الزمني المتفق عليه.'),
     ArabicPdf::shape('الدفعة الاولى غير قابلة للاسترداد ما لم ينص على خلاف ذلك كتابيا.'),
@@ -41,7 +46,6 @@
     ArabicPdf::shape('يخضع هذا العقد للقوانين واللوائح المحلية المعمول بها.'),
     ArabicPdf::shape('يقر الطرفان بانهما قرا ووافقا على جميع الشروط الواردة هنا.'),
     ];
-
     @endphp
     @include('pdfs._arabic_font')
     <style>
@@ -65,19 +69,53 @@
             padding: 0;
         }
 
-        /* WATERMARK */
         .watermark {
             position: fixed;
-            left: 50%;
-            top: 52%;
-            transform: translate(-50%, -50%);
-            width: 500px;
-            opacity: 0.06;
-            /* adjust between 0.04 - 0.08 */
-            z-index: -1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            text-align: center;
         }
 
-        /* Typography */
+        .watermark img {
+            margin-top: 250px;
+            width: 340px;
+            opacity: 0.06;
+        }
+
+        .logo-top {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo-top img {
+            width: 110px;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .header-table td {
+            padding: 0 4px;
+            vertical-align: middle;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .voucher-bar {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 0 14px;
+            text-align: center;
+        }
+
         .muted {
             color: #6b7280;
         }
@@ -86,16 +124,21 @@
             font-size: 10.5px;
         }
 
-        .h1 {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-        }
-
         .h2 {
             font-size: 13px;
             font-weight: 700;
             margin: 0 0 8px;
+        }
+
+        .h2-ar {
+            font-family: 'Amiri', sans-serif;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            display: block;
         }
 
         .ar {
@@ -114,7 +157,7 @@
             text-align: right;
             display: block;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10.5px;
             color: #555;
             margin-bottom: 1px;
         }
@@ -127,25 +170,23 @@
             display: block;
         }
 
-        .h2-ar {
-            font-family: 'Amiri', sans-serif;
-            direction: ltr;
-            unicode-bidi: bidi-override;
-            text-align: right;
-            font-size: 13px;
+        .field-lbl {
             font-weight: 700;
-            margin: 0 0 8px;
-            display: block;
+            font-size: 10.5px;
+            color: #555;
+            margin-bottom: 3px;
         }
 
-        /* Separators */
+        .field-val {
+            font-size: 12px;
+        }
+
         .line {
             height: 1px;
             background: #e5e7eb;
             margin: 12px 0;
         }
 
-        /* Cards */
         .card {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
@@ -153,38 +194,43 @@
             page-break-inside: avoid;
         }
 
-        /* Tables */
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
         .info td {
-            padding: 6px 8px;
+            padding: 8px 10px;
             border-bottom: 1px solid #eef2f7;
+            vertical-align: top;
+            width: 50%;
         }
 
         .info tr:last-child td {
             border-bottom: 0;
         }
 
-        .label {
-            width: 34%;
+        .info .final td {
+            background: #f1f5f9;
             font-weight: 700;
         }
 
-        .value {
-            width: 66%;
+        .notes {
+            border: 1px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            page-break-inside: avoid;
         }
 
         .money th,
         .money td {
             border: 1px solid #e5e7eb;
             padding: 8px 10px;
+            vertical-align: top;
         }
 
         .money th {
-            width: 55%;
             text-align: left;
             background: #f8fafc;
             font-weight: 700;
@@ -200,24 +246,6 @@
             font-weight: 800;
         }
 
-        .notes {
-            border: 1px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-            page-break-inside: avoid;
-        }
-
-        /* Header */
-        .header td {
-            vertical-align: top;
-        }
-
-        .logo {
-            width: 110px;
-        }
-
-        /* Signatures */
         .sig-wrap {
             page-break-inside: avoid;
         }
@@ -241,28 +269,6 @@
             width: 72px;
         }
 
-        .sig-img {
-            height: 34px;
-            max-width: 200px;
-            display: block;
-            margin-top: 6px;
-        }
-
-        /* Terms */
-        .terms {
-            page-break-inside: avoid;
-        }
-
-        .terms ol {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        .terms li {
-            margin: 0 0 6px;
-        }
-
-        /* Spacing */
         .sp-10 {
             height: 10px;
         }
@@ -271,80 +277,109 @@
             height: 12px;
         }
 
-        /* Arabic text shaping — direction:ltr because utf8Glyphs pre-orders visually */
-        .ar {
-            font-family: 'Amiri', sans-serif;
-            direction: ltr;
-            unicode-bidi: bidi-override;
-            text-align: right;
-            display: inline-block;
-            width: 100%;
+        .terms {
+            page-break-inside: avoid;
+        }
+
+        .terms li {
+            margin: 0 0 6px;
         }
     </style>
 </head>
 
 <body>
-    @if($logoB64)
-    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="Watermark">
-    @endif
-    <!-- HEADER -->
-    <table class="header" style="margin-bottom:10px;">
-        <tr>
-            <td style="padding-right:10px;">
-                <div class="h1">Sales Contract</div>
-                <div
-                    style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;text-align:center;font-size:16px;font-weight:bold;margin-top:4px;">
-                    {{ $arDocTitle }}</div>
-                <div class="muted small" style="margin-top:2px;">
-                    Contract ID: <b>#{{ $contract->id }}</b> &nbsp; • &nbsp;
-                    Date: <b>{{ $contract->contract_date }}</b>
-                    <br>
-                    Generated at: <b>{{ ($generatedAt ?? now())->timezone('Asia/Beirut')->format('Y-m-d H:i:s') }}</b>
+    @if($logoB64)<div class="watermark"><img src="data:image/png;base64,{{ $logoB64 }}" alt=""></div>@endif
 
-                </div>
-            </td>
+    <!-- HEADER -->
+    <div class="logo-top">
+        @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif
+    </div>
+    <table class="header-table">
+        <tr>
+            <td>ABOU SALEH REAL ESTATE</td>
             <td style="text-align:right;">
-                @if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" class="logo" alt="Logo">@endif
+                <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{ $arCompanyAr
+                    }}</span>
             </td>
         </tr>
+        <tr>
+            <td style="font-size:11px;font-weight:normal;">Email: info@abousaleh.me</td>
+            <td style="font-size:11px;font-weight:normal;text-align:right;">Tel: +961 71 999 219</td>
+        </tr>
     </table>
+    <div class="voucher-bar">
+        SALES CONTRACT &nbsp;|&nbsp;
+        <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{ $arDocTitle }}</span>
+    </div>
 
-    <div class="line"></div>
+    <div class="muted small" style="margin-bottom:10px;">
+        Contract ID: <b>#{{ $contract->id }}</b> &nbsp;•&nbsp;
+        Date: <b>{{ $contract->contract_date }}</b>
+        &nbsp;•&nbsp; Generated: <b>{{ ($generatedAt ?? now())->timezone('Asia/Beirut')->format('Y-m-d H:i') }}</b>
+    </div>
 
     <!-- CLIENT / UNIT -->
     <div class="card">
-        <table style="width:100%;border:0;border-collapse:collapse;">
+        <table style="width:100%;border:0;border-collapse:collapse;margin-bottom:4px;">
             <tr>
                 <td style="border:0;">
-                    <div class="h2">Client & Unit Details</div>
+                    <div class="h2" style="margin-bottom:0;">Client & Unit Details</div>
                 </td>
                 <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arClientUnit }}</span></td>
             </tr>
         </table>
         <table class="info">
             <tr>
-                <td class="label">Client</td>
-                <td class="value">{{ $contract->client->name }}</td>
-                <td style="text-align:right;width:25%;"><span class="ar-lbl">{{ $arLblClient }}</span><span
-                        class="ar-val">{{ $arClientName }}</span></td>
+                <td>
+                    <div class="field-lbl">Seller / Company</div>
+                    <div class="field-val">Abou Saleh Real Estate</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblSeller }}</span>
+                    <span class="ar-val">{{ $arCompanyAr }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Phone</td>
-                <td class="value">{{ $contract->client->phone ?? '-' }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblPhone }}</span><span class="ar-val">{{
-                        $contract->client->phone ?? '-' }}</span></td>
+                <td>
+                    <div class="field-lbl">Client</div>
+                    <div class="field-val"><b>{{ $contract->client->name }}</b></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblClient }}</span>
+                    <span class="ar-val">{{ $arClientName }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Project</td>
-                <td class="value">{{ $contract->project->name ?? '-' }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblProject }}</span><span class="ar-val">{{
-                        $arProjectName }}</span></td>
+                <td>
+                    <div class="field-lbl">Phone</div>
+                    <div class="field-val">{{ $contract->client->phone ?? '—' }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblPhone }}</span>
+                    <span class="ar-val">{{ $contract->client->phone ?? '—' }}</span>
+                </td>
             </tr>
             <tr>
-                <td class="label">Apartment</td>
-                <td class="value">{{ $contract->apartment->unit_number ?? $contract->apartment->unit_code ?? '-' }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblApt }}</span><span class="ar-val">{{
-                        $contract->apartment->unit_number ?? $contract->apartment->unit_code ?? '-' }}</span></td>
+                <td>
+                    <div class="field-lbl">Project</div>
+                    <div class="field-val">{{ $contract->project->name ?? '—' }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblProject }}</span>
+                    <span class="ar-val">{{ $arProjectName }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Apartment</div>
+                    <div class="field-val">{{ $contract->apartment->unit_number ?? $contract->apartment->unit_code ??
+                        '—' }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblApt }}</span>
+                    <span class="ar-val">{{ $contract->apartment->unit_number ?? $contract->apartment->unit_code ?? '—'
+                        }}</span>
+                </td>
             </tr>
         </table>
     </div>
@@ -361,74 +396,108 @@
                 <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arPaySummary }}</span></td>
             </tr>
         </table>
-
-        <table class="money">
+        <table class="info">
             <tr>
-                <th>Total price</th>
-                <td>USD ${{ number_format($contract->total_price, 2) }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblTotal }}</span></td>
+                <td>
+                    <div class="field-lbl">Total Price</div>
+                    <div class="field-val">USD ${{ number_format($contract->total_price, 2) }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblTotal }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->total_price, 2) }}</span>
+                </td>
             </tr>
             <tr>
-                <th>Discount</th>
-                <td>USD ${{ number_format($contract->discount, 2) }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblDiscount }}</span></td>
+                <td>
+                    <div class="field-lbl">Discount</div>
+                    <div class="field-val">USD ${{ number_format($contract->discount, 2) }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblDiscount }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->discount, 2) }}</span>
+                </td>
             </tr>
             <tr class="final">
-                <th>Final price</th>
-                <td>USD ${{ number_format($contract->final_price, 2) }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblFinal }}</span></td>
-            </tr>
-            <tr>
-                <th>Down payment</th>
-                <td>USD ${{ number_format($contract->down_payment, 2) }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblDown }}</span></td>
-            </tr>
-            <tr>
-                <th>Installment period (months)</th>
-                <td>{{ $contract->installment_months }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblMonths }}</span></td>
-            </tr>
-            <tr>
-                <th>Monthly installment</th>
-                <td>USD ${{ number_format($contract->installment_amount, 2) }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblMonthly }}</span></td>
-            </tr>
-            <tr>
-                <th>Payment start date</th>
-                <td>{{ $contract->payment_start_date }}</td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblStart }}</span></td>
-            </tr>
-            <tr>
-                <th>Late fee (per delay)</th>
                 <td>
-                    @if($contract->late_fee > 0)
-                    USD ${{ number_format($contract->late_fee, 2) }}
-                    @else
-                    No late fee
-                    @endif
+                    <div class="field-lbl">Final Price</div>
+                    <div class="field-val"><b>USD ${{ number_format($contract->final_price, 2) }}</b></div>
                 </td>
-                <td style="text-align:right;"><span class="ar-lbl">{{ $arLblLateFee }}</span></td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblFinal }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->final_price, 2) }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Down Payment</div>
+                    <div class="field-val">USD ${{ number_format($contract->down_payment, 2) }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblDown }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->down_payment, 2) }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Installment Period</div>
+                    <div class="field-val">{{ $contract->installment_months }} months</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblMonths }}</span>
+                    <span class="ar-val">{{ $arInstMonths }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Monthly Installment</div>
+                    <div class="field-val"><b>USD ${{ number_format($contract->installment_amount, 2) }}</b></div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblMonthly }}</span>
+                    <span class="ar-val">USD ${{ number_format($contract->installment_amount, 2) }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Payment Start Date</div>
+                    <div class="field-val">{{ $contract->payment_start_date }}</div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblStart }}</span>
+                    <span class="ar-val">{{ $contract->payment_start_date }}</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-lbl">Late Fee (per delay)</div>
+                    <div class="field-val">
+                        @if($contract->late_fee > 0) USD ${{ number_format($contract->late_fee, 2) }}
+                        @else No late fee @endif
+                    </div>
+                </td>
+                <td style="text-align:right;">
+                    <span class="ar-lbl">{{ $arLblLateFee }}</span>
+                    <span class="ar-val">{{ $arLateFeeVal }}</span>
+                </td>
             </tr>
         </table>
 
         @if($contract->notes)
         <div class="notes">
-            <div style="font-weight:800; margin-bottom:6px;">Notes</div>
+            <div style="font-weight:800;margin-bottom:6px;">Notes</div>
             <div>{{ $contract->notes }}</div>
         </div>
         @endif
 
         @if($contract->payment_type === 'in_kind')
-        <div class="notes" style="border-left:3px solid #1e3a5f; margin-top:12px;">
-            <div style="font-weight:800; margin-bottom:6px; color:#1e3a5f;">⚠ In-Kind Payment Agreement</div>
+        <div class="notes" style="border-left:3px solid #1e3a5f;margin-top:12px;">
+            <div style="font-weight:800;margin-bottom:6px;color:#1e3a5f;">⚠ In-Kind Payment Agreement</div>
             <div>This contract is settled by delivery of inventory items (in-kind) instead of cash payments.
                 No installment invoices will be issued. Items agreed upon are listed below.</div>
             @if($contract->in_kind_notes)
             <div style="margin-top:6px;"><strong>Details:</strong> {{ $contract->in_kind_notes }}</div>
             @endif
         </div>
-
-        {{-- Load the in-kind payment items if available --}}
         @php $ikp = $contract->inKindPayments()->with('items.inventoryItem')->first(); @endphp
         @if($ikp && $ikp->items->count())
         <table class="money" style="margin-top:10px;">
@@ -467,37 +536,32 @@
                 <td style="border:0;text-align:right;"><span class="h2-ar">{{ $arSignatures }}</span></td>
             </tr>
         </table>
-
         <table style="border:0;">
             <tr>
-                <td style="width:50%; padding-right:10px; border:0; vertical-align:top;">
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
                     <div class="sig-box">
                         <div class="sig-title">Client</div>
                         <div><b>Name:</b> {{ $contract->client->name }}</div>
-
                         <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________
                         </div>
                         <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
                     </div>
                 </td>
-
-                <td style="width:50%; padding-left:10px; border:0; vertical-align:top;">
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
                     <div class="sig-box">
                         <div class="sig-title">Seller / Company</div>
                         <div><b>Company:</b> Abou Saleh Real Estate</div>
                         <div><b>Representative:</b> ____________________________</div>
-
                         <div style="margin-top:10px;">
                             <span class="k">Signature:</span>
                             <span
-                                style="display:inline-block; width:240px; border-bottom:1px solid #111; height:18px; vertical-align:bottom;">
+                                style="display:inline-block;width:240px;border-bottom:1px solid #111;height:18px;vertical-align:bottom;">
                                 @if($signatureB64)
-                                <img class="sig-signature-img" style="position:relative; top:-18px; left:10px;"
-                                    src="data:image/png;base64,{{ $signatureB64 }}" alt="Company Signature">
+                                <img class="sig-signature-img" style="position:relative;top:-18px;left:10px;"
+                                    src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
                                 @endif
                             </span>
                         </div>
-
                         <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
                     </div>
                 </td>
@@ -519,7 +583,7 @@
         </table>
         <table style="width:100%;border:0;border-collapse:collapse;">
             <tr>
-                <td style="border:0;vertical-align:top;width:50%;">
+                <td style="border:0;vertical-align:top;width:50%;padding-right:8px;">
                     <ol class="small">
                         <li>All payments must be made according to the agreed schedule stated in this contract.</li>
                         <li>Down payment is non-refundable unless otherwise stated in writing.</li>
@@ -529,24 +593,27 @@
                         <li>Both parties acknowledge they have read and accepted all terms herein.</li>
                     </ol>
                 </td>
-                <td style="border:0;vertical-align:top;width:50%;">
-                    <ol class="small"
-                        style="direction:ltr;unicode-bidi:bidi-override;text-align:right;font-family:'Amiri',sans-serif;padding-right:16px;padding-left:0;">
-                        @foreach($arTermsList as $term)
-                        <li style="margin-bottom:4px;">{{ $term }}</li>
+                <td style="border:0;vertical-align:top;width:50%;padding-left:8px;">
+                    <table style="width:100%;border-collapse:collapse;font-family:'Amiri',sans-serif;font-size:11px;">
+                        @foreach($arTermsList as $i => $term)
+                        <tr>
+                            <td
+                                style="direction:ltr;unicode-bidi:bidi-override;text-align:right;padding:0 6px 4px 0;vertical-align:top;">
+                                {{ $term }}</td>
+                            <td
+                                style="width:22px;text-align:right;padding:0 0 4px 4px;vertical-align:top;font-weight:700;">
+                                .{{ $i + 1 }}</td>
+                        </tr>
                         @endforeach
-                    </ol>
+                    </table>
                 </td>
             </tr>
         </table>
     </div>
 
-    <!-- IMPORTANT: DOMPDF FOOTER (ONLY ONE FOOTER SYSTEM) -->
     <script type="text/php">
         if (isset($pdf)) {
-            // A4 portrait is 595x842 points.
-            // Left margin ~22. Bottom text y ~ 825 keeps it inside margin.
-            $left = "Abou Saleh Real Estate • +961 XX XXX XXX • info@abousaleh.me";
+            $left = "Abou Saleh Real Estate • info@abousaleh.me";
             $pdf->page_text(22, 825, $left, null, 9, array(0.42,0.45,0.50));
             $pdf->page_text(500, 825, "Page {PAGE_NUM} of {PAGE_COUNT}", null, 9, array(0.42,0.45,0.50));
         }

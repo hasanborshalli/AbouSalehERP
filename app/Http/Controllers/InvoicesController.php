@@ -57,6 +57,18 @@ class InvoicesController extends Controller
         $audit->record = 'INV-' . str_pad(auth()->id(), 5, '0', STR_PAD_LEFT) . '-' . $audit->id;
         $audit->save();
 
+        // ── Sequential enforcement: must pay in order ─────────────────────
+        $hasEarlierPending = Invoice::where('contract_id', $invoice->contract_id)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->where('due_date', '<', $invoice->due_date)
+            ->exists();
+
+        if ($hasEarlierPending) {
+            return response()->json([
+                'message' => 'Please pay earlier invoices first. Invoices must be paid in order.',
+            ], 422);
+        }
+
         $paymentType = $request->input('payment_type', 'cash');
 
         // ── IN-KIND PAYMENT ───────────────────────────────────────────────
@@ -75,19 +87,29 @@ class InvoicesController extends Controller
                 'payment_notes'             => ['nullable', 'string', 'max:1000'],
             ]);
 
-            $inKindPayment = null;
+            $inKindPayment      = null;
+            $adjustedInvoices   = [];
+            $pdfInvoiceIds      = [];
+            $autoPaidInvoiceIds = [];
+            $userId             = auth()->id();
 
-            DB::transaction(function () use ($request, $data, $invoice, $acct, &$inKindPayment) {
+            DB::transaction(function () use (
+                $request, $data, $invoice, $acct, $userId,
+                &$inKindPayment, &$adjustedInvoices, &$pdfInvoiceIds, &$autoPaidInvoiceIds
+            ) {
+                $now = now();
+
                 $invoice->status  = 'paid';
-                $invoice->paid_at = now();
+                $invoice->paid_at = $now;
                 $invoice->save();
+                $pdfInvoiceIds[] = $invoice->id;
 
                 $inKindPayment = InKindPayment::create([
                     'contract_id'           => $invoice->contract_id,
                     'invoice_id'            => $invoice->id,
-                    'payment_date'          => now()->toDateString(),
+                    'payment_date'          => $now->toDateString(),
                     'notes'                 => $data['payment_notes'] ?? null,
-                    'created_by'            => auth()->id(),
+                    'created_by'            => $userId,
                     'total_estimated_value' => 0,
                 ]);
 
@@ -111,7 +133,7 @@ class InvoicesController extends Controller
 
                 $inKindPayment->update(['total_estimated_value' => $totalValue]);
                 $inKindPayment->load('items');
-                $acct->postInvoicePaidInKind($inKindPayment, auth()->id());
+                $acct->postInvoicePaidInKind($inKindPayment, $userId);
 
                 $invoice->loadMissing('contract.apartment');
                 $contract  = $invoice->contract;
@@ -122,16 +144,76 @@ class InvoicesController extends Controller
                         $apartment->update(['status' => 'sold']);
                     }
                 }
+
+                // ── Apply credit/deficit cascade (same as cash) ───────────
+                $invoiceDue = round((float)$invoice->amount + (float)$invoice->late_fee_amount, 2);
+                $credit     = round($totalValue - $invoiceDue, 2);
+
+                if ($credit >= 0.01) {
+                    $upcomingInvoices = Invoice::where('contract_id', $invoice->contract_id)
+                        ->where('status', 'pending')
+                        ->where('due_date', '>', $invoice->due_date)
+                        ->orderBy('due_date')
+                        ->get();
+
+                    foreach ($upcomingInvoices as $upcoming) {
+                        if ($credit < 0.01) break;
+                        $upcomingAmount = round((float)$upcoming->amount, 2);
+
+                        if ($credit >= $upcomingAmount) {
+                            $credit -= $upcomingAmount;
+                            $credit  = round($credit, 2);
+                            $upcoming->status      = 'paid';
+                            $upcoming->amount_paid = $upcomingAmount;
+                            $upcoming->paid_at     = $now;
+                            $upcoming->save();
+                            $acct->postInvoicePaid($upcoming, $now, $userId);
+                            $pdfInvoiceIds[]      = $upcoming->id;
+                            $autoPaidInvoiceIds[] = $upcoming->id;
+                            $adjustedInvoices[]   = ['id' => $upcoming->id, 'status' => 'paid', 'amount' => $upcomingAmount];
+                        } else {
+                            $newAmount        = round($upcomingAmount - $credit, 2);
+                            $upcoming->amount = $newAmount;
+                            $upcoming->save();
+                            $pdfInvoiceIds[]    = $upcoming->id;
+                            $adjustedInvoices[] = ['id' => $upcoming->id, 'status' => 'pending', 'amount' => $newAmount];
+                            $credit = 0;
+                        }
+                    }
+                } elseif ($credit <= -0.01) {
+                    $nextInvoice = Invoice::where('contract_id', $invoice->contract_id)
+                        ->where('status', 'pending')
+                        ->where('due_date', '>', $invoice->due_date)
+                        ->orderBy('due_date')
+                        ->first();
+                    if ($nextInvoice) {
+                        $newAmount          = round((float)$nextInvoice->amount + abs($credit), 2);
+                        $nextInvoice->amount = $newAmount;
+                        $nextInvoice->save();
+                        $pdfInvoiceIds[]    = $nextInvoice->id;
+                        $adjustedInvoices[] = ['id' => $nextInvoice->id, 'status' => 'pending', 'amount' => $newAmount];
+                    }
+                }
             });
 
-            if ($inKindPayment) {
-                GenerateInKindReceiptJob::dispatch($inKindPayment->id, auth()->id());
-            }
-            GenerateInvoicePdfJob::dispatch($invoice->id);
+            DB::afterCommit(function () use ($pdfInvoiceIds, $autoPaidInvoiceIds, $inKindPayment, $userId, $invoice) {
+                $pdfJobs = array_map(fn($id) => new GenerateInvoicePdfJob($id), $pdfInvoiceIds);
+                Bus::batch($pdfJobs)->name("Invoice PDFs after in-kind payment #{$invoice->id}")->dispatch();
+
+                if ($inKindPayment) {
+                    GenerateInKindReceiptJob::dispatch($inKindPayment->id, $userId);
+                }
+                foreach ($autoPaidInvoiceIds as $autoPaidId) {
+                    GenerateReceiptPdfJob::dispatch($autoPaidId, $userId);
+                }
+            });
 
             $audit->details = 'Marking invoice (' . $invoice->invoice_number . ') as paid (in-kind) succeeded';
             $audit->save();
-            return response()->json(['message' => 'Marked as paid (in-kind). Items added to stock.']);
+            return response()->json([
+                'message'           => 'Marked as paid (in-kind). Items added to stock.',
+                'adjusted_invoices' => $adjustedInvoices,
+            ]);
         }
 
         // ── CASH PAYMENT ──────────────────────────────────────────────────

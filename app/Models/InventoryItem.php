@@ -10,6 +10,7 @@ class InventoryItem extends Model
     use SoftDeletes;
 protected $fillable=[
     'name',
+    'name_ar',
     'price',
     'type',
     'quantity',

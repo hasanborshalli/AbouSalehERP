@@ -263,7 +263,8 @@ Route::middleware(['auth', 'role:owner,admin'])->prefix('workers')->name('worker
     Route::patch('/payments/{payment}/mark-paid',        [WorkersController::class, 'markPaid'])->name('payments.markPaid');
     Route::get('/contracts/{contract}/pdf',              [WorkersController::class, 'contractPdf'])->name('contract.pdf');
     Route::get('/contracts/{contract}/pdf/download',     [WorkersController::class, 'contractPdfDownload'])->name('contract.pdf.download');
-    Route::get('/payments/{payment}/receipt/download',   [WorkersController::class, 'paymentReceiptDownload'])->name('payments.receipt');
+    Route::get('/payments/{payment}/receipt/download',            [WorkersController::class, 'paymentReceiptDownload'])->name('payments.receipt');
+    Route::get('/payments/{payment}/inkind-receipt/download',     [WorkersController::class, 'inKindReceiptDownload'])->name('payments.inkind-receipt');
 });
 
 // ── Worker Portal ─────────────────────────────────────────────

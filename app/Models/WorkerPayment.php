@@ -38,4 +38,9 @@ class WorkerPayment extends Model
     {
         return $this->belongsTo(User::class, 'marked_paid_by');
     }
+
+    public function inKindPayment()
+    {
+        return $this->hasOne(WorkerInKindPayment::class);
+    }
 }

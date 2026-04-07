@@ -9,42 +9,39 @@
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     $signaturePath = public_path('img/abousaleh-signature.png');
     $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-    $contract = $payment->contract;
-    $client = $contract->client;
 
-    $arTitle = ArabicPdf::shape('إيصال دفع عيني');
-    $arCompany = ArabicPdf::shape('أبو صالح للتجارة العامة');
+    $contract = $payment->workerContract;
+    $worker = $contract->worker;
+
+    $arTitle = ArabicPdf::shape('إيصال دفع عيني للعامل');
+    $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
     $arNo = ArabicPdf::shape('رقم الإيصال');
     $arDate = ArabicPdf::shape('التاريخ');
-    $arFrom = ArabicPdf::shape('استلمنا من');
+    $arTo = ArabicPdf::shape('صُرف إلى');
     $arFor = ArabicPdf::shape('وذلك بدل');
     $arMethod = ArabicPdf::shape('طريقة الدفع');
     $arInKind = ArabicPdf::shape('دفع عيني (مواد من المخزون)');
-    $arItems = ArabicPdf::shape('البنود المستلمة');
+    $arItems = ArabicPdf::shape('البنود المسلَّمة');
     $arItem = ArabicPdf::shape('البند');
     $arQty = ArabicPdf::shape('الكمية');
     $arUnitPrice= ArabicPdf::shape('سعر الوحدة');
     $arTotal = ArabicPdf::shape('الإجمالي');
-    $arNotes = ArabicPdf::shape('ملاحظات');
     $arTotalVal = ArabicPdf::shape('القيمة الإجمالية التقديرية');
-    $arRecBy = ArabicPdf::shape('استلمت بواسطة');
     $arSig = ArabicPdf::shape('التوقيع المخوّل');
-    $arNote1 = ArabicPdf::shape('يؤكد هذا الإيصال استلام المواد أعلاه');
-    $arNote2 = ArabicPdf::shape('من العميل كدفعة.');
-    $arNote3 = ArabicPdf::shape('تحتفظ الشركة بالحق في إعادة التقييم.');
-    $arClientName = ArabicPdf::shape($client->name ?? '');
+    $arNote1 = ArabicPdf::shape('يؤكد هذا الإيصال تسليم المواد أعلاه');
+    $arNote2 = ArabicPdf::shape('للعامل المذكور بدلاً عن الدفعة النقدية.');
+    $arWorkerName = ArabicPdf::shape($worker->name ?? '');
 
-    $projectNameAr = $contract->project ? ($contract->project->name_ar ?? $contract->project->name) : '';
-    $aptUnit = $contract->apartment->unit_number ?? '';
-    if ($payment->invoice) {
-    $arForWhat = ArabicPdf::shape('فاتورة رقم ' . $payment->invoice->invoice_number . ' - شقة ' . $aptUnit);
-    $arForWhat2 = $projectNameAr ? ArabicPdf::shape($projectNameAr) : null;
-    } else {
-    $arForWhat = ArabicPdf::shape('دفع عيني - شقة ' . $aptUnit);
-    $arForWhat2 = $projectNameAr ? ArabicPdf::shape($projectNameAr) : null;
-    }
+    $projectName = $contract->project?->name ?? '';
+    $installment = $payment->workerPayment?->installment_index ?? '';
+
+    $arForWhat1 = ArabicPdf::shape('دفعة رقم ' . $installment);
+    $arForWhat2 = ArabicPdf::shape($contract->scope_of_work ?? '');
+    $arForWhat3 = $projectName ? ArabicPdf::shape('مشروع: ' . $projectName) : null;
     @endphp
+
     @include('pdfs._arabic_font')
+
     <style>
         @@page {
             margin: 32px 40px;
@@ -80,6 +77,28 @@
             width: 110px;
         }
 
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .header-table td {
+            font-size: 13px;
+            font-weight: bold;
+            padding: 0 4px;
+        }
+
+        .voucher-bar {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 0 16px;
+            text-align: center;
+        }
+
         .ar {
             font-family: 'Amiri', sans-serif;
             direction: ltr;
@@ -109,28 +128,6 @@
             text-align: right;
             display: block;
             width: 100%;
-        }
-
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 6px;
-        }
-
-        .header-table td {
-            font-size: 13px;
-            font-weight: bold;
-            padding: 0 4px;
-        }
-
-        .voucher-bar {
-            background: #1e3a5f;
-            color: #fff;
-            padding: 10px 14px;
-            font-weight: bold;
-            font-size: 14px;
-            margin: 10px 0 16px;
-            text-align: center;
         }
 
         .bi {
@@ -190,23 +187,6 @@
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .items-table .ar-th {
-            font-family: 'Amiri', sans-serif;
-            direction: ltr;
-            unicode-bidi: bidi-override;
-            text-align: right;
-        }
-
-        .badge-inkind {
-            display: inline-block;
-            background: #1e3a5f;
-            color: #fff;
-            padding: 2px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
         .sig-table {
             width: 100%;
             border-collapse: collapse;
@@ -217,14 +197,6 @@
             vertical-align: top;
             width: 50%;
             padding: 0 6px;
-        }
-
-        .stamp-box {
-            width: 80px;
-            height: 80px;
-            border: 1px solid #000;
-            margin-top: 10px;
-            display: inline-block;
         }
 
         .sig-img {
@@ -254,7 +226,7 @@
     <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
     <table class="header-table">
         <tr>
-            <td>ABOU SALEH GENERAL TRADING</td>
+            <td>ABOU SALEH REAL ESTATE</td>
             <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
         </tr>
         <tr>
@@ -264,7 +236,7 @@
     </table>
 
     <div class="voucher-bar">
-        IN-KIND PAYMENT RECEIPT | <span class="ar" style="display:inline;">{{ $arTitle }}</span>
+        WORKER IN-KIND PAYMENT RECEIPT | <span class="ar" style="display:inline;">{{ $arTitle }}</span>
     </div>
 
     <div class="box">
@@ -280,27 +252,26 @@
                         \Carbon\Carbon::parse($payment->payment_date)->format('Y-m-d') }}</span></td>
             </tr>
             <tr>
-                <td class="en"><span class="en-lbl">Received from:</span><span class="en-val">{{ $client->name ?? '—'
+                <td class="en"><span class="en-lbl">Paid to (Worker):</span><span class="en-val">{{ $worker->name ?? '—'
                         }}</span></td>
-                <td><span class="ar-lbl">{{ $arFrom }}</span><span class="ar-val">{{ $arClientName }}</span></td>
+                <td><span class="ar-lbl">{{ $arTo }}</span><span class="ar-val">{{ $arWorkerName }}</span></td>
             </tr>
             <tr>
                 <td class="en"><span class="en-lbl">For:</span><span class="en-val">
-                        @if($payment->invoice) Invoice #{{ $payment->invoice->invoice_number }} — Apt {{
-                        $contract->apartment->unit_number ?? '' }} — {{ $contract->project->name ?? '' }}
-                        @else Full purchase (in-kind) — Apt {{ $contract->apartment->unit_number ?? '' }} — {{
-                        $contract->project->name ?? '' }}
-                        @endif
+                        Installment #{{ $installment }}
+                        @if($contract->scope_of_work) — {{ $contract->scope_of_work }}@endif
+                        @if($projectName) — {{ $projectName }}@endif
                     </span></td>
                 <td>
                     <span class="ar-lbl">{{ $arFor }}</span>
-                    <span class="ar-val">{{ $arForWhat }}</span>
-                    @if($arForWhat2)<span class="ar-val">{{ $arForWhat2 }}</span>@endif
+                    <span class="ar-val">{{ $arForWhat1 }}</span>
+                    <span class="ar-val">{{ $arForWhat2 }}</span>
+                    @if($arForWhat3)<span class="ar-val">{{ $arForWhat3 }}</span>@endif
                 </td>
             </tr>
             <tr>
-                <td class="en"><span class="en-lbl">Payment method:</span><span class="en-val">In-Kind (Inventory
-                        Items)</span></td>
+                <td class="en"><span class="en-lbl">Payment method:</span><span class="en-val">In-Kind (Materials from
+                        Stock)</span></td>
                 <td><span class="ar-lbl">{{ $arMethod }}</span><span class="ar-val">{{ $arInKind }}</span></td>
             </tr>
         </table>
@@ -342,14 +313,13 @@
     <table class="sig-table">
         <tr>
             <td class="en">
-                <strong>Received by:</strong> Abou Saleh General Trading<br>
+                <strong>Issued by:</strong> Abou Saleh Real Estate<br>
                 <strong>Authorised Signature:</strong>
                 @if($signatureB64)<img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">@endif
             </td>
             <td style="text-align:right;">
-                <span class="ar-lbl">{{ $arRecBy }}</span>
+                <span class="ar-lbl">{{ $arSig }}</span>
                 <span class="ar-val">{{ $arCompany }}</span>
-                <span class="ar-lbl" style="margin-top:8px;">{{ $arSig }}</span>
             </td>
         </tr>
     </table>
@@ -357,7 +327,6 @@
     <div class="info-note">
         <span class="ar">{{ $arNote1 }}</span>
         <span class="ar">{{ $arNote2 }}</span>
-        <span class="ar">{{ $arNote3 }}</span>
     </div>
     <div class="footer-line"></div>
 </body>

@@ -27,7 +27,9 @@
 
     $arFaqat = ArabicPdf::shape('فقط لا غير');
     $arReceivedFrom = ArabicPdf::shape($receivedFrom);
-    $arForWhat = ArabicPdf::shape($forWhat);
+    $arForWhat1 = ArabicPdf::shape($forWhatAr1 ?? '');
+    $arForWhat2 = isset($forWhatAr2) && $forWhatAr2 ? ArabicPdf::shape($forWhatAr2) : null;
+    $arForWhat3 = isset($forWhatAr3) && $forWhatAr3 ? ArabicPdf::shape($forWhatAr3) : null;
     $arReceiverName = ArabicPdf::shape($receiverName);
     $arCompanyName = ArabicPdf::shape('أبو صالح للعقارات');
     $arPayMethod = ArabicPdf::shape(match($paymentMethod) {
@@ -67,21 +69,36 @@
             opacity: 0.07;
         }
 
-        .logo {
+        .logo-top {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo-top img {
             width: 110px;
-            float: right;
         }
 
-        .clearfix::after {
-            content: '';
-            display: block;
-            clear: both;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
         }
 
-        .title-bar {
-            font-size: 20px;
+        .header-table td {
+            font-size: 13px;
             font-weight: bold;
+            padding: 0 4px;
+            vertical-align: middle;
+        }
+
+        .voucher-bar {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
             margin: 10px 0 16px;
+            text-align: center;
         }
 
         /* Arabic spans: ltr + bidi-override because utf8Glyphs pre-orders visually */
@@ -198,15 +215,20 @@
     </div>
     @endif
 
-    {{-- Header --}}
-    @if($logoB64)
-    <img class="logo" src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
-    @endif
-    <div class="clearfix">
-        <div class="title-bar">
-            Receipt &nbsp;|&nbsp; <span class="ar" style="font-size:20px; font-weight:bold; display:inline;">{{ $arTitle
-                }}</span>
-        </div>
+    <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
+    <table class="header-table">
+        <tr>
+            <td>ABOU SALEH REAL ESTATE</td>
+            <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
+        </tr>
+        <tr>
+            <td style="font-size:11px;font-weight:normal;">Email: info@abousaleh.me</td>
+            <td style="font-size:11px;font-weight:normal;text-align:right;">Tel: +961 71 999 219</td>
+        </tr>
+    </table>
+    <div class="voucher-bar">
+        RECEIPT &nbsp;|&nbsp; <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{
+            $arTitle }}</span>
     </div>
 
     {{-- Data box --}}
@@ -276,7 +298,9 @@
                 </td>
                 <td>
                     <span class="ar-lbl">{{ $arFor }}</span>
-                    <span class="ar-val">{{ $arForWhat }}</span>
+                    <span class="ar-val">{{ $arForWhat1 }}</span>
+                    @if($arForWhat2)<span class="ar-val">{{ $arForWhat2 }}</span>@endif
+                    @if($arForWhat3)<span class="ar-val">{{ $arForWhat3 }}</span>@endif
                 </td>
             </tr>
             {{-- Payment method --}}

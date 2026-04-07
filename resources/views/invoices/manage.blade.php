@@ -90,6 +90,18 @@
                                 </thead>
 
                                 <tbody id="invTbody" class="invoices__tbody">
+                                    @php
+                                    // Compute first-payable invoice per contract (sequential enforcement UI)
+                                    $pageContractIds = $invoices->pluck('contract_id')->filter()->unique()->values();
+                                    $firstPayableIds = \App\Models\Invoice::whereIn('contract_id', $pageContractIds)
+                                    ->whereIn('status', ['pending', 'overdue'])
+                                    ->orderBy('due_date')
+                                    ->get()
+                                    ->groupBy('contract_id')
+                                    ->map(fn($g) => $g->first()->id)
+                                    ->values()
+                                    ->toArray();
+                                    @endphp
                                     @foreach($invoices as $inv)
                                     @php
                                     $contract = $inv->contract;
@@ -140,6 +152,8 @@
                                             </span>
                                         </td>
 
+                                        @php $isPayable = $status === 'paid' || in_array($inv->id, $firstPayableIds);
+                                        @endphp
                                         <td class="invoices__td invoices__td--actions">
                                             <button class="invoices__btn invoices__btn--view"
                                                 type="button">View</button>
@@ -151,10 +165,19 @@
                                             </button>
                                             @endif
 
+                                            @if($isPayable)
                                             <button class="invoices__icon-btn invoices__icon-btn--paid" type="button"
                                                 aria-label="Mark paid">
                                                 ✔
                                             </button>
+                                            @else
+                                            <button class="invoices__icon-btn invoices__icon-btn--paid" type="button"
+                                                aria-label="Pay earlier invoices first" disabled
+                                                title="Pay earlier invoices first"
+                                                style="opacity:.3;cursor:not-allowed;">
+                                                🔒
+                                            </button>
+                                            @endif
                                             @endif
                                         </td>
                                     </tr>

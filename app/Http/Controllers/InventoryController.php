@@ -25,6 +25,7 @@ class InventoryController extends Controller
         $audit->save();
         $data = $request->validate([
     'item_name' => ['required', 'string', 'max:255'],
+    'item_name_ar' => ['nullable', 'string', 'max:255'],
     'item_price' => ['required', 'numeric', 'min:0'],
     'item_type' => ['required', Rule::in(['internal', 'external', 'sale'])],
     'item_quantity' => ['required', 'integer', 'min:0'],
@@ -49,6 +50,7 @@ if ((int)$data['item_quantity'] > 0 && blank($request->input('purchase_unit_cost
 
        $item = InventoryItem::create([
             'name' => $data['item_name'],
+            'name_ar' => $data['item_name_ar'] ?? null,
             'price' => $data['item_price'],
             'type' => $data['item_type'],
             'unit' => $data['item_unit'],
@@ -88,6 +90,7 @@ $cash->createInventoryPurchase([
         $audit->save();
         $data = $request->validate([
             'item_name' => ['required', 'string', 'max:255'],
+            'item_name_ar' => ['nullable', 'string', 'max:255'],
             'item_price' => ['required', 'numeric', 'min:0'],
             'item_type' => ['required', Rule::in(['internal', 'external', 'sale'])],
             'item_image' => ['nullable', 'image', 'max:4096'],
@@ -104,6 +107,7 @@ $cash->createInventoryPurchase([
         }
 
         $inventoryItem->name = $data['item_name'];
+        $inventoryItem->name_ar = $data['item_name_ar'] ?? null;
         $inventoryItem->price = $data['item_price'];
         $inventoryItem->type = $data['item_type'];
         $inventoryItem->unit = $data['item_unit'];

@@ -68,6 +68,12 @@
                             </div>
 
                             <div class="add-item__field">
+                                <label class="add-item__label" for="item_name_ar">Item name (Arabic)</label>
+                                <input class="add-item__input" id="item_name_ar" name="item_name_ar" type="text"
+                                    placeholder="مثال: أسمنت" dir="rtl" value="{{ old('item_name_ar') }}" />
+                            </div>
+
+                            <div class="add-item__field">
                                 <label class="add-item__label" for="item_price">Item price</label>
                                 <input class="add-item__input" id="item_price" name="item_price" type="number"
                                     step="0.01" min="0" placeholder="0.00" required value="{{ old('item_price') }}" />

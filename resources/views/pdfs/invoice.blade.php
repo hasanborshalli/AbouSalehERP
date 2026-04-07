@@ -29,6 +29,7 @@
     $arDesc = ArabicPdf::shape('قسط شهري');
     $arSig = ArabicPdf::shape('التوقيع المخوّل');
     $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+    $arLblDesc = ArabicPdf::shape('الوصف');
 
     $arClientName = ArabicPdf::shape($contract->client->name ?? '');
     $arProjectName= ArabicPdf::shape($contract->project->name ?? '-');
@@ -56,30 +57,55 @@
 
         .watermark {
             position: fixed;
-            left: 50%;
-            top: 52%;
-            transform: translate(-50%, -50%);
-            width: 500px;
-            opacity: 0.06;
-            z-index: -1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            text-align: center;
         }
 
-        .logo {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 120px;
+        .watermark img {
+            margin-top: 250px;
+            width: 340px;
+            opacity: 0.06;
+        }
+
+        .logo-top {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo-top img {
+            width: 110px;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+
+        .header-table td {
+            font-size: 13px;
+            font-weight: bold;
+            padding: 0 4px;
+            vertical-align: middle;
+        }
+
+        .voucher-bar {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 10px 0 14px;
+            text-align: center;
         }
 
         .muted {
             color: #6b7280;
             font-size: 10.5px;
-        }
-
-        .title-bar {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
         }
 
         .ar {
@@ -145,13 +171,23 @@
 </head>
 
 <body>
-    @if($logoB64)
-    <img class="watermark" src="data:image/png;base64,{{ $logoB64 }}" alt="">
-    <img class="logo" src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">
-    @endif
+    @if($logoB64)<div class="watermark"><img src="data:image/png;base64,{{ $logoB64 }}" alt=""></div>@endif
 
-    <div class="title-bar">Invoice &nbsp;|&nbsp; <span class="ar" style="font-size:18px;font-weight:bold;">{{ $arTitle
-            }}</span></div>
+    <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
+    <table class="header-table">
+        <tr>
+            <td>ABOU SALEH REAL ESTATE</td>
+            <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
+        </tr>
+        <tr>
+            <td style="font-size:11px;font-weight:normal;">Email: info@abousaleh.me</td>
+            <td style="font-size:11px;font-weight:normal;text-align:right;">Tel: +961 71 999 219</td>
+        </tr>
+    </table>
+    <div class="voucher-bar">
+        INVOICE &nbsp;|&nbsp; <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{
+            $arTitle }}</span>
+    </div>
     <div class="muted">Generated: {{ ($generatedAt ?? now())->timezone('Asia/Beirut')->format('Y-m-d H:i') }}</div>
 
     <div class="box">
@@ -214,7 +250,7 @@
             </tr>
             <tr>
                 <td class="en"><strong>Description:</strong> Monthly installment</td>
-                <td><span class="ar">{{ $arDesc }}</span></td>
+                <td><span class="ar">{{ $arDesc }} : {{ $arLblDesc }}</span></td>
             </tr>
         </table>
     </div>
@@ -231,9 +267,9 @@
                 <div style="margin-top:4px;font-weight:600;">Abou Saleh Real Estate</div>
             </td>
             <td style="text-align:right;">
-                <span class="ar">{{ $arSig }}</span>
-                <div class="sig-line" style="margin-left:auto;margin-right:0;"></div>
-                <span class="ar" style="font-weight:600;">{{ $arCompany }}</span>
+                <span class="ar" style="font-weight:bold;">{{ $arSig }}</span>
+                <div class="sig-line" style="width:100%;"></div>
+                <span class="ar">{{ $arCompany }}</span>
             </td>
         </tr>
     </table>

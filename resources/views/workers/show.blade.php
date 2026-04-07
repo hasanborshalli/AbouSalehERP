@@ -92,6 +92,12 @@
                         </div>
                     </div>
 
+                    @php
+                    $firstPendingIdx = $contract->payments
+                    ->where('status', 'pending')
+                    ->sortBy('installment_index')
+                    ->first()?->installment_index ?? PHP_INT_MAX;
+                    @endphp
                     <table class="wrk-table">
                         <thead>
                             <tr>
@@ -105,6 +111,8 @@
                         </thead>
                         <tbody>
                             @foreach($contract->payments as $p)
+                            @php $isBlocked = $p->status === 'pending' && $p->installment_index > $firstPendingIdx;
+                            @endphp
                             <tr>
                                 <td class="bold">{{ $p->installment_index }}</td>
                                 <td>{{ $p->due_date->format('d M Y') }}</td>
@@ -112,6 +120,9 @@
                                 <td>
                                     @if($p->status === 'paid')
                                     <span class="badge badge--paid">Paid</span>
+                                    @elseif($isBlocked)
+                                    <span class="badge badge--pending" style="opacity:.5;"
+                                        title="Pay earlier installments first">Blocked</span>
                                     @else
                                     <span class="badge badge--pending">Pending</span>
                                     @endif
@@ -119,10 +130,11 @@
                                 <td style="font-size:12px; opacity:.7;">{{ $p->paid_at ? $p->paid_at->format('d M Y') :
                                     '—' }}</td>
                                 <td>
-                                    @if($p->status === 'pending')
+                                    @if($p->status === 'pending' && !$isBlocked)
                                     <form class="settle-form" method="post"
                                         action="{{ route('workers.payments.markPaid', $p) }}">
                                         @csrf @method('PATCH')
+                                        <input type="hidden" name="payment_type" value="cash">
                                         <div style="display:flex;flex-direction:column;gap:5px;">
                                             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                                                 <input type="date" name="paid_at" value="{{ now()->format('Y-m-d') }}">
@@ -132,12 +144,25 @@
                                                     style="width:110px;padding:5px 8px;border-radius:8px;border:2px solid rgba(0,0,0,0.12);font-size:12px;">
                                                 <button type="submit" class="btn-submit"
                                                     style="padding:6px 14px;border-radius:999px;border:none;background:rgba(21,128,61,.12);color:#15803d;font-size:12px;font-weight:700;cursor:pointer;">✔
-                                                    Mark Paid</button>
+                                                    Cash</button>
+                                                <button type="button" class="btn-inkind-open"
+                                                    data-payment-id="{{ $p->id }}"
+                                                    data-payment-url="{{ route('workers.payments.markPaid', $p) }}"
+                                                    data-payment-label="Installment #{{ $p->installment_index }}"
+                                                    style="padding:6px 14px;border-radius:999px;border:none;background:rgba(42,127,176,.12);color:#2a7fb0;font-size:12px;font-weight:700;cursor:pointer;">📦
+                                                    In-Kind</button>
                                             </div>
                                             <div class="amt-paid-diff"
                                                 style="font-size:11px;font-weight:700;min-height:14px;"></div>
                                         </div>
                                     </form>
+                                    @elseif($p->status === 'pending' && $isBlocked)
+                                    <span style="font-size:11px;opacity:.45;"
+                                        title="Pay installment #{{ $firstPendingIdx }} first">🔒 Pay #{{
+                                        $firstPendingIdx }} first</span>
+                                    @elseif($p->inKindPayment && $p->inKindPayment->receipt_path)
+                                    <a class="link-btn" href="{{ route('workers.payments.inkind-receipt', $p) }}">↓
+                                        In-Kind Receipt</a>
                                     @elseif($p->receipt_path)
                                     <a class="link-btn" href="{{ route('workers.payments.receipt', $p) }}">↓ Receipt</a>
                                     @else
@@ -329,6 +354,42 @@
                 </div>
 
             </div>
+
+            {{-- Worker In-Kind Payment Modal --}}
+            <div id="wrkInKindModal"
+                style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+                <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);" id="wrkInKindBackdrop"></div>
+                <div
+                    style="position:relative;background:#fff;border-radius:14px;padding:28px 28px 22px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                    <h3 style="margin:0 0 4px;font-size:16px;">📦 In-Kind Payment</h3>
+                    <p id="wrkInKindLabel" style="font-size:12px;opacity:.6;margin:0 0 16px;"></p>
+
+                    <div id="wrkInKindRows"></div>
+                    <button type="button" id="wrkAddRowBtn"
+                        style="font-size:12px;padding:5px 14px;border-radius:999px;border:1.5px dashed rgba(0,0,0,.2);background:none;cursor:pointer;margin-bottom:12px;">+
+                        Add item</button>
+
+                    <div style="font-size:13px;font-weight:700;margin-bottom:10px;">
+                        Items total: <span id="wrkInKindTotal">$0.00</span>
+                    </div>
+
+                    <div style="margin-bottom:14px;">
+                        <label style="font-size:11px;font-weight:700;display:block;margin-bottom:4px;">Notes
+                            (optional)</label>
+                        <input type="text" id="wrkInKindNotes" placeholder="e.g. Delivered at warehouse"
+                            style="width:100%;padding:7px 10px;border:2px solid rgba(0,0,0,.1);border-radius:8px;font-size:12px;box-sizing:border-box;">
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="button" id="wrkInKindCancel"
+                            style="padding:8px 18px;border-radius:999px;border:1.5px solid rgba(0,0,0,.15);background:#fff;cursor:pointer;font-size:13px;">Cancel</button>
+                        <button type="button" id="wrkInKindConfirm"
+                            style="padding:8px 18px;border-radius:999px;border:none;background:#1e3a5f;color:#fff;cursor:pointer;font-size:13px;font-weight:700;">✓
+                            Confirm In-Kind Payment</button>
+                    </div>
+                </div>
+            </div>
+
         </main>
         <label class="app-shell__overlay" for="sidebarToggle" aria-hidden="true"></label>
     </div>
@@ -448,6 +509,140 @@
         input.addEventListener('input', update);
         update();
     });
+    </script>
+    <script>
+        // ── Worker In-Kind Payment Modal ───────────────────────────────────────
+    (function () {
+        var modal     = document.getElementById('wrkInKindModal');
+        var backdrop  = document.getElementById('wrkInKindBackdrop');
+        var label     = document.getElementById('wrkInKindLabel');
+        var rowsWrap  = document.getElementById('wrkInKindRows');
+        var addRowBtn = document.getElementById('wrkAddRowBtn');
+        var totalEl   = document.getElementById('wrkInKindTotal');
+        var notesEl   = document.getElementById('wrkInKindNotes');
+        var cancelBtn = document.getElementById('wrkInKindCancel');
+        var confirmBtn= document.getElementById('wrkInKindConfirm');
+        var token     = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        var currentUrl = null;
+        var inventoryItems = [];
+
+        function money(v) {
+            return '$' + Number(v||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        function openModal() { modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; rowsWrap.innerHTML = ''; if (notesEl) notesEl.value = ''; }
+
+        backdrop?.addEventListener('click', closeModal);
+        cancelBtn?.addEventListener('click', closeModal);
+
+        async function loadItems() {
+            if (inventoryItems.length > 0) return;
+            try {
+                var res = await fetch('/invoices/inventory-items', { headers: { Accept: 'application/json', 'X-CSRF-TOKEN': token } });
+                inventoryItems = await res.json();
+            } catch(_) { inventoryItems = []; }
+        }
+
+        function buildRow() {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
+
+            var sel = document.createElement('select');
+            sel.style.cssText = 'flex:1;min-width:160px;padding:6px 8px;border:2px solid rgba(0,0,0,.12);border-radius:8px;font-size:12px;';
+            sel.innerHTML = '<option value="">— select item —</option>';
+            inventoryItems.forEach(function(it) {
+                var opt = document.createElement('option');
+                opt.value = it.id;
+                opt.dataset.price = it.price;
+                opt.dataset.name  = it.name;
+                opt.dataset.unit  = it.unit || '';
+                opt.textContent = it.name + ' (' + money(it.price) + '/' + (it.unit||'unit') + ', stock: ' + it.quantity + ')';
+                sel.appendChild(opt);
+            });
+
+            var qty = document.createElement('input');
+            qty.type = 'number'; qty.min = '0.001'; qty.step = '0.001'; qty.placeholder = 'Qty';
+            qty.style.cssText = 'width:80px;padding:6px 8px;border:2px solid rgba(0,0,0,.12);border-radius:8px;font-size:12px;';
+
+            var val = document.createElement('span');
+            val.style.cssText = 'font-size:12px;font-weight:700;min-width:60px;';
+            val.textContent = '$0.00';
+
+            var rm = document.createElement('button');
+            rm.type = 'button'; rm.textContent = '✕';
+            rm.style.cssText = 'border:none;background:none;cursor:pointer;color:#ef4444;font-size:14px;';
+            rm.addEventListener('click', function() { row.remove(); recalcTotal(); });
+
+            function recalcRow() {
+                var price = parseFloat(sel.options[sel.selectedIndex]?.dataset.price || 0);
+                var q     = parseFloat(qty.value || 0);
+                val.textContent = money(price * q);
+                recalcTotal();
+            }
+            sel.addEventListener('change', recalcRow);
+            qty.addEventListener('input', recalcRow);
+
+            row.appendChild(sel); row.appendChild(qty); row.appendChild(val); row.appendChild(rm);
+            return row;
+        }
+
+        function recalcTotal() {
+            var total = 0;
+            rowsWrap.querySelectorAll('div').forEach(function(row) {
+                var sel   = row.querySelector('select');
+                var qty   = row.querySelector('input[type="number"]');
+                var price = parseFloat(sel?.options[sel.selectedIndex]?.dataset.price || 0);
+                total += price * (parseFloat(qty?.value || 0));
+            });
+            if (totalEl) totalEl.textContent = money(total);
+        }
+
+        addRowBtn?.addEventListener('click', function() { rowsWrap.appendChild(buildRow()); });
+
+        document.querySelectorAll('.btn-inkind-open').forEach(function(btn) {
+            btn.addEventListener('click', async function() {
+                currentUrl = btn.dataset.paymentUrl;
+                if (label) label.textContent = btn.dataset.paymentLabel || '';
+                await loadItems();
+                rowsWrap.innerHTML = '';
+                rowsWrap.appendChild(buildRow());
+                openModal();
+            });
+        });
+
+        confirmBtn?.addEventListener('click', async function() {
+            var items = [];
+            var valid = true;
+            rowsWrap.querySelectorAll('div').forEach(function(row) {
+                var sel  = row.querySelector('select');
+                var qty  = row.querySelector('input[type="number"]');
+                if (!sel?.value || !qty?.value || parseFloat(qty.value) <= 0) { valid = false; return; }
+                items.push({ inventory_item_id: parseInt(sel.value), quantity: parseFloat(qty.value), notes: null });
+            });
+            if (!valid || items.length === 0) { alert('Please fill all items with valid quantities.'); return; }
+
+            try {
+                confirmBtn.disabled = true;
+                var res = await fetch(currentUrl, {
+                    method: 'PATCH',
+                    headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ payment_type: 'in_kind', items: items, payment_notes: notesEl?.value || null }),
+                });
+                if (!res.ok) {
+                    var d = await res.json().catch(() => ({}));
+                    alert(d.message || 'Failed.');
+                    return;
+                }
+                closeModal();
+                window.location.reload();
+            } catch(err) {
+                alert(err.message || 'Failed.');
+            } finally {
+                confirmBtn.disabled = false;
+            }
+        });
+    })();
     </script>
 </body>
 

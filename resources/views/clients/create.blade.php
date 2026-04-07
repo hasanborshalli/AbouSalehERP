@@ -556,6 +556,10 @@
             fullSection.style.display  = val === 'cash_full'  ? '' : 'none';
             inKindSection.style.display = val === 'in_kind'   ? '' : 'none';
 
+            // Disable inputs in hidden sections so they are not submitted with the form
+            document.getElementById('late_fee').disabled      = (val !== 'cash');
+            document.getElementById('late_fee_full').disabled = (val !== 'cash_full');
+
             // Required management
             if (val === 'cash') {
                 monthsEl.required = true;

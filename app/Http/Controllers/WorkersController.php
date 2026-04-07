@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\GenerateWorkerContractPdfJob;
+use App\Jobs\GenerateWorkerInKindReceiptJob;
 use App\Jobs\GenerateWorkerPaymentReceiptJob;
 use App\Jobs\SendWorkerPaymentReceiptMailJob;
 use App\Mail\WorkerCredentialsMail;
 use App\Models\AuditLog;
 use App\Models\ApartmentAdditionalCost;
+use App\Models\InventoryItem;
 use App\Models\Project;
 use App\Models\ProjectAdditionalCost;
 use App\Models\User;
 use App\Models\WorkerContract;
-
+use App\Models\WorkerInKindPayment;
+use App\Models\WorkerInKindPaymentItem;
 use App\Models\WorkerPayment;
 use App\Services\CashAccountingService;
 use Carbon\Carbon;
@@ -230,7 +233,7 @@ class WorkersController extends Controller
     {
         abort_unless($worker->role === 'worker', 404);
 
-        $worker->load(['workerContracts.payments', 'workerContracts.project']);
+        $worker->load(['workerContracts.payments.inKindPayment', 'workerContracts.project']);
         $projects         = Project::with('apartments')->orderByDesc('created_at')->get();
         $managedProperties = \App\Models\ManagedProperty::orderBy('address')->get();
 
@@ -254,6 +257,171 @@ class WorkersController extends Controller
     public function markPaid(Request $request, WorkerPayment $payment, CashAccountingService $cash)
     {
         abort_if($payment->status === 'paid', 422, 'Already paid.');
+
+        // Sequential enforcement: must pay in order
+        $hasEarlierPending = WorkerPayment::where('worker_contract_id', $payment->worker_contract_id)
+            ->where('status', 'pending')
+            ->where('due_date', '<', $payment->due_date)
+            ->exists();
+
+        if ($hasEarlierPending) {
+            return back()->with('error', 'Please pay earlier installments first. Payments must be in order.');
+        }
+
+        $paymentType = $request->input('payment_type', 'cash');
+
+        // ── IN-KIND PAYMENT ───────────────────────────────────────────────
+        if ($paymentType === 'in_kind') {
+            $rawItems = collect($request->input('items', []))
+                ->filter(fn($row) => !empty($row['inventory_item_id']) && !empty($row['quantity']))
+                ->values()
+                ->toArray();
+            $request->merge(['items' => $rawItems]);
+
+            $data = $request->validate([
+                'items'                     => ['required', 'array', 'min:1'],
+                'items.*.inventory_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+                'items.*.quantity'          => ['required', 'numeric', 'min:0.001'],
+                'items.*.notes'             => ['nullable', 'string', 'max:255'],
+                'payment_notes'             => ['nullable', 'string', 'max:1000'],
+            ]);
+
+            $inKindPayment  = null;
+            $autoPaidIds    = [];
+            $totalValue     = 0;
+            $userId         = auth()->id();
+
+            DB::transaction(function () use ($data, $payment, $cash, $userId, &$inKindPayment, &$autoPaidIds, &$totalValue) {
+                $now = now();
+
+                $totalValue = 0;
+                $itemRows   = [];
+                foreach ($data['items'] as $row) {
+                    $item      = InventoryItem::findOrFail($row['inventory_item_id']);
+                    $qty       = (float)$row['quantity'];
+                    $unitPrice = (float)$item->price;
+                    $rowVal    = round($unitPrice * $qty, 2);
+                    $totalValue += $rowVal;
+                    $itemRows[] = [
+                        'item'      => $item,
+                        'qty'       => $qty,
+                        'unitPrice' => $unitPrice,
+                        'rowVal'    => $rowVal,
+                        'notes'     => $row['notes'] ?? null,
+                    ];
+                }
+
+                // Mark payment as paid
+                $payment->update([
+                    'status'         => 'paid',
+                    'amount_paid'    => $totalValue,
+                    'paid_at'        => $now->toDateString(),
+                    'marked_paid_by' => $userId,
+                ]);
+
+                // Create in-kind payment record
+                $inKindPayment = WorkerInKindPayment::create([
+                    'worker_payment_id'     => $payment->id,
+                    'worker_contract_id'    => $payment->worker_contract_id,
+                    'payment_date'          => $now->toDateString(),
+                    'notes'                 => $data['payment_notes'] ?? null,
+                    'created_by'            => $userId,
+                    'total_estimated_value' => $totalValue,
+                ]);
+
+                foreach ($itemRows as $row) {
+                    WorkerInKindPaymentItem::create([
+                        'worker_in_kind_payment_id' => $inKindPayment->id,
+                        'inventory_item_id'          => $row['item']->id,
+                        'quantity'                   => $row['qty'],
+                        'unit_price_snapshot'        => $row['unitPrice'],
+                        'total_value'                => $row['rowVal'],
+                        'notes'                      => $row['notes'],
+                    ]);
+
+                    // Decrement stock (company gives items to worker)
+                    $item           = $row['item'];
+                    $item->quantity = max(0, (float)$item->quantity - $row['qty']);
+                    $item->is_out_of_stock = ($item->quantity <= 0);
+                    $item->save();
+                }
+
+                // Post accounting: operating expense (in-kind value as cash-out equivalent)
+                $contract = $payment->contract()->with('worker', 'project')->first();
+                $cash->createOperatingExpense([
+                    'expense_date' => $now->toDateString(),
+                    'category'     => 'worker_payment',
+                    'amount'       => $totalValue,
+                    'description'  => "Worker in-kind payment #{$payment->payment_number} – {$contract->worker->name}" .
+                                      ($contract->project ? " (Project: {$contract->project->name})" : ''),
+                ], $userId);
+
+                // ── Credit/deficit cascade ────────────────────────────────
+                $amountDue = round((float)$payment->amount, 2);
+                $credit    = round($totalValue - $amountDue, 2);
+
+                if ($credit >= 0.01) {
+                    $upcoming = WorkerPayment::where('worker_contract_id', $payment->worker_contract_id)
+                        ->where('status', 'pending')
+                        ->where('due_date', '>', $payment->due_date)
+                        ->orderBy('due_date')
+                        ->get();
+
+                    foreach ($upcoming as $next) {
+                        if ($credit < 0.01) break;
+                        $nextDue = round((float)$next->amount, 2);
+
+                        if ($credit >= $nextDue) {
+                            $credit -= $nextDue;
+                            $credit  = round($credit, 2);
+                            $next->update([
+                                'status'         => 'paid',
+                                'amount_paid'    => $nextDue,
+                                'paid_at'        => $now->toDateString(),
+                                'marked_paid_by' => $userId,
+                            ]);
+                            $autoPaidIds[] = $next->id;
+                        } else {
+                            $next->update(['amount' => round($nextDue - $credit, 2)]);
+                            $credit = 0;
+                        }
+                    }
+                } elseif ($credit <= -0.01) {
+                    $next = WorkerPayment::where('worker_contract_id', $payment->worker_contract_id)
+                        ->where('status', 'pending')
+                        ->where('due_date', '>', $payment->due_date)
+                        ->orderBy('due_date')
+                        ->first();
+                    if ($next) {
+                        $next->update(['amount' => round((float)$next->amount + abs($credit), 2)]);
+                    }
+                }
+            });
+
+            DB::afterCommit(function () use ($inKindPayment, $autoPaidIds) {
+                if ($inKindPayment) {
+                    \App\Jobs\GenerateWorkerInKindReceiptJob::dispatch($inKindPayment->id);
+                }
+                foreach ($autoPaidIds as $autoPaidId) {
+                    GenerateWorkerPaymentReceiptJob::dispatch($autoPaidId);
+                }
+            });
+
+            // Notify worker
+            $notifService = app(\App\Services\NotificationService::class);
+            $notifService->createOnce([
+                'user_id'     => $payment->contract->worker_user_id,
+                'key'         => 'worker_payment_received_' . $payment->id,
+                'type'        => 'payment_received',
+                'title'       => 'Payment Received (In-Kind)',
+                'message'     => 'In-kind payment #' . $payment->installment_index . ' of $' . number_format($totalValue, 2) . ' has been processed.',
+                'url'         => '/worker/payments',
+                'entity_type' => 'worker_payment',
+                'entity_id'   => $payment->id,
+            ]);
+
+            return back()->with('success', 'In-kind payment recorded. Stock updated.');
+        }
 
         $data = $request->validate([
             'paid_at'     => ['nullable', 'date'],
@@ -539,5 +707,12 @@ class WorkersController extends Controller
     {
         abort_unless($payment->receipt_path && \Storage::disk('public')->exists($payment->receipt_path), 404);
         return response()->download(\Storage::disk('public')->path($payment->receipt_path), "Receipt-{$payment->payment_number}.pdf");
+    }
+
+    public function inKindReceiptDownload(WorkerPayment $payment)
+    {
+        $inKind = $payment->inKindPayment;
+        abort_unless($inKind && $inKind->receipt_path && \Storage::disk('public')->exists($inKind->receipt_path), 404);
+        return response()->download(\Storage::disk('public')->path($inKind->receipt_path), "InKind-Receipt-{$payment->payment_number}.pdf");
     }
 }
