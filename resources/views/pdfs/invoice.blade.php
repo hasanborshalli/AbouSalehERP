@@ -7,9 +7,6 @@
     use App\Support\ArabicPdf;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $signaturePath = public_path('img/abousaleh-signature.png');
-    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-
     $baseAmount = (float) $invoice->amount;
     $lateFee = (float) ($invoice->late_fee_amount ?? 0);
     $totalDue = $baseAmount + $lateFee;
@@ -28,7 +25,7 @@
     $arTotal = ArabicPdf::shape('المجموع المستحق');
     $arDesc = ArabicPdf::shape('قسط شهري');
     $arSig = ArabicPdf::shape('التوقيع المخوّل');
-    $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompany = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arLblDesc = ArabicPdf::shape('الوصف');
 
     $arClientName = ArabicPdf::shape($contract->client->name ?? '');
@@ -161,11 +158,27 @@
             margin-top: 6px;
         }
 
-        .sig-img {
-            height: 45px;
-            max-width: 220px;
-            display: block;
-            margin-top: 6px;
+        .sig-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 130px;
+            page-break-inside: avoid;
+        }
+
+        .sig-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .sig-wrap {
+            page-break-inside: avoid;
+        }
+
+        .k {
+            font-weight: 700;
+            display: inline-block;
+            width: 72px;
         }
     </style>
 </head>
@@ -176,7 +189,7 @@
     <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
     <table class="header-table">
         <tr>
-            <td>ABOU SALEH REAL ESTATE</td>
+            <td>ABOU SALEH GENERAL TRADING</td>
             <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
         </tr>
         <tr>
@@ -255,24 +268,31 @@
         </table>
     </div>
 
-    <table class="sig-table">
-        <tr>
-            <td class="en">
-                <strong>Authorized Signature</strong>
-                @if($signatureB64)
-                <img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">
-                @else
-                <div class="sig-line"></div>
-                @endif
-                <div style="margin-top:4px;font-weight:600;">Abou Saleh Real Estate</div>
-            </td>
-            <td style="text-align:right;">
-                <span class="ar" style="font-weight:bold;">{{ $arSig }}</span>
-                <div class="sig-line" style="width:100%;"></div>
-                <span class="ar">{{ $arCompany }}</span>
-            </td>
-        </tr>
-    </table>
+    <div class="sig-wrap" style="margin-top:20px;">
+        <table style="border:0;border-collapse:collapse;width:100%;">
+            <tr>
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Client</div>
+                        <div><b>Name:</b> {{ $contract->client->name }}</div>
+                        <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Company</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
+                        <div><b>Representative:</b> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 
 </html>

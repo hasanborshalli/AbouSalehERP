@@ -14,7 +14,7 @@
     $arAmountWords = ArabicPdf::shape(MoneyToWords::ar($numericAmount, 'USD'));
 
     $arTitle = ArabicPdf::shape('إيصال استلام');
-    $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompany = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arNo = ArabicPdf::shape('رقم الإيصال');
     $arDate = ArabicPdf::shape('التاريخ');
     $arFrom = ArabicPdf::shape('استلمنا من');
@@ -31,7 +31,7 @@
     $arForWhat2 = isset($forWhatAr2) && $forWhatAr2 ? ArabicPdf::shape($forWhatAr2) : null;
     $arForWhat3 = isset($forWhatAr3) && $forWhatAr3 ? ArabicPdf::shape($forWhatAr3) : null;
     $arReceiverName = ArabicPdf::shape($receiverName);
-    $arCompanyName = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompanyName = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arPayMethod = ArabicPdf::shape(match($paymentMethod) {
     'cash' => 'نقدا',
     'cheque' => 'شيك',
@@ -190,10 +190,27 @@
             padding: 0 8px;
         }
 
-        .sig-line {
-            width: 160px;
-            border-bottom: 1px solid #111;
-            margin-top: 24px;
+        .sig-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 130px;
+            page-break-inside: avoid;
+        }
+
+        .sig-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .sig-wrap {
+            page-break-inside: avoid;
+        }
+
+        .k {
+            font-weight: 700;
+            display: inline-block;
+            width: 72px;
         }
 
         .note {
@@ -218,7 +235,7 @@
     <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
     <table class="header-table">
         <tr>
-            <td>ABOU SALEH REAL ESTATE</td>
+            <td>ABOU SALEH GENERAL TRADING</td>
             <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
         </tr>
         <tr>
@@ -318,21 +335,31 @@
     </div>
 
     {{-- Footer --}}
-    <table class="footer-table">
-        <tr>
-            <td class="en">
-                <strong>Receiver:</strong> {{ $receiverName }}<br>
-                <strong>Abou Saleh Real Estate</strong>
-                <div class="sig-line"></div>
-            </td>
-            <td style="text-align:right;">
-                <span class="ar-lbl">{{ $arReceiver }}</span>
-                <span class="ar-val">{{ $arReceiverName }}</span>
-                <span class="ar-val" style="font-weight:bold;">{{ $arCompanyName }}</span>
-                <div class="sig-line" style="margin-left:auto; margin-right:0;"></div>
-            </td>
-        </tr>
-    </table>
+    <div class="sig-wrap" style="margin-top:20px;">
+        <table style="border:0;border-collapse:collapse;width:100%;">
+            <tr>
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Client</div>
+                        <div><b>Name:</b> {{ $receivedFrom }}</div>
+                        <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Company</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
+                        <div><b>Representative:</b> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <div class="note"><span class="ar" style="display:inline;">{{ $arNote }}</span></div>
 </body>

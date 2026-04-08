@@ -400,7 +400,7 @@ class WorkersController extends Controller
 
             DB::afterCommit(function () use ($inKindPayment, $autoPaidIds) {
                 if ($inKindPayment) {
-                    \App\Jobs\GenerateWorkerInKindReceiptJob::dispatch($inKindPayment->id);
+                    GenerateWorkerInKindReceiptJob::dispatch($inKindPayment->id);
                 }
                 foreach ($autoPaidIds as $autoPaidId) {
                     GenerateWorkerPaymentReceiptJob::dispatch($autoPaidId);
@@ -420,7 +420,7 @@ class WorkersController extends Controller
                 'entity_id'   => $payment->id,
             ]);
 
-            return back()->with('success', 'In-kind payment recorded. Stock updated.');
+            return response()->json(['message' => 'In-kind payment recorded. Stock updated.']);
         }
 
         $data = $request->validate([

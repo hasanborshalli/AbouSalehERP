@@ -7,14 +7,11 @@
     use App\Support\ArabicPdf;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $signaturePath = public_path('img/abousaleh-signature.png');
-    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-
     $contract = $payment->workerContract;
     $worker = $contract->worker;
 
     $arTitle = ArabicPdf::shape('إيصال دفع عيني للعامل');
-    $arCompany = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompany = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arNo = ArabicPdf::shape('رقم الإيصال');
     $arDate = ArabicPdf::shape('التاريخ');
     $arTo = ArabicPdf::shape('صُرف إلى');
@@ -199,11 +196,27 @@
             padding: 0 6px;
         }
 
-        .sig-img {
-            height: 38px;
-            max-width: 200px;
-            display: block;
-            margin-top: 4px;
+        .sig-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 130px;
+            page-break-inside: avoid;
+        }
+
+        .sig-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .sig-wrap {
+            page-break-inside: avoid;
+        }
+
+        .k {
+            font-weight: 700;
+            display: inline-block;
+            width: 72px;
         }
 
         .info-note {
@@ -226,7 +239,7 @@
     <div class="logo-top">@if($logoB64)<img src="data:image/png;base64,{{ $logoB64 }}" alt="Logo">@endif</div>
     <table class="header-table">
         <tr>
-            <td>ABOU SALEH REAL ESTATE</td>
+            <td>ABOU SALEH GENERAL TRADING</td>
             <td style="text-align:right;"><span class="ar">{{ $arCompany }}</span></td>
         </tr>
         <tr>
@@ -310,19 +323,31 @@
         </tbody>
     </table>
 
-    <table class="sig-table">
-        <tr>
-            <td class="en">
-                <strong>Issued by:</strong> Abou Saleh Real Estate<br>
-                <strong>Authorised Signature:</strong>
-                @if($signatureB64)<img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">@endif
-            </td>
-            <td style="text-align:right;">
-                <span class="ar-lbl">{{ $arSig }}</span>
-                <span class="ar-val">{{ $arCompany }}</span>
-            </td>
-        </tr>
-    </table>
+    <div class="sig-wrap" style="margin-top:20px;">
+        <table style="border:0;border-collapse:collapse;width:100%;">
+            <tr>
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Worker</div>
+                        <div><b>Name:</b> {{ $worker->name ?? '—' }}</div>
+                        <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Company</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
+                        <div><b>Representative:</b> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <div class="info-note">
         <span class="ar">{{ $arNote1 }}</span>

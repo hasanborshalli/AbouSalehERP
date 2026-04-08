@@ -7,12 +7,9 @@
     use App\Support\ArabicPdf;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $signaturePath = public_path('img/abousaleh-signature.png');
-    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-
     // Bilingual Arabic
     $arDocTitle = ArabicPdf::shape('عقد بيع عقار');
-    $arCompanyAr = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompanyAr = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arClientUnit = ArabicPdf::shape('بيانات العميل والوحدة');
     $arPaySummary = ArabicPdf::shape('ملخص الدفع');
     $arSignatures = ArabicPdf::shape('التوقيعات');
@@ -296,7 +293,7 @@
     </div>
     <table class="header-table">
         <tr>
-            <td>ABOU SALEH REAL ESTATE</td>
+            <td>ABOU SALEH GENERAL TRADING</td>
             <td style="text-align:right;">
                 <span style="font-family:'Amiri',sans-serif;direction:ltr;unicode-bidi:bidi-override;">{{ $arCompanyAr
                     }}</span>
@@ -332,7 +329,7 @@
             <tr>
                 <td>
                     <div class="field-lbl">Seller / Company</div>
-                    <div class="field-val">Abou Saleh Real Estate</div>
+                    <div class="field-val">Abou Saleh General Trading</div>
                 </td>
                 <td style="text-align:right;">
                     <span class="ar-lbl">{{ $arLblSeller }}</span>
@@ -550,17 +547,9 @@
                 <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
                     <div class="sig-box">
                         <div class="sig-title">Seller / Company</div>
-                        <div><b>Company:</b> Abou Saleh Real Estate</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
                         <div><b>Representative:</b> ____________________________</div>
-                        <div style="margin-top:10px;">
-                            <span class="k">Signature:</span>
-                            <span
-                                style="display:inline-block;width:240px;border-bottom:1px solid #111;height:18px;vertical-align:bottom;">
-                                @if($signatureB64)
-                                <img class="sig-signature-img" style="position:relative;top:-18px;left:10px;"
-                                    src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
-                                @endif
-                            </span>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________
                         </div>
                         <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
                     </div>
@@ -613,7 +602,7 @@
 
     <script type="text/php">
         if (isset($pdf)) {
-            $left = "Abou Saleh Real Estate • info@abousaleh.me";
+            $left = "Abou Saleh General Trading • info@abousaleh.me";
             $pdf->page_text(22, 825, $left, null, 9, array(0.42,0.45,0.50));
             $pdf->page_text(500, 825, "Page {PAGE_NUM} of {PAGE_COUNT}", null, 9, array(0.42,0.45,0.50));
         }

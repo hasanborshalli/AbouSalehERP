@@ -6,7 +6,7 @@
     @php
     use App\Support\ArabicPdf;
     $arDocTitle = ArabicPdf::shape('اتفاقية إدارة عقار');
-    $arCompanyAr = ArabicPdf::shape('أبو صالح للعقارات');
+    $arCompanyAr = ArabicPdf::shape('ابو صالح للتجارة العامة');
     $arParties = ArabicPdf::shape('اطراف الاتفاقية');
     $arAgreement = ArabicPdf::shape('تفاصيل الاتفاقية');
     $arOwner = ArabicPdf::shape('معلومات المالك');
@@ -156,45 +156,27 @@
             line-height: 1.7;
         }
 
-        .signature-section {
-            display: table;
-            width: 100%;
-            margin-top: 36px;
+        .sig-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 130px;
+            page-break-inside: avoid;
         }
 
-        .sig-col {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
+        .sig-title {
+            font-weight: 800;
+            margin-bottom: 8px;
         }
 
-        .sig-label {
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 28px;
+        .sig-wrap {
+            page-break-inside: avoid;
         }
 
-        .sig-line {
-            border-top: 1px solid #333;
-            width: 80%;
-            margin-top: 4px;
-        }
-
-        .signature-img {
-            position: relative;
-            top: -8px;
-            height: 40px;
-            max-width: 220px;
+        .k {
+            font-weight: 700;
             display: inline-block;
-            vertical-align: bottom;
-        }
-
-        .stamp-box {
-            width: 80px;
-            height: 80px;
-            border: 1px solid #000;
-            display: inline-block;
-            margin-top: 12px;
+            width: 72px;
         }
 
         .footer-line {
@@ -463,20 +445,28 @@
             <td style="border:0;text-align:right;"><span class="section-title-ar">{{$arSig}}</span></td>
         </tr>
     </table>
-    <div class="signature-section">
-        <div class="sig-col">
-            <p class="sig-label">Owner: {{ $property->owner_name }}</p>
-            <div class="sig-line"></div>
-            <p style="font-size:10px;color:#6b7280;margin-top:4px;">Signature & Date</p>
-        </div>
-        <div class="sig-col">
-            <p class="sig-label">Abou Saleh General Trading</p>
-            @if($signatureB64)
-            <img class="signature-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Signature">
-            @else
-            <div class="sig-line"></div>
-            @endif
-        </div>
+    <div class="sig-wrap" style="margin-top:20px;">
+        <table style="border:0;border-collapse:collapse;width:100%;">
+            <tr>
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Owner</div>
+                        <div><b>Name:</b> {{ $property->owner_name }}</div>
+                        <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Company</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
+                        <div><b>Representative:</b> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <div class="info-note">

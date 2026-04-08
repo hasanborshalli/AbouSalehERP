@@ -8,9 +8,6 @@
     use App\Support\MoneyToWords;
     $logoPath = public_path('img/abosaleh-logo.png');
     $logoB64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
-    $signaturePath = public_path('img/abousaleh-signature.png');
-    $signatureB64 = file_exists($signaturePath) ? base64_encode(file_get_contents($signaturePath)) : null;
-
     $numericAmount = (float) preg_replace('/[^0-9.]/', '', $amountNumbers);
     $arAmountWords = ArabicPdf::shape(MoneyToWords::ar($numericAmount, 'USD'));
 
@@ -154,19 +151,27 @@
             padding: 0 6px;
         }
 
-        .stamp-box {
-            width: 80px;
-            height: 80px;
-            border: 1px solid #000;
-            margin-top: 10px;
-            display: inline-block;
+        .sig-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            height: 130px;
+            page-break-inside: avoid;
         }
 
-        .sig-img {
-            height: 38px;
-            max-width: 200px;
-            display: block;
-            margin-top: 4px;
+        .sig-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .sig-wrap {
+            page-break-inside: avoid;
+        }
+
+        .k {
+            font-weight: 700;
+            display: inline-block;
+            width: 72px;
         }
 
         .footer-line {
@@ -313,21 +318,31 @@
         </table>
     </div>
 
-    <table class="sig-table">
-        <tr>
-            <td class="en">
-                <span class="label">Paid by:</span> Abou Saleh General Trading<br>
-                <span class="label">Authorised Signature:</span>
-                @if($signatureB64)
-                <img class="sig-img" src="data:image/png;base64,{{ $signatureB64 }}" alt="Sig">
-                @endif
-            </td>
-            <td style="text-align:right;">
-                <span class="ar">{{ $arCompany }} : {{ $arPaidBy }}</span><br>
-                <span class="ar">{{ $arAuthSig }}</span>
-            </td>
-        </tr>
-    </table>
+    <div class="sig-wrap" style="margin-top:20px;">
+        <table style="border:0;border-collapse:collapse;width:100%;">
+            <tr>
+                <td style="width:50%;padding-right:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Worker</div>
+                        <div><b>Name:</b> {{ $payeeName }}</div>
+                        <div style="margin-top:26px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+                <td style="width:50%;padding-left:10px;border:0;vertical-align:top;">
+                    <div class="sig-box">
+                        <div class="sig-title">Company</div>
+                        <div><b>Company:</b> Abou Saleh General Trading</div>
+                        <div><b>Representative:</b> ____________________________</div>
+                        <div style="margin-top:10px;"><span class="k">Signature:</span> ____________________________
+                        </div>
+                        <div style="margin-top:10px;"><span class="k">Date:</span> ____ / ____ / ______</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <div class="info-note">
         <span class="ar">{{ $arNote1 }}</span>
