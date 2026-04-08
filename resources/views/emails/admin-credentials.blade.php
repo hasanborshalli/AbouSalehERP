@@ -3,82 +3,143 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Admin Account Access Details</title>
+    <title>Admin Account Access | بيانات حساب المسؤول</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333;
+            line-height: 1.8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .divider {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 30px 0;
+        }
+
+        .section-ar {
+            direction: rtl;
+            text-align: right;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 6px 12px;
+        }
+
+        td:first-child {
+            font-weight: bold;
+        }
+
+        .footer {
+            font-size: 11px;
+            color: #777;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #1e3a5f;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
-<body style="font-family: Arial, Helvetica, sans-serif; color:#333; line-height:1.6;">
+<body>
+    <div class="container">
 
-    <p>Dear {{ $user->name }},</p>
+        {{-- ══ ENGLISH ══════════════════════════════════════════════ --}}
+        <p>Dear <strong>{{ $user->name }}</strong>,</p>
+        <p>An <strong>administrator account</strong> has been created for you to manage the system and access
+            administrative features.</p>
 
-    <p>
-        An <strong>administrator account</strong> has been created for you to manage the system and access
-        administrative features.
-    </p>
+        <p><strong>Your admin login credentials:</strong></p>
+        <table>
+            <tr>
+                <td>ID:</td>
+                <td>{{ $user->id }}</td>
+            </tr>
+            <tr>
+                <td>Temporary Password:</td>
+                <td><strong>{{ $rawPassword }}</strong></td>
+            </tr>
+            @if(!empty($role))
+            <tr>
+                <td>Role:</td>
+                <td>{{ $role }}</td>
+            </tr>
+            @endif
+        </table>
 
-    <p><strong>Your admin login credentials are as follows:</strong></p>
+        <p style="margin-top:16px;">
+            <a href="{{ url('/login') }}" class="btn">Login to admin panel</a>
+        </p>
+        <p><strong>Important:</strong> Please change your password after your first login for security. This account
+            provides elevated permissions — do not share your credentials.</p>
 
-    <table cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
-        <tr>
-            <td><strong>Admin ID:</strong></td>
-            <td>{{ $user->id }}</td>
-        </tr>
-        <tr>
-            <td><strong>Temporary Password:</strong></td>
-            <td>{{ $rawPassword }}</td>
-        </tr>
-    </table>
+        <p>If you have any issues accessing your account, contact us at <a
+                href="mailto:info@abousaleh.me">info@abousaleh.me</a> or call +961 71 999 219.</p>
 
-    <p>Login using the link below:</p>
+        <p>Kind regards,<br><strong>Abou Saleh General Trading</strong></p>
 
-    <p>
-        <a href="{{ url('/login') }}" style="color:#1a73e8;">
-            {{ url('/login') }}
-        </a>
-    </p>
+        <hr class="divider">
 
-    <p>
-        <strong>Important:</strong> For security reasons, please log in and change your password
-        immediately after your first access.
-    </p>
+        {{-- ══ ARABIC ════════════════════════════════════════════════ --}}
+        <div class="section-ar">
+            <p>عزيزي/عزيزتي <strong>{{ $user->name }}</strong>،</p>
+            <p>تم إنشاء <strong>حساب مسؤول</strong> لك لإدارة النظام والوصول إلى الميزات الإدارية.</p>
 
-    <p>
-        <strong>Admin Access Notice:</strong> This account provides elevated permissions. Please use it responsibly and
-        do not share your credentials with anyone.
-    </p>
+            <p><strong>بيانات تسجيل الدخول:</strong></p>
+            <table>
+                <tr>
+                    <td>رقم الحساب:</td>
+                    <td>{{ $user->id }}</td>
+                </tr>
+                <tr>
+                    <td>كلمة المرور المؤقتة:</td>
+                    <td><strong>{{ $rawPassword }}</strong></td>
+                </tr>
+                @if(!empty($role))
+                <tr>
+                    <td>الصلاحية:</td>
+                    <td>{{ $role }}</td>
+                </tr>
+                @endif
+            </table>
 
-    @if(!empty($role))
-    <p>
-        Your assigned role: <strong>{{ $role }}</strong>
-    </p>
-    @endif
+            <p style="margin-top:16px;">
+                <a href="{{ url('/login') }}" class="btn">تسجيل الدخول إلى لوحة التحكم</a>
+            </p>
+            <p><strong>ملاحظة مهمة:</strong> يُرجى تغيير كلمة المرور فور تسجيل الدخول للمرة الأولى. هذا الحساب يمتلك
+                صلاحيات موسّعة — لا تشارك بياناتك مع أي شخص.</p>
 
-    <p>
-        If you experience any issues accessing your account, feel free to reach out to us.
-    </p>
+            <p>لأي استفسار، تواصل معنا على <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> أو على الرقم 219 999
+                71 961+.</p>
 
-    <p>Kind regards,</p>
+            <p>مع تحياتنا،<br><strong>أبو صالح للتجارة العامة</strong></p>
+        </div>
 
-    <p>
-        <strong>Abou Saleh</strong><br>
-        Real Estate Management<br>
-        Phone: +961 71 999 219<br>
-        Email: info@abousaleh.me
-    </p>
+        <div class="footer">
+            This email contains confidential information intended only for the recipient. |
+            هذا البريد يحتوي على معلومات سرية مخصصة للمستلم فقط.
+        </div>
 
-    <hr style="margin-top:30px;">
-
-    <p style="font-size:12px; color:#777;">
-        This email contains confidential information intended only for the recipient.
-        If you are not the intended recipient, please delete this email immediately.
-    </p>
-
-
-    <hr style="border:none;border-top:2px solid #e5e7eb;margin:30px 0;">
-    <div style="direction:rtl;text-align:right;font-family:Arial,sans-serif;color:#333;line-height:1.8;">
-        <p>عزيزي المسؤول،</p>
-        <p>تم إنشاء حساب مسؤول لك على نظام إدارة أبو صالح العقاري.</p>
-        <p>يُرجى تسجيل الدخول وتغيير كلمة المرور فوراً.</p>
-        <p>مع تحياتنا — <strong>أبو صالح للعقارات</strong></p>
     </div>
 </body>
 

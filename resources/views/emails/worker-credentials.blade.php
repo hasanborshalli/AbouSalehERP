@@ -65,14 +65,14 @@
     <div class="container">
 
         {{-- ══ ENGLISH ══════════════════════════════════════════════ --}}
-        <p>Dear <strong>{{ $worker->name }}</strong>,</p>
+        <p>Dear <strong>{{ $user->name }}</strong>,</p>
         <p>An account has been created for you to access your contracts, work assignments, and payment schedule.</p>
 
         <p><strong>Your login credentials:</strong></p>
         <table>
             <tr>
-                <td>Email:</td>
-                <td>{{ $worker->email }}</td>
+                <td>ID:</td>
+                <td>{{ $user->id }}</td>
             </tr>
             <tr>
                 <td>Temporary Password:</td>
@@ -97,14 +97,14 @@
 
         {{-- ══ ARABIC ════════════════════════════════════════════════ --}}
         <div class="section-ar">
-            <p>عزيزي <strong>{{ $worker->name }}</strong>،</p>
+            <p>عزيزي <strong>{{ $user->name }}</strong>،</p>
             <p>تم إنشاء حساب لك للاطلاع على عقودك ومهامك وجدول مدفوعاتك.</p>
 
             <p><strong>بيانات تسجيل الدخول:</strong></p>
             <table>
                 <tr>
-                    <td>البريد الإلكتروني:</td>
-                    <td>{{ $worker->email }}</td>
+                    <td>رقم الحساب:</td>
+                    <td>{{ $user->id }}</td>
                 </tr>
                 <tr>
                     <td>كلمة المرور المؤقتة:</td>

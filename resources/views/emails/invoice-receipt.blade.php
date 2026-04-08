@@ -68,14 +68,15 @@
             <p><strong>Invoice:</strong> {{ $invoice->invoice_number }}</p>
             <p><strong>Amount paid:</strong> <span class="amount">${{ number_format($invoice->amount_paid ??
                     $invoice->amount, 2) }}</span></p>
-            <p><strong>Date:</strong> {{ $invoice->paid_at?->format('d M Y') ?? now()->format('d M Y') }}</p>
+            <p><strong>Date:</strong> {{ $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('d M Y') :
+                now()->format('d M Y') }}</p>
             <p><strong>Status:</strong> ✅ Paid</p>
         </div>
 
         <p>📎 The receipt PDF is attached to this email for your records.</p>
         <p>Thank you for your payment. If you have any questions, contact us at <a
                 href="mailto:info@abousaleh.me">info@abousaleh.me</a>.</p>
-        <p>Best regards,<br><strong>Abou Saleh Real Estate</strong></p>
+        <p>Best regards,<br><strong>Abou Saleh General Trading</strong></p>
 
         <hr class="divider">
 
@@ -88,13 +89,14 @@
                 <p><strong>رقم الفاتورة:</strong> {{ $invoice->invoice_number }}</p>
                 <p><strong>المبلغ المدفوع:</strong> <span class="amount">${{ number_format($invoice->amount_paid ??
                         $invoice->amount, 2) }}</span></p>
-                <p><strong>التاريخ:</strong> {{ $invoice->paid_at?->format('d M Y') ?? now()->format('d M Y') }}</p>
+                <p><strong>التاريخ:</strong> {{ $invoice->paid_at ? \Carbon\Carbon::parse($invoice->paid_at)->format('d
+                    M Y') : now()->format('d M Y') }}</p>
                 <p><strong>الحالة:</strong> ✅ مدفوع</p>
             </div>
 
             <p>📎 الإيصال مرفق بهذا البريد للاحتفاظ به في سجلاتك.</p>
             <p>شكراً لك. لأي استفسار تواصل معنا على <a href="mailto:info@abousaleh.me">info@abousaleh.me</a>.</p>
-            <p>مع تحياتنا،<br><strong>أبو صالح للعقارات</strong></p>
+            <p>مع تحياتنا،<br><strong>أبو صالح للتجارة العامة</strong></p>
         </div>
 
         <div class="footer">

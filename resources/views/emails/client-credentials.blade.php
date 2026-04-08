@@ -72,8 +72,8 @@
         <p><strong>Your login credentials:</strong></p>
         <table>
             <tr>
-                <td>Email:</td>
-                <td>{{ $user->email }}</td>
+                <td>ID:</td>
+                <td>{{ $user->id }}</td>
             </tr>
             <tr>
                 <td>Temporary Password:</td>
@@ -94,7 +94,7 @@
         <p>If you have any questions, feel free to contact us at <a
                 href="mailto:info@abousaleh.me">info@abousaleh.me</a> or call +961 71 999 219.</p>
 
-        <p>Kind regards,<br><strong>Abou Saleh Real Estate</strong></p>
+        <p>Kind regards,<br><strong>Abou Saleh General Trading</strong></p>
 
         <hr class="divider">
 
@@ -106,8 +106,8 @@
             <p><strong>بيانات تسجيل الدخول:</strong></p>
             <table>
                 <tr>
-                    <td>البريد الإلكتروني:</td>
-                    <td>{{ $user->email }}</td>
+                    <td>رقم الحساب:</td>
+                    <td>{{ $user->id }}</td>
                 </tr>
                 <tr>
                     <td>كلمة المرور المؤقتة:</td>
@@ -128,7 +128,7 @@
             <p>لأي استفسار، تواصل معنا على <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> أو على الرقم 219 999
                 71 961+.</p>
 
-            <p>مع تحياتنا،<br><strong>أبو صالح للعقارات</strong></p>
+            <p>مع تحياتنا،<br><strong>أبو صالح للتجارة العامة</strong></p>
         </div>
 
         <div class="footer">

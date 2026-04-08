@@ -140,12 +140,41 @@
         <div style="padding:20px 32px; direction:rtl; text-align:right; border-top:1px solid #e5e7eb;">
             <p>عزيزي/عزيزتي <strong>{{ $property->owner_name }}</strong>،</p>
             <p>شكراً لثقتكم بشركة أبو صالح للتجارة العامة لإدارة عقاركم. مرفق بهذا البريد نسخة من الاتفاقية الكاملة.</p>
+
+            <div class="row"><span>رقم الاتفاقية</span><span>MP-{{ str_pad($property->id,5,'0',STR_PAD_LEFT) }}</span>
+            </div>
+            <div class="row"><span>العقار</span><span>{{ $property->address }}</span></div>
+            <div class="row"><span>نوع الخدمة</span><span>{{ $property->isFlip() ? 'تجديد وبيع (Flip)' : 'إدارة الإيجار'
+                    }}</span></div>
+            <div class="row"><span>تاريخ الاتفاقية</span><span>{{ $property->agreement_date->format('d M Y') }}</span>
+            </div>
+
             @if($property->isFlip())
-            <p><strong>مبلغ الضمان المتفق عليه:</strong> ${{ number_format($property->owner_asking_price, 2) }}</p>
+            <div class="highlight">
+                <p><strong>المبلغ المضمون عند البيع:</strong> ${{ number_format($property->owner_asking_price, 2) }}</p>
+                @if($property->agreed_listing_price)
+                <p><strong>سعر الإدراج المتفق عليه:</strong> ${{ number_format($property->agreed_listing_price, 2) }}
+                </p>
+                @endif
+                <p style="color:#6b7280;font-size:12px;">ستتكفل الشركة بجميع تكاليف التجديد وتدفع لك المبلغ كاملاً عند
+                    إتمام البيع.</p>
+            </div>
             @endif
+
             @if($property->isRental())
-            <p><strong>الإيجار الشهري المتوقع:</strong> ${{ number_format($property->agreed_rent_price ?? 0, 2) }}</p>
+            <div class="highlight">
+                <p><strong>الإيجار الشهري المتوقع:</strong> ${{ number_format($property->agreed_rent_price ?? 0, 2) }}
+                </p>
+                @if($property->company_commission_pct)
+                @php $comm = ($property->agreed_rent_price ?? 0) * $property->company_commission_pct / 100; @endphp
+                <p><strong>حصتك الشهرية:</strong> ${{ number_format(($property->agreed_rent_price ?? 0) - $comm, 2) }}
+                    ({{ 100 - $property->company_commission_pct }}%)</p>
+                <p><strong>رسوم الإدارة:</strong> ${{ number_format($comm, 2) }}/شهر ({{
+                    $property->company_commission_pct }}%)</p>
+                @endif
+            </div>
             @endif
+
             <p>لأي استفسار: <a href="mailto:info@abousaleh.me">info@abousaleh.me</a> | 219 999 71 961+</p>
             <p>مع تحياتنا — <strong>أبو صالح للتجارة العامة</strong></p>
         </div>

@@ -72,7 +72,7 @@ class ManagedPropertyRentalController extends Controller
         // Send contract email to tenant
         if ($rental && $rental->tenant_email) {
             try {
-                Mailable::to($rental->tenant_email)
+                \Illuminate\Support\Facades\Mail::to($rental->tenant_email)
                     ->queue(new \App\Mail\ManagedPropertyRentalMail($property, $rental));
             } catch (\Throwable $e) {
                 Log::error('Rental email failed: ' . $e->getMessage());
