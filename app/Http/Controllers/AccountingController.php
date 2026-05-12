@@ -76,31 +76,37 @@ class AccountingController extends Controller
         // ── Step 2: if in-kind, deduct payment items from stock ───────────
         if ($paymentMethod === 'in_kind') {
             $inkindLines = $request->input('inkind_items', []);
+            $stockError  = null;
 
-            foreach ($inkindLines as $inkindLine) {
-                $item = InventoryItem::lockForUpdate()->findOrFail((int) $inkindLine['inventory_item_id']);
-                $qty  = (float) $inkindLine['quantity'];
+            \Illuminate\Support\Facades\DB::transaction(function () use ($inkindLines, $receiptRef, &$stockError) {
+                foreach ($inkindLines as $inkindLine) {
+                    $item = InventoryItem::lockForUpdate()->findOrFail((int) $inkindLine['inventory_item_id']);
+                    $qty  = (float) $inkindLine['quantity'];
 
-                if ($item->quantity < $qty) {
-                    return back()
-                        ->withInput()
-                        ->with('error', "Not enough stock for \"{$item->name}\". Available: {$item->quantity} {$item->unit}.");
+                    if ((float) $item->quantity < $qty) {
+                        $stockError = "Not enough stock for \"{$item->name}\". Available: {$item->quantity} {$item->unit}.";
+                        return;
+                    }
+
+                    // Deduct from stock (giving this item to the supplier as payment)
+                    $item->quantity        = (float) $item->quantity - $qty;
+                    $item->is_out_of_stock = $item->quantity <= 0;
+                    $item->save();
+
+                    PurchaseInkindItem::create([
+                        'receipt_ref'         => $receiptRef,
+                        'inventory_item_id'   => $item->id,
+                        'quantity'            => $qty,
+                        'unit_price_snapshot' => (float) $item->price,
+                        'total_value'         => round((float) $item->price * $qty, 2),
+                        'notes'               => $inkindLine['notes'] ?? null,
+                        'created_by'          => auth()->id(),
+                    ]);
                 }
+            });
 
-                // Deduct from stock (giving this item to the supplier as payment)
-                $item->quantity        = (float) $item->quantity - $qty;
-                $item->is_out_of_stock = $item->quantity <= 0;
-                $item->save();
-
-                PurchaseInkindItem::create([
-                    'receipt_ref'         => $receiptRef,
-                    'inventory_item_id'   => $item->id,
-                    'quantity'            => $qty,
-                    'unit_price_snapshot' => (float) $item->price,
-                    'total_value'         => round((float) $item->price * $qty, 2),
-                    'notes'               => $inkindLine['notes'] ?? null,
-                    'created_by'          => auth()->id(),
-                ]);
+            if ($stockError) {
+                return back()->withInput()->with('error', $stockError);
             }
         }
 

@@ -132,6 +132,7 @@ class InvoicesController extends Controller
                 }
 
                 $inKindPayment->update(['total_estimated_value' => $totalValue]);
+                $invoice->update(['amount_paid' => round($totalValue, 2)]);
                 $inKindPayment->load('items');
                 $acct->postInvoicePaidInKind($inKindPayment, $userId);
 

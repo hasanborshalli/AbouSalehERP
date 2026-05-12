@@ -64,8 +64,8 @@ class ClientMaterialUpgradeController extends Controller
             $oldQty     = $oldMaterial->quantity_needed;
             $oldMaterial->delete();
 
-            // 3. Deduct stock for new material
-            $newItem->decrement('quantity', $data['new_quantity']);
+            // 3. Deduct stock for new material (manual subtraction so is_out_of_stock uses the new value)
+            $newItem->quantity        = (float)$newItem->quantity - (float)$data['new_quantity'];
             $newItem->is_out_of_stock = $newItem->quantity <= 0;
             $newItem->save();
 

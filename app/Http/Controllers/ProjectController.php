@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
-    public function createProject(Request $request, CashAccountingService $cash){
+    public function createProject(Request $request){
         $audit=new AuditLog();
         $audit->user_id=auth()->id();
         $audit->event='Create';
@@ -56,37 +56,9 @@ class ProjectController extends Controller
             'floors.*.units.*.status' => ['nullable', 'in:available,reserved,sold'],
             'floors.*.units.*.note' => ['nullable', 'string', 'max:1000'],
 
-            // per-apartment materials
-            'floors.*.units.*.apt_materials' => ['nullable', 'array'],
-            'floors.*.units.*.apt_materials.*.item_id' => ['nullable', 'integer', 'exists:inventory_items,id'],
-            'floors.*.units.*.apt_materials.*.qty' => ['nullable', 'numeric', 'min:0'],
-            'floors.*.units.*.apt_materials.*.unit' => ['nullable', 'string', 'max:20'],
-
-            // per-apartment additional costs
-            'floors.*.units.*.apt_costs' => ['nullable', 'array'],
-            'floors.*.units.*.apt_costs.*.description' => ['nullable', 'string', 'max:255'],
-            'floors.*.units.*.apt_costs.*.category' => ['nullable', 'string', 'max:80'],
-            'floors.*.units.*.apt_costs.*.expected_amount' => ['nullable', 'numeric', 'min:0'],
-            'floors.*.units.*.apt_costs.*.notes' => ['nullable', 'string', 'max:500'],
-
-            // project-level additional costs
-            'project_costs' => ['nullable', 'array'],
-            'project_costs.*.description' => ['nullable', 'string', 'max:255'],
-            'project_costs.*.category' => ['nullable', 'string', 'max:80'],
-            'project_costs.*.expected_amount' => ['nullable', 'numeric', 'min:0'],
-            'project_costs.*.notes' => ['nullable', 'string', 'max:500'],
-
-            // materials (we validate; storing depends on your DB tables)
-            'materials' => ['nullable', 'array'],
-            'materials.item_id' => ['nullable', 'array'],
-            'materials.item_id.*' => ['nullable', 'integer', 'exists:inventory_items,id'],
-            'materials.qty' => ['nullable', 'array'],
-            'materials.qty.*' => ['nullable', 'numeric', 'min:0'],
-            'materials.unit' => ['nullable', 'array'],
-            'materials.unit.*' => ['nullable', 'string', 'max:20'],
         ]);
 
-        return DB::transaction(function () use ($request, $validated, $audit, $cash) {
+        return DB::transaction(function () use ($request, $validated, $audit) {
             // ✅ Create Project (map your columns)
             $project = Project::create([
                 'name'    => $validated['project_name'],
@@ -100,98 +72,6 @@ class ProjectController extends Controller
                 'status' => 'planned',
                 'manager_user_id' => Auth::id(),
             ]);
-            //STOCK CONTROL!!
-            $materials = $request->input('materials', []);
-            $itemIds = $materials['item_id'] ?? [];
-            $qtys    = $materials['qty'] ?? [];
-            $units   = $materials['unit'] ?? [];
-            $notes   = $materials['note'] ?? []; // optional if you later add column
-
-            // clean rows (remove empty item selections)
-            $rows = [];
-            for ($i = 0; $i < count($itemIds); $i++) {
-                $id = $itemIds[$i] ?? null;
-                $qty = $qtys[$i] ?? null;
-                $unit = $units[$i] ?? null;
-
-                if (!$id) continue; // skip empty row
-
-                $rows[] = [
-                    'inventory_item_id' => (int)$id,
-                    'quantity_needed' => (float)$qty,
-                    'unit' => (string)$unit,
-                ];
-            }
-
-            if (count($rows)) {
-                // prevent duplicates (same item twice) by aggregating
-                $aggregated = [];
-                foreach ($rows as $r) {
-                    $key = $r['inventory_item_id'];
-                    if (!isset($aggregated[$key])) {
-                        $aggregated[$key] = $r;
-                    } else {
-                        $aggregated[$key]['quantity_needed'] += $r['quantity_needed'];
-                    }
-                }
-                $rows = array_values($aggregated);
-
-                // lock inventory rows to avoid race conditions
-                $inventory = InventoryItem::whereIn('id', array_column($rows, 'inventory_item_id'))
-                    ->lockForUpdate()
-                    ->get()
-                    ->keyBy('id');
-
-                $errors = [];
-
-                foreach ($rows as $r) {
-                    $inv = $inventory->get($r['inventory_item_id']);
-
-                    if (!$inv) {
-                        $errors["materials.item_id"][] = "Selected material not found.";
-                        continue;
-                    }
-
-                    // unit enforcement (must match DB unit)
-                    if ($inv->unit && $r['unit'] !== $inv->unit) {
-                        $errors["materials.unit"][] = "Unit mismatch for {$inv->name}.";
-                    }
-
-                    $need = $r['quantity_needed'];
-                    if ($need <= 0) {
-                        $errors["materials.qty"][] = "Quantity must be greater than 0 for {$inv->name}.";
-                        continue;
-                    }
-
-                    if ($need > $inv->quantity) {
-                        $errors["materials.qty"][] = "Not enough stock for {$inv->name}. Needed {$need} {$inv->unit}, available {$inv->quantity} {$inv->unit}.";
-                        continue;
-                    }
-                }
-
-                if (!empty($errors)) {
-                    throw ValidationException::withMessages($errors);
-                }
-
-                // apply stock updates + insert pivot rows
-                foreach ($rows as $r) {
-                    $inv = $inventory->get($r['inventory_item_id']);
-
-                    $newQty = $inv->quantity - $r['quantity_needed'];
-
-                    $inv->quantity = $newQty;
-                    $inv->is_out_of_stock = ($newQty <= 0);
-                    $inv->save();
-
-                    ProjectInventoryItem::create([
-                        'project_id' => $project->id,
-                        'inventory_item_id' => $inv->id,
-                        'quantity_needed' => $r['quantity_needed'],
-                        'unit' => $inv->unit ?? $r['unit'],
-                    ]);
-                }
-            }   
-
             // ✅ Floors + Apartments
             foreach ($validated['floors'] as $floorNumber => $floorData) {
                 $floor = ProjectFloor::create([
@@ -218,81 +98,13 @@ class ProjectController extends Controller
                         'notes' => $unit['note'] ?? null,
                     ]);
 
-                    // Apartment-level materials (from inventory)
-                    $aptMaterials = $unit['apt_materials'] ?? [];
-                    foreach ($aptMaterials as $m) {
-                        $iid = $m['item_id'] ?? null;
-                        $qty = (float) ($m['qty'] ?? 0);
-                        if (!$iid || $qty <= 0) continue;
-
-                        $inv = InventoryItem::lockForUpdate()->find($iid);
-                        if (!$inv) continue;
-                        if ($inv->quantity < $qty) {
-                            throw ValidationException::withMessages([
-                                'materials' => "Not enough stock for {$inv->name}. Needed {$qty}, available {$inv->quantity}.",
-                            ]);
-                        }
-                        $inv->quantity -= $qty;
-                        $inv->is_out_of_stock = $inv->quantity <= 0;
-                        $inv->save();
-
-                        ApartmentMaterial::create([
-                            'apartment_id'      => $apt->id,
-                            'inventory_item_id' => $inv->id,
-                            'quantity_needed'   => $qty,
-                            'unit'              => $inv->unit,
-                        ]);
-                    }
-
-                    // Apartment-level additional costs
-                    $aptCosts = $unit['apt_costs'] ?? [];
-                    foreach ($aptCosts as $c) {
-                        $desc = trim($c['description'] ?? '');
-                        $exp  = (float) ($c['expected_amount'] ?? 0);
-                        if (!$desc || $exp <= 0) continue;
-                        ApartmentAdditionalCost::create([
-                            'apartment_id'    => $apt->id,
-                            'description'     => $desc,
-                            'category'        => $c['category'] ?? null,
-                            'expected_amount' => $exp,
-                            'notes'           => $c['notes'] ?? null,
-                        ]);
-                        // Post expected amount as immediate cash-out
-                        $cash->createOperatingExpense([
-                            'expense_date' => now()->toDateString(),
-                            'category'     => 'apartment_additional_cost',
-                            'amount'       => $exp,
-                            'description'  => "{$desc} (Unit: {$apt->unit_number}, Project: {$project->name})",
-                        ], auth()->id());
-                    }
                 }
-            }
-
-            // Project-level additional costs
-            foreach ($request->input('project_costs', []) as $pc) {
-                $desc = trim($pc['description'] ?? '');
-                $exp  = (float) ($pc['expected_amount'] ?? 0);
-                if (!$desc || $exp <= 0) continue;
-                ProjectAdditionalCost::create([
-                    'project_id'      => $project->id,
-                    'description'     => $desc,
-                    'category'        => $pc['category'] ?? null,
-                    'expected_amount' => $exp,
-                    'notes'           => $pc['notes'] ?? null,
-                ]);
-                // Post expected amount as immediate cash-out
-                $cash->createOperatingExpense([
-                    'expense_date' => now()->toDateString(),
-                    'category'     => 'project_additional_cost',
-                    'amount'       => $exp,
-                    'description'  => "{$desc} (Project: {$project->name})",
-                ], auth()->id());
             }
 
             $audit->details='Creating project succeeded. Project Code: '.$project->code.' Project Name: '.$project->name;
             $audit->save();
             return redirect()
-                ->route('apartments.overview') // or your projects list route
+                ->route('apartments.project', $project->id)
                 ->with('success', 'Project created successfully.');
         });
         
@@ -417,11 +229,9 @@ class ProjectController extends Controller
             $available = (float)$inv->quantity;
 
             if ($need > $available) {
-                // rollback transaction by throwing validation-like error
-                abort( back()
-                    ->withErrors(["materials" => "Not enough stock for {$inv->name}. Needed {$need} {$inv->unit}, available {$available} {$inv->unit}."])
-                    ->withInput()
-                );
+                throw ValidationException::withMessages([
+                    'materials' => "Not enough stock for {$inv->name}. Needed {$need} {$inv->unit}, available {$available} {$inv->unit}.",
+                ]);
             }
 
             // deduct now

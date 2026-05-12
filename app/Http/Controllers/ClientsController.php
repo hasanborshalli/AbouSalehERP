@@ -224,11 +224,6 @@ DB::transaction(function () use (
                 'total_value'         => $rowVal,
                 'notes'               => $row['notes'] ?? null,
             ]);
-
-            // INCREASE stock
-            $item->quantity        = (float)$item->quantity + $qty;
-            $item->is_out_of_stock = false;
-            $item->save();
         }
 
         $inKindPayment->update(['total_estimated_value' => $totalValue]);
@@ -297,6 +292,13 @@ DB::transaction(function () use (
     }
 
     // ── CASH / CASH_FULL: 4) Create invoices ─────────────────────────────
+
+    // Post down payment to ledger (cash contracts only)
+    if ((float)($contractFields['down_payment'] ?? 0) > 0.001) {
+        app(\App\Services\CashAccountingService::class)
+            ->postDownPayment($contract, (float)$contractFields['down_payment'], auth()->id());
+    }
+
     $start = Carbon::parse($contract->payment_start_date)->startOfDay();
 
     // For full payment: 1 invoice for the entire net price (no down payment logic)
@@ -557,6 +559,47 @@ public function update(Request $request, User $user)
         $contract->fill($contractFields);
         $contract->save();
 
+        // Sync down payment ledger: reverse old entry then post the new amount
+        $existingDownEntry = \App\Models\LedgerEntry::where('source_type', 'down_payment')
+            ->where('source_id', $contract->id)
+            ->whereNull('reverses_entry_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($existingDownEntry) {
+            \App\Models\LedgerEntry::create([
+                'posted_at'         => now(),
+                'account_id'        => $existingDownEntry->account_id,
+                'amount'            => $existingDownEntry->amount,
+                'direction'         => 'out',
+                'description'       => 'Void: down payment Contract #' . $contract->id . ' (contract revised)',
+                'source_type'       => 'down_payment',
+                'source_id'         => $contract->id,
+                'user_id'           => auth()->id(),
+                'reverses_entry_id' => $existingDownEntry->id,
+            ]);
+
+            $newDown = round((float)($contractFields['down_payment'] ?? 0), 2);
+            if ($newDown > 0.001) {
+                \App\Models\LedgerEntry::create([
+                    'posted_at'   => \Carbon\Carbon::parse($contractFields['contract_date'])->startOfDay(),
+                    'account_id'  => $existingDownEntry->account_id,
+                    'amount'      => $newDown,
+                    'direction'   => 'in',
+                    'description' => 'Down payment: Contract #' . $contract->id . ' (revised)',
+                    'source_type' => 'down_payment',
+                    'source_id'   => $contract->id,
+                    'user_id'     => auth()->id(),
+                ]);
+            }
+        } else {
+            $newDown = (float)($contractFields['down_payment'] ?? 0);
+            if ($newDown > 0.001) {
+                app(\App\Services\CashAccountingService::class)
+                    ->postDownPayment($contract, $newDown, auth()->id());
+            }
+        }
+
         // 6) delete old PDFs (contract + invoices) and null pdf_path
         if ($contract->pdf_path) {
             Storage::disk('public')->delete($contract->pdf_path);
@@ -576,9 +619,18 @@ public function update(Request $request, User $user)
         $start = Carbon::parse($contract->payment_start_date)->startOfDay();
         $rev = $contract->revision;
 
-        for ($i=0; $i<$months; $i++) {
+        // Compute fractional last invoice (mirrors createClient logic)
+        $remaining     = (float)$contractFields['final_price'] - (float)$contractFields['down_payment'];
+        $fullInvoices  = ($monthly > 0) ? (int) floor($remaining / $monthly) : $months;
+        $lastAmount    = ($monthly > 0) ? round($remaining - ($fullInvoices * $monthly), 2) : 0;
+        if (abs($lastAmount) < 0.01) $lastAmount = 0;
+        $totalInvoices = $fullInvoices + ($lastAmount > 0.01 ? 1 : 0);
+
+        for ($i = 0; $i < $totalInvoices; $i++) {
             $issueDate = $start->copy()->addMonths($i);
-            $dueDate = $issueDate->copy()->addDays(7);
+            $dueDate   = $issueDate->copy()->addDays(7);
+            $isLast    = ($i === $totalInvoices - 1);
+            $amount    = ($isLast && $lastAmount > 0.01) ? $lastAmount : $monthly;
 
             $invoiceNumber = sprintf(
                 "INV-%06d-%s-%03d-R%d",
@@ -589,12 +641,12 @@ public function update(Request $request, User $user)
             );
 
             $inv = Invoice::create([
-                'contract_id' => $contract->id,
+                'contract_id'    => $contract->id,
                 'invoice_number' => $invoiceNumber,
-                'issue_date' => $issueDate->toDateString(),
-                'due_date' => $dueDate->toDateString(),
-                'amount' => $monthly,
-                'status' => 'pending',
+                'issue_date'     => $issueDate->toDateString(),
+                'due_date'       => $dueDate->toDateString(),
+                'amount'         => $amount,
+                'status'         => 'pending',
             ]);
 
             $invoiceIds[] = $inv->id;

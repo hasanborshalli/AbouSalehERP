@@ -183,21 +183,33 @@ class AdditionalCostController extends Controller
             'quantity_needed'   => ['required', 'numeric', 'min:0.01'],
         ]);
 
-        $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
-
-        if ($item->quantity < $data['quantity_needed']) {
+        // Quick pre-check before acquiring a lock
+        $item = \App\Models\InventoryItem::findOrFail($data['inventory_item_id']);
+        if ((float)$item->quantity < (float)$data['quantity_needed']) {
             return back()->with('error', "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.");
         }
 
-        $item->decrement('quantity', $data['quantity_needed']);
-        $item->is_out_of_stock = $item->quantity <= 0;
-        $item->save();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $apartment, &$item) {
+            $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
 
-        $apartment->materials()->create([
-            'inventory_item_id' => $item->id,
-            'quantity_needed'   => $data['quantity_needed'],
-            'unit'              => $item->unit,
-        ]);
+            // Re-check with lock to guard against race conditions
+            if ((float)$item->quantity < (float)$data['quantity_needed']) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'inventory_item_id' => "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.",
+                ]);
+            }
+
+            // Manual subtraction so is_out_of_stock reflects the new quantity, not the pre-decrement value
+            $item->quantity        = (float)$item->quantity - (float)$data['quantity_needed'];
+            $item->is_out_of_stock = $item->quantity <= 0;
+            $item->save();
+
+            $apartment->materials()->create([
+                'inventory_item_id' => $item->id,
+                'quantity_needed'   => $data['quantity_needed'],
+                'unit'              => $item->unit,
+            ]);
+        });
 
         $this->auditLog('Create', 'Apartment Material',
             "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to unit {$apartment->unit_number}.");
@@ -235,36 +247,51 @@ class AdditionalCostController extends Controller
             'quantity_needed'   => ['required', 'numeric', 'min:0.01'],
         ]);
 
-        $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
-
-        if ($item->quantity < $data['quantity_needed']) {
+        // Quick pre-check before acquiring a lock
+        $item = \App\Models\InventoryItem::findOrFail($data['inventory_item_id']);
+        if ((float)$item->quantity < (float)$data['quantity_needed']) {
             return back()->with('error', "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.");
         }
 
-        // If this item is already assigned to the project, add to its quantity instead of inserting a duplicate
-        $existing = \App\Models\ProjectInventoryItem::where('project_id', $project->id)
-            ->where('inventory_item_id', $item->id)
-            ->first();
+        $isUpdate = false;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $project, &$item, &$isUpdate) {
+            $item = \App\Models\InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
 
-        $item->decrement('quantity', $data['quantity_needed']);
-        $item->is_out_of_stock = $item->quantity <= 0;
-        $item->save();
+            // Re-check with lock to guard against race conditions
+            if ((float)$item->quantity < (float)$data['quantity_needed']) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'inventory_item_id' => "Not enough stock for {$item->name}. Available: {$item->quantity} {$item->unit}.",
+                ]);
+            }
 
-        if ($existing) {
-            $existing->increment('quantity_needed', $data['quantity_needed']);
-            $this->auditLog('Update', 'Project Material', "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to project {$project->name} (total: {$existing->quantity_needed}).");
+            // Manual subtraction so is_out_of_stock reflects the new quantity, not the pre-decrement value
+            $item->quantity        = (float)$item->quantity - (float)$data['quantity_needed'];
+            $item->is_out_of_stock = $item->quantity <= 0;
+            $item->save();
+
+            $existing = \App\Models\ProjectInventoryItem::where('project_id', $project->id)
+                ->where('inventory_item_id', $item->id)
+                ->first();
+
+            if ($existing) {
+                $existing->increment('quantity_needed', $data['quantity_needed']);
+                $isUpdate = true;
+            } else {
+                \App\Models\ProjectInventoryItem::create([
+                    'project_id'        => $project->id,
+                    'inventory_item_id' => $item->id,
+                    'quantity_needed'   => $data['quantity_needed'],
+                    'unit'              => $item->unit,
+                ]);
+            }
+        });
+
+        if ($isUpdate) {
+            $this->auditLog('Update', 'Project Material', "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to project {$project->name}.");
             return back()->with('success', "Updated quantity for {$item->name}.");
         }
 
-        \App\Models\ProjectInventoryItem::create([
-            'project_id'        => $project->id,
-            'inventory_item_id' => $item->id,
-            'quantity_needed'   => $data['quantity_needed'],
-            'unit'              => $item->unit,
-        ]);
-
         $this->auditLog('Create', 'Project Material', "Added {$data['quantity_needed']} {$item->unit} of {$item->name} to project {$project->name}.");
-
         return back()->with('success', "Material added: {$item->name}.");
     }
 

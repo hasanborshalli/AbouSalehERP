@@ -95,122 +95,6 @@
                             </div>
                         </section>
 
-                        {{-- ═══ Project Materials (from inventory) ═══ --}}
-                        <section class="create-project__section">
-                            <div class="create-project__section-row">
-                                <h3 class="create-project__section-title">Project materials (from inventory)</h3>
-                                <button type="button" class="create-project__mini-btn" id="cpAddMaterialBtn">+ Add
-                                    item</button>
-                            </div>
-                            <p class="create-project__hint">Shared inventory items consumed by the whole project.</p>
-                            <div class="cp-materials" id="cpMaterials">
-                                <div class="cp-materials__row" data-row>
-                                    <div class="cp-materials__field">
-                                        <label class="cp-materials__label">Item</label>
-                                        <select class="cp-materials__select" name="materials[item_id][]" required>
-                                            <option value="" selected disabled>Select item</option>
-                                            @foreach($inventoryItems as $it)
-                                            <option value="{{ $it->id }}" data-unit="{{ $it->unit }}">{{ $it->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--qty">
-                                        <label class="cp-materials__label">Qty</label>
-                                        <input class="cp-materials__input" name="materials[qty][]" type="number"
-                                            step="0.01" min="0" placeholder="0" required>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--unit">
-                                        <label class="cp-materials__label">Unit</label>
-                                        <input class="cp-materials__input" name="materials[unit][]" type="text"
-                                            placeholder="Auto" readonly>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--note">
-                                        <label class="cp-materials__label">Note (optional)</label>
-                                        <input class="cp-materials__input" name="materials[note][]" type="text"
-                                            placeholder="e.g. for phase 1">
-                                    </div>
-                                    <div class="cp-materials__actions">
-                                        <button type="button" class="cp-materials__remove" data-remove
-                                            aria-label="Remove item">✕</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <template id="cpMaterialTemplate">
-                                <div class="cp-materials__row" data-row>
-                                    <div class="cp-materials__field">
-                                        <label class="cp-materials__label">Item</label>
-                                        <select class="cp-materials__select" name="materials[item_id][]" required>
-                                            <option value="" selected disabled>Select item</option>
-                                            @foreach($inventoryItems as $it)
-                                            <option value="{{ $it->id }}" data-unit="{{ $it->unit }}">{{ $it->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--qty">
-                                        <label class="cp-materials__label">Qty</label>
-                                        <input class="cp-materials__input" name="materials[qty][]" type="number"
-                                            step="0.01" min="0" placeholder="0" required>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--unit">
-                                        <label class="cp-materials__label">Unit</label>
-                                        <input class="cp-materials__input" name="materials[unit][]" type="text"
-                                            placeholder="Auto" readonly>
-                                    </div>
-                                    <div class="cp-materials__field cp-materials__field--note">
-                                        <label class="cp-materials__label">Note (optional)</label>
-                                        <input class="cp-materials__input" name="materials[note][]" type="text"
-                                            placeholder="e.g. for phase 1">
-                                    </div>
-                                    <div class="cp-materials__actions">
-                                        <button type="button" class="cp-materials__remove" data-remove
-                                            aria-label="Remove item">✕</button>
-                                    </div>
-                                </div>
-                            </template>
-                        </section>
-
-                        {{-- ═══ Project Additional Costs ═══ --}}
-                        <section class="create-project__section">
-                            <div class="create-project__section-row">
-                                <h3 class="create-project__section-title">Project additional costs (expected)</h3>
-                                <button type="button" class="create-project__mini-btn" id="addProjCostBtn">+ Add
-                                    cost</button>
-                            </div>
-                            <p class="create-project__hint">Non-inventory costs for the whole project (e.g. permits,
-                                elevator, scaffolding). Enter expected budget now — actual cost can be entered later.
-                            </p>
-                            <div class="cp-costs" id="projCostsList"></div>
-                            <template id="projCostTemplate">
-                                <div class="cp-costs__row" data-cost-row>
-                                    <div>
-                                        <label class="cp-costs__label">Description</label>
-                                        <input class="cp-costs__input" name="project_costs[__IDX__][description]"
-                                            type="text" placeholder="e.g. Elevator installation" required>
-                                    </div>
-                                    <div>
-                                        <label class="cp-costs__label">Category (optional)</label>
-                                        <input class="cp-costs__input" name="project_costs[__IDX__][category]"
-                                            type="text" placeholder="e.g. infrastructure">
-                                    </div>
-                                    <div>
-                                        <label class="cp-costs__label">Expected amount ($)</label>
-                                        <input class="cp-costs__input" name="project_costs[__IDX__][expected_amount]"
-                                            type="number" step="0.01" min="0" placeholder="0.00" required>
-                                    </div>
-                                    <div>
-                                        <label class="cp-costs__label">Notes (optional)</label>
-                                        <input class="cp-costs__input" name="project_costs[__IDX__][notes]" type="text"
-                                            placeholder="Any details...">
-                                    </div>
-                                    <div style="display:flex;align-items:flex-end">
-                                        <button type="button" class="cp-costs__remove" data-remove>✕</button>
-                                    </div>
-                                </div>
-                            </template>
-                        </section>
-
                         {{-- ═══ Floors & Units ═══ --}}
                         <section class="create-project__section" aria-label="Floors and units">
                             <div class="create-project__section-row">
@@ -225,8 +109,7 @@
                                 </div>
                                 <div class="create-project__field create-project__field--wide">
                                     <p class="create-project__hint" style="margin:0;">After you enter the number of
-                                        floors, a unit form will appear for each floor. Each unit has a section for its
-                                        own materials and additional costs.</p>
+                                        floors, a unit form will appear for each floor.</p>
                                 </div>
                             </div>
                             <div class="cp-floors" id="cpFloorsWrap" aria-label="Floors forms"></div>
@@ -314,37 +197,12 @@
     </div>
 
     <script src="/js/createProject.js"></script>
-    <script src="/js/materials.js"></script>
     <script src="/js/navSearch.js"></script>
 
-    {{-- ── Per-unit extras: materials + costs injected via MutationObserver ── --}}
     <script>
         (() => {
-        const ITEMS = {!! $itemsJson !!};
-
-        let projCostIdx = 0;
-
-        // ── Project additional costs ──
-        document.getElementById('addProjCostBtn').addEventListener('click', () => {
-            const tpl = document.getElementById('projCostTemplate').innerHTML
-                .replace(/__IDX__/g, projCostIdx++);
-            const wrap = document.getElementById('projCostsList');
-            const div = document.createElement('div');
-            div.innerHTML = tpl;
-            const row = div.firstElementChild;
-            row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
-            wrap.appendChild(row);
-        });
-
-        // ── Build item <option> HTML ──
-        function itemOptions() {
-            return '<option value="" disabled selected>Select item</option>' +
-                ITEMS.map(it => `<option value="${it.id}" data-unit="${it.unit ?? ''}">${it.name} (Stock: ${it.qty} ${it.unit ?? ''})</option>`).join('');
-        }
-
         const floorsWrap = document.getElementById('cpFloorsWrap');
 
-        // ── Stamp name attributes on all [data-name] inputs in a unit ──
         function stampNames(unitEl) {
             const floor = unitEl.closest('[data-floor-card]');
             const fi = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
@@ -354,140 +212,22 @@
             });
         }
 
-        // ── Re-index all units before submit so names match current DOM order ──
+        // Re-index all units before submit so names match current DOM order
         document.querySelector('form').addEventListener('submit', () => {
             floorsWrap.querySelectorAll('[data-unit-row]').forEach(stampNames);
-        }, true); // capture phase so it runs before createProject.js submit handler
+        }, true);
 
-        // ── Inject extras into a unit card ──
-        function injectExtras(unitEl) {
-            if (unitEl.dataset.extrasInjected) return;
-            unitEl.dataset.extrasInjected = '1';
-
-            // Compute fi / ui indices
-            const floor   = unitEl.closest('[data-floor-card]');
-            const floors   = Array.from(floorsWrap.querySelectorAll('[data-floor-card]'));
-            const fi = floors.indexOf(floor);
-            const units = Array.from(floor.querySelectorAll('[data-unit-row]'));
-            const ui = units.indexOf(unitEl);
-
-            // Immediately stamp name attributes on this unit's data-name inputs
-            stampNames(unitEl);
-
-            let matIdx = 0, costIdx = 0;
-
-            const extras = document.createElement('div');
-            extras.className = 'cp-unit__extras';
-            extras.innerHTML = `
-                <button type="button" class="cp-unit__extras-toggle">
-                    <span class="toggle-arrow">▶</span>
-                    Unit materials & additional costs
-                </button>
-                <div class="cp-unit__extras-body">
-                    <div class="cp-unit__extras-section">
-                        <p class="cp-unit__extras-section-title">Materials for this unit</p>
-                        <div class="cp-mini-table" data-apt-mats></div>
-                        <button type="button" class="cp-mini-add" data-add-mat>＋ Add material</button>
-                    </div>
-                    <div class="cp-unit__extras-section" style="margin-top:14px;">
-                        <p class="cp-unit__extras-section-title">Additional costs for this unit (expected)</p>
-                        <div class="cp-mini-table" data-apt-costs></div>
-                        <button type="button" class="cp-mini-add" data-add-cost>＋ Add cost</button>
-                    </div>
-                </div>`;
-
-            unitEl.appendChild(extras);
-
-            // Toggle
-            extras.querySelector('.cp-unit__extras-toggle').addEventListener('click', function() {
-                const body = this.nextElementSibling;
-                const arrow = this.querySelector('.toggle-arrow');
-                const open = body.classList.toggle('open');
-                arrow.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
-            });
-
-            // Add material row
-            extras.querySelector('[data-add-mat]').addEventListener('click', () => {
-                // Recompute indices (floorsWrap is outer-scoped)
-                const fi2 = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
-                const ui2 = Array.from(floor.querySelectorAll('[data-unit-row]')).indexOf(unitEl);
-                const mi  = matIdx++;
-                const prefix = `floors[${fi2}][units][${ui2}][apt_materials][${mi}]`;
-
-                const row = document.createElement('div');
-                row.className = 'cp-mini-row cp-mini-row--mat';
-                row.innerHTML = `
-                    <div>
-                        <label class="cp-mini-label">Item</label>
-                        <select class="cp-mini-select" name="${prefix}[item_id]">${itemOptions()}</select>
-                    </div>
-                    <div>
-                        <label class="cp-mini-label">Qty</label>
-                        <input class="cp-mini-input" type="number" step="0.01" min="0" name="${prefix}[qty]" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="cp-mini-label">Unit</label>
-                        <input class="cp-mini-input" type="text" name="${prefix}[unit]" placeholder="Auto" readonly>
-                    </div>
-                    <button type="button" class="cp-mini-remove" title="Remove">✕</button>`;
-
-                // Auto-fill unit from selected item
-                const sel = row.querySelector('select');
-                const unitInput = row.querySelector('input[name*="[unit]"]');
-                sel.addEventListener('change', () => {
-                    const opt = sel.options[sel.selectedIndex];
-                    unitInput.value = opt.dataset.unit || '';
-                });
-                row.querySelector('.cp-mini-remove').addEventListener('click', () => row.remove());
-
-                extras.querySelector('[data-apt-mats]').appendChild(row);
-                extras.querySelector('.cp-unit__extras-body').classList.add('open');
-                extras.querySelector('.toggle-arrow').style.transform = 'rotate(90deg)';
-            });
-
-            // Add cost row
-            extras.querySelector('[data-add-cost]').addEventListener('click', () => {
-                const fi2 = Array.from(floorsWrap.querySelectorAll('[data-floor-card]')).indexOf(floor);
-                const ui2 = Array.from(floor.querySelectorAll('[data-unit-row]')).indexOf(unitEl);
-                const ci  = costIdx++;
-                const prefix = `floors[${fi2}][units][${ui2}][apt_costs][${ci}]`;
-
-                const row = document.createElement('div');
-                row.className = 'cp-mini-row cp-mini-row--cost';
-                row.innerHTML = `
-                    <div>
-                        <label class="cp-mini-label">Description</label>
-                        <input class="cp-mini-input" type="text" name="${prefix}[description]" placeholder="e.g. Painting" required>
-                    </div>
-                    <div>
-                        <label class="cp-mini-label">Category</label>
-                        <input class="cp-mini-input" type="text" name="${prefix}[category]" placeholder="e.g. finishing">
-                    </div>
-                    <div>
-                        <label class="cp-mini-label">Expected ($)</label>
-                        <input class="cp-mini-input" type="number" step="0.01" min="0" name="${prefix}[expected_amount]" placeholder="0.00" required>
-                    </div>
-                    <button type="button" class="cp-mini-remove" title="Remove">✕</button>`;
-
-                row.querySelector('.cp-mini-remove').addEventListener('click', () => row.remove());
-
-                extras.querySelector('[data-apt-costs]').appendChild(row);
-                extras.querySelector('.cp-unit__extras-body').classList.add('open');
-                extras.querySelector('.toggle-arrow').style.transform = 'rotate(90deg)';
-            });
-        }
-
-        // ── Watch for new unit cards (floorsWrap is defined above) ──
+        // Stamp names immediately when units are added
         const observer = new MutationObserver(mutations => {
             mutations.forEach(m => {
                 m.addedNodes.forEach(node => {
                     if (node.nodeType !== 1) return;
                     const units = node.matches('[data-unit-row]') ? [node] : Array.from(node.querySelectorAll('[data-unit-row]'));
-                    units.forEach(injectExtras);
+                    units.forEach(stampNames);
                 });
             });
         });
-        observer.observe(document.getElementById('cpFloorsWrap'), { childList: true, subtree: true });
+        observer.observe(floorsWrap, { childList: true, subtree: true });
     })();
     </script>
 </body>

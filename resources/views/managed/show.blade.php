@@ -362,6 +362,13 @@
                                     @error('sale_price')<span class="form-error">{{ $message }}</span>@enderror
                                 </div>
                                 <div class="mp-form-field">
+                                    <label>Owner Payout Amount ($) *</label>
+                                    <input name="owner_payout_amount" type="number" step="0.01" min="0"
+                                        placeholder="{{ $property->owner_asking_price }}"
+                                        value="{{ old('owner_payout_amount', $property->owner_asking_price) }}" required />
+                                    @error('owner_payout_amount')<span class="form-error">{{ $message }}</span>@enderror
+                                </div>
+                                <div class="mp-form-field">
                                     <label>Sale Date *</label>
                                     <input name="sale_date" type="date" value="{{ old('sale_date', date('Y-m-d')) }}"
                                         required />
@@ -371,10 +378,6 @@
                                     <input name="notes" type="text" placeholder="Optional" value="{{ old('notes') }}" />
                                 </div>
                             </div>
-                            <p style="font-size:12px;color:#6b7280;margin:0 0 12px;">
-                                ℹ️ Owner payout will automatically be set to <strong>${{
-                                    number_format($property->owner_asking_price, 2) }}</strong> (owner asking price).
-                            </p>
                             <div style="display:flex;gap:10px;">
                                 <button type="submit" class="btn-add green">Confirm Sale</button>
                                 <button type="button" class="btn-outline"

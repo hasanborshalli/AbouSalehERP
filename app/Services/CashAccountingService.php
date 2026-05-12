@@ -100,15 +100,25 @@ class CashAccountingService
 
         DB::transaction(function () use ($inKindPayment, $invoice, $invoiceTotal, $userId) {
 
-            // 2. Increase stock for each item received
+            // Post revenue — invoice is satisfied even though no cash was received
+            LedgerEntry::create([
+                'posted_at'   => now(),
+                'account_id'  => $this->revenueAccount()->id,
+                'amount'      => round($invoiceTotal, 2),
+                'direction'   => 'in',
+                'description' => 'Invoice paid (in-kind): #' . $invoice->invoice_number,
+                'source_type' => 'invoice',
+                'source_id'   => $invoice->invoice_number,
+                'user_id'     => $userId,
+            ]);
+
+            // Increase stock for each item received
             foreach ($inKindPayment->items as $line) {
                 $item = InventoryItem::lockForUpdate()->findOrFail($line->inventory_item_id);
 
                 $item->quantity        = (float)$item->quantity + (float)$line->quantity;
                 $item->is_out_of_stock = false;
                 $item->save();
-
-                
             }
         });
     }
@@ -153,17 +163,6 @@ class CashAccountingService
                 $item->quantity        = (float)$item->quantity + (float)$line->quantity;
                 $item->is_out_of_stock = false;
                 $item->save();
-
-                LedgerEntry::create([
-                    'posted_at'   => \Carbon\Carbon::parse($inKindPayment->payment_date)->startOfDay(),
-                    'account_id'  => $this->purchasesAccount()->id,
-                    'amount'      => round((float)$line->total_value, 2),
-                    'direction'   => 'in',
-                    'description' => "In-kind received: {$item->name} × {$line->quantity} {$item->unit} (Contract #{$contract->id})",
-                    'source_type' => 'in_kind_contract_item',
-                    'source_id'   => $inKindPayment->id,
-                    'user_id'     => $userId,
-                ]);
             }
         });
     }
@@ -208,21 +207,18 @@ class CashAccountingService
 
         $item->save();
 
-        // Cash-out ledger entry only applies when the supplier was paid in cash.
-        // For in-kind purchases the company pays with inventory items instead —
-        // no cash leaves, so we skip the ledger entry here.
-        if (($data['payment_method'] ?? 'cash') === 'cash') {
-            \App\Models\LedgerEntry::create([
-                'posted_at'   => $purchaseDate,
-                'account_id'  => $this->purchasesAccount()->id,
-                'amount'      => $total,
-                'direction'   => 'out',
-                'description' => 'Inventory purchase (cash): ' . ($item->name ?? ('Item#'.$item->id)),
-                'source_type' => 'inventory_purchase',
-                'source_id'   => $purchase->id,
-                'user_id'     => $userId,
-            ]);
-        }
+        // Record cash-out for all real payment methods (cash, bank, other all represent real outflows).
+        $method = $data['payment_method'] ?? 'cash';
+        \App\Models\LedgerEntry::create([
+            'posted_at'   => $purchaseDate,
+            'account_id'  => $this->purchasesAccount()->id,
+            'amount'      => $total,
+            'direction'   => 'out',
+            'description' => 'Inventory purchase (' . $method . '): ' . ($item->name ?? ('Item#'.$item->id)),
+            'source_type' => 'inventory_purchase',
+            'source_id'   => $purchase->id,
+            'user_id'     => $userId,
+        ]);
 
         return $purchase;
     });
@@ -285,10 +281,12 @@ class CashAccountingService
         foreach ($range as $m) {
             $rev = LedgerEntry::whereBetween('posted_at', [$m['start'], $m['end']])
                 ->where('direction', 'in')
+                ->whereNull('reverses_entry_id')
                 ->sum('amount');
 
             $exp = LedgerEntry::whereBetween('posted_at', [$m['start'], $m['end']])
                 ->where('direction', 'out')
+                ->whereNull('reverses_entry_id')
                 ->sum('amount');
 
             $revenues[] = (float)$rev;
@@ -339,18 +337,8 @@ class CashAccountingService
 }
 public function postCostSaving(float $amount, string $description, string $sourceType, int $sourceId, ?int $userId = null): void
 {
-    DB::transaction(function () use ($amount, $description, $sourceType, $sourceId, $userId) {
-        LedgerEntry::create([
-            'posted_at'   => now(),
-            'account_id'  => $this->operatingExpenseAccount()->id,
-            'amount'      => round($amount, 2),
-            'direction'   => 'in', // cash-in: under-budget saving
-            'description' => $description,
-            'source_type' => $sourceType,
-            'source_id'   => $sourceId,
-            'user_id'     => $userId,
-        ]);
-    });
+    // Under-budget savings are informational only — no cash moves, nothing to ledger.
+    // The actual cash-out was already recorded by createOperatingExpense() at the settled amount.
 }
 
 public function voidInventoryPurchase(InventoryPurchase $purchase, string $reason, ?int $userId = null): void
@@ -387,18 +375,20 @@ public function voidInventoryPurchase(InventoryPurchase $purchase, string $reaso
             ->where('direction', 'out')
             ->first();
 
-        // Create reversal ledger (cash in)
-        LedgerEntry::create([
-            'posted_at' => now(),
-            'account_id' => $this->purchasesAccount()->id,
-            'amount' => (float)$purchase->total_cost,
-            'direction' => 'in',
-            'description' => "VOID purchase #{$purchase->id}: {$reason}",
-            'source_type' => 'inventory_purchase_void',
-            'source_id' => $purchase->id,
-            'user_id' => $userId,
-            'reverses_entry_id' => $original?->id,
-        ]);
+        // Only reverse if there was an original cash-out entry (in-kind/bank purchases may have none)
+        if ($original) {
+            LedgerEntry::create([
+                'posted_at' => now(),
+                'account_id' => $this->purchasesAccount()->id,
+                'amount' => (float)$purchase->total_cost,
+                'direction' => 'in',
+                'description' => "VOID purchase #{$purchase->id}: {$reason}",
+                'source_type' => 'inventory_purchase_void',
+                'source_id' => $purchase->id,
+                'user_id' => $userId,
+                'reverses_entry_id' => $original->id,
+            ]);
+        }
     });
 }
 
@@ -597,6 +587,28 @@ public function voidOperatingExpense(OperatingExpense $expense, string $reason, 
                 'user_id'     => $userId,
             ]);
         });
+    }
+
+    public function postDownPayment(\App\Models\Contract $contract, float $amount, ?int $userId = null): void
+    {
+        if ($amount < 0.001) return;
+
+        $exists = LedgerEntry::where('source_type', 'down_payment')
+            ->where('source_id', $contract->id)
+            ->exists();
+
+        if ($exists) return;
+
+        LedgerEntry::create([
+            'posted_at'   => \Carbon\Carbon::parse($contract->contract_date)->startOfDay(),
+            'account_id'  => $this->revenueAccount()->id,
+            'amount'      => round($amount, 2),
+            'direction'   => 'in',
+            'description' => 'Down payment: Contract #' . $contract->id,
+            'source_type' => 'down_payment',
+            'source_id'   => $contract->id,
+            'user_id'     => $userId,
+        ]);
     }
 
     public function postRentalOwnerPayout(

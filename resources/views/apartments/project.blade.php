@@ -48,6 +48,11 @@
                             📊 View Report
                         </a>
 
+                        <a class="project-page__edit" href="{{ route('apartments.edit-materials', $project->id) }}"
+                            style="background:rgba(5,150,105,.1);color:#065f46;border-color:rgba(5,150,105,.3);">
+                            🧱 Edit Materials
+                        </a>
+
                         <a class="project-page__edit" href="{{ route('apartments.edit-project', $project->id) }}">
                             Edit project
                         </a>
@@ -185,38 +190,11 @@
                         <div class="project-page__muted">No materials added to this project yet.</div>
                         @endif
 
-                        {{-- Add material form --}}
-                        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.07);">
-                            <p style="font-size:13px;font-weight:600;margin:0 0 10px;">＋ Add material to this project
-                            </p>
-                            <form method="post" action="{{ route('projects.materials.store', $project) }}">
-                                @csrf
-                                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-                                    <div>
-                                        <label style="font-size:12px;display:block;margin-bottom:4px;">Inventory
-                                            Item</label>
-                                        <select name="inventory_item_id" required
-                                            style="padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;min-width:180px;">
-                                            <option value="">Select item</option>
-                                            @foreach($inventoryItems as $it)
-                                            <option value="{{ $it->id }}">{{ $it->name }} (Stock: {{ $it->quantity }} {{
-                                                $it->unit }})</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="font-size:12px;display:block;margin-bottom:4px;">Quantity
-                                            Needed</label>
-                                        <input type="number" name="quantity_needed" step="0.01" min="0.01"
-                                            placeholder="0.00" required
-                                            style="padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;width:130px;">
-                                    </div>
-                                    <button type="submit"
-                                        style="padding:7px 18px;border-radius:7px;background:#2563eb;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;">
-                                        Add
-                                    </button>
-                                </div>
-                            </form>
+                        <div style="margin-top:14px;">
+                            <a href="{{ route('apartments.edit-materials', $project->id) }}"
+                                style="font-size:13px;font-weight:600;padding:7px 16px;border-radius:7px;background:rgba(5,150,105,.1);color:#065f46;border:1px solid rgba(5,150,105,.3);text-decoration:none;display:inline-block;">
+                                🧱 Edit Materials &amp; Costs
+                            </a>
                         </div>
                     </section>
 
@@ -282,38 +260,6 @@
                         @else
                         <p class="project-page__muted" style="margin-bottom:14px;">No additional costs recorded yet.</p>
                         @endif
-
-                        <div style="padding-top:14px;border-top:1px solid rgba(0,0,0,0.07);">
-                            <p style="font-size:13px;font-weight:600;margin:0 0 10px;">＋ Add expected cost</p>
-                            <form method="post" action="{{ route('projects.costs.store', $project) }}">
-                                @csrf
-                                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-                                    <div>
-                                        <label
-                                            style="font-size:12px;display:block;margin-bottom:4px;">Description</label>
-                                        <input type="text" name="description" placeholder="e.g. Electrical" required
-                                            style="padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;min-width:160px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size:12px;display:block;margin-bottom:4px;">Category
-                                            (optional)</label>
-                                        <input type="text" name="category" placeholder="e.g. finishing"
-                                            style="padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;width:140px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size:12px;display:block;margin-bottom:4px;">Expected Amount
-                                            ($)</label>
-                                        <input type="number" name="expected_amount" step="0.01" min="0"
-                                            placeholder="0.00" required
-                                            style="padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;width:130px;">
-                                    </div>
-                                    <button type="submit"
-                                        style="padding:7px 18px;border-radius:7px;background:#2563eb;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;">
-                                        Add Cost
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </section>
 
                     {{-- Floors & apartments --}}

@@ -215,9 +215,9 @@ class ReportsController extends Controller
         $groupBy    = $request->input('group_by', 'month'); // month | source
 
         $baseQ = LedgerEntry::whereBetween(DB::raw('DATE(posted_at)'), [$dateFrom, $dateTo])
-            ->where('amount', '>', 0);
+            ->where('amount', '>', 0)
+            ->whereNull('reverses_entry_id');
 
-        // exclude void entries
         $revenueQ  = (clone $baseQ)->where('direction','in');
         $expenseQ  = (clone $baseQ)->where('direction','out');
 

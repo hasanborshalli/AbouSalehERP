@@ -28,10 +28,4 @@ class LedgerEntry extends Model
         return $this->belongsTo(Account::class);
     }
 
-    public function source()
-    {
-        // polymorphic-ish (manual)
-        // you can resolve it yourself if needed
-        return null;
-    }
 }

@@ -385,22 +385,6 @@ class ReportExportController extends Controller
                 number_format($ik->total_value, 2, '.', ''),
             ];
         }
-        $rows[] = [];
-        $rows[] = ['--- IN-KIND RECEIVED FROM CLIENTS ---'];
-        $rows[] = ['Date','Client','Apartment','Invoice/Contract','Qty Received','Unit Price','Total Value'];
-        foreach ($d['inKindReceipts'] as $ik) {
-            $ikContract = $ik->payment?->contract;
-            $ikInvoice  = $ik->payment?->invoice;
-            $rows[] = [
-                $ik->payment?->payment_date?->format('Y-m-d') ?? '—',
-                $ikContract?->client?->name ?? '—',
-                $ikContract?->apartment ? 'Unit '.$ikContract->apartment->unit_number : '—',
-                $ikInvoice ? '#'.$ikInvoice->invoice_number : 'Contract #'.($ikContract?->id ?? '—'),
-                number_format($ik->quantity, 3, '.', ''),
-                number_format($ik->unit_price_snapshot, 2, '.', ''),
-                number_format($ik->total_value, 2, '.', ''),
-            ];
-        }
         $totals = [
             ['Total Cost Paid','','','','',$d['totalPurchaseCost']],
             ['Total In-Kind Received','','',number_format($d['totalInKindQty'],3,'.',''),'',number_format($d['totalInKindValue'],2,'.','')],

@@ -106,6 +106,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('delete-project');
             Route::get('/project/{project}', [PagesController::class, 'projectPage'])
                 ->name('project');
+            Route::get('/project/{project}/edit-materials', [PagesController::class, 'editMaterialsPage'])
+                ->name('edit-materials');
         });
     });
 

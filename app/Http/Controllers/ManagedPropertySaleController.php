@@ -18,16 +18,16 @@ class ManagedPropertySaleController extends Controller
         if ($property->sale) return back()->with('error', 'A sale has already been recorded for this property.');
 
         $data = $request->validate([
-            'buyer_name'  => ['required', 'string', 'max:255'],
-            'buyer_phone' => ['nullable', 'string', 'max:30'],
-            'buyer_email' => ['nullable', 'email', 'max:255'],
-            'sale_price'  => ['required', 'numeric', 'min:0'],
-            'sale_date'   => ['required', 'date'],
-            'notes'       => ['nullable', 'string', 'max:1000'],
+            'buyer_name'          => ['required', 'string', 'max:255'],
+            'buyer_phone'         => ['nullable', 'string', 'max:30'],
+            'buyer_email'         => ['nullable', 'email', 'max:255'],
+            'sale_price'          => ['required', 'numeric', 'min:0'],
+            'owner_payout_amount' => ['required', 'numeric', 'min:0'],
+            'sale_date'           => ['required', 'date'],
+            'notes'               => ['nullable', 'string', 'max:1000'],
         ]);
 
         $data['managed_property_id'] = $property->id;
-        $data['owner_payout_amount'] = $property->owner_asking_price;
         $data['created_by']          = auth()->id();
 
         $sale = null;

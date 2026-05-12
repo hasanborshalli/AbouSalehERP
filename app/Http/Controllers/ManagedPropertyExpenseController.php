@@ -25,18 +25,20 @@ class ManagedPropertyExpenseController extends Controller
                 'notes'             => ['nullable', 'string', 'max:500'],
             ]);
 
-            $item = InventoryItem::findOrFail($data['inventory_item_id']);
+            $itemSnapshot = InventoryItem::findOrFail($data['inventory_item_id']);
+            $unitCost     = (float)$itemSnapshot->price;
+            $totalCost    = round($unitCost * (float)$data['quantity_used'], 2);
+            $description  = $data['description'] ?: "Inventory: {$itemSnapshot->name} × {$data['quantity_used']} {$itemSnapshot->unit}";
 
-            if ((float)$item->quantity < (float)$data['quantity_used']) {
-                return back()->with('error', "Insufficient stock. Available: {$item->quantity} {$item->unit}.");
-            }
+            $insufficientStock = false;
+            DB::transaction(function () use ($data, $property, $totalCost, $description, $cash, &$insufficientStock) {
+                $item = InventoryItem::lockForUpdate()->findOrFail($data['inventory_item_id']);
 
-            // Calculate cost using item's current price
-            $unitCost    = (float)$item->price;
-            $totalCost   = round($unitCost * (float)$data['quantity_used'], 2);
-            $description = $data['description'] ?: "Inventory: {$item->name} × {$data['quantity_used']} {$item->unit}";
+                if ((float)$item->quantity < (float)$data['quantity_used']) {
+                    $insufficientStock = true;
+                    return;
+                }
 
-            DB::transaction(function () use ($data, $property, $item, $totalCost, $description, $cash) {
                 // Deduct from stock
                 $item->quantity = max(0, (float)$item->quantity - (float)$data['quantity_used']);
                 $item->is_out_of_stock = ($item->quantity <= 0);
@@ -56,8 +58,12 @@ class ManagedPropertyExpenseController extends Controller
                 $cash->postManagedPropertyExpense($expense, auth()->id());
             });
 
+            if ($insufficientStock) {
+                return back()->with('error', "Insufficient stock. Available quantity has changed — please try again.");
+            }
+
             return redirect()->route('managed.show', $property)
-                ->with('success', "Used {$data['quantity_used']} {$item->unit} of {$item->name} — cost: $" . number_format($totalCost, 2));
+                ->with('success', "Used {$data['quantity_used']} {$itemSnapshot->unit} of {$itemSnapshot->name} — cost: $" . number_format($totalCost, 2));
         }
 
         // ── Cash / manual expense ────────────────────────────────

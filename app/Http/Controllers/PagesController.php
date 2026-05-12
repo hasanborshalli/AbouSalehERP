@@ -21,8 +21,8 @@ class PagesController extends Controller
         return view('login');
     }
     public function dashboardPage(CashAccountingService $acct){
-        $totalCredit = (float) LedgerEntry::where('direction', 'in')->sum('amount');
-        $totalDebit  = (float) LedgerEntry::where('direction', 'out')->sum('amount');
+        $totalCredit = (float) LedgerEntry::where('direction', 'in')->whereNull('reverses_entry_id')->sum('amount');
+        $totalDebit  = (float) LedgerEntry::where('direction', 'out')->whereNull('reverses_entry_id')->sum('amount');
         $netBalance  = $totalCredit - $totalDebit;
 
     $totalProducts = InventoryItem::count();
@@ -96,9 +96,7 @@ $end   = Carbon::now()->endOfMonth();
             $query->where('description', 'like', '%' . $search . '%');
         }
 
-        $entries   = $query->paginate(50)->withQueryString();
-        $totalIn   = (clone $query->getQuery())->where('direction', 'in')->sum('amount');
-        $totalOut  = (clone $query->getQuery())->where('direction', 'out')->sum('amount');
+        $entries = $query->paginate(50)->withQueryString();
 
         // Re-query filtered totals separately
         $filteredQuery = LedgerEntry::query();
@@ -242,11 +240,7 @@ $end   = Carbon::now()->endOfMonth();
     ));
     }
     public function createProjectPage(){
-        $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit', 'quantity', 'price']);
-        $itemsJson = $inventoryItems->map(function ($i) {
-            return ['id' => $i->id, 'name' => $i->name, 'qty' => $i->quantity, 'unit' => $i->unit];
-        })->values()->toJson();
-        return view('apartments.create-project', compact('inventoryItems', 'itemsJson'));
+        return view('apartments.create-project');
     }
     public function editProjectPage(Project $project){
         $inventoryItems = InventoryItem::orderBy('name')->get(['id', 'name', 'unit']);
@@ -305,6 +299,17 @@ $end   = Carbon::now()->endOfMonth();
 
     return view('apartments.project', compact('project', 'stats', 'inventoryItems'));
 }
+    public function editMaterialsPage(Project $project)
+    {
+        $project->load([
+            'inventoryUsages.inventoryItem',
+            'additionalCosts',
+        ]);
+
+        $inventoryItems = InventoryItem::whereNull('deleted_at')->orderBy('name')->get();
+
+        return view('apartments.edit-materials', compact('project', 'inventoryItems'));
+    }
     public function apartmentUnitPage(\App\Models\Apartment $apartment)
     {
         $apartment->load([

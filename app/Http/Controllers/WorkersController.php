@@ -194,9 +194,7 @@ class WorkersController extends Controller
             $firstDate = Carbon::parse($contractData['first_payment_date']);
             for ($i = 0; $i < $months; $i++) {
                 $dueDate = $firstDate->copy()->addMonths($i);
-                $amount  = ($i === $months - 1)
-                    ? round($totalAmount - ($monthlyAmount * ($months - 1)), 2)
-                    : $monthlyAmount;
+                $amount  = ($i === $months - 1) ? $lastAmount : $monthlyAmount;
 
                 WorkerPayment::create([
                     'worker_contract_id' => $contract->id,
@@ -660,9 +658,7 @@ class WorkersController extends Controller
 
             $firstDate = Carbon::parse($contractData['first_payment_date']);
             for ($i = 0; $i < $months; $i++) {
-                $amount = ($i === $months - 1)
-                    ? round($totalAmount - ($monthlyAmount * ($months - 1)), 2)
-                    : $monthlyAmount;
+                $amount = ($i === $months - 1) ? $lastAmount : $monthlyAmount;
                 WorkerPayment::create([
                     'worker_contract_id' => $contract->id,
                     'payment_number'     => $worker->id . '-' . $contract->id . '-' . ($i + 1),

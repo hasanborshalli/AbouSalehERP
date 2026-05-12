@@ -55,7 +55,7 @@ class Contract extends Model
     {
         return $this->hasOne(Invoice::class)
             ->where('status', 'pending')
-            ->orderBy('due_date', 'desc');
+            ->orderBy('due_date', 'asc');
     }
 
     public function progressItems()
