@@ -150,9 +150,8 @@ $end   = Carbon::now()->endOfMonth();
         return view('clients.index',compact('clients_count','existingClients','clients_volume'));
     }
     public function addClientPage(){
-                $apartments=Apartment::where('status','available')->get();
-
-        return view('clients.create',compact('apartments'));
+        $apartments = Apartment::where('status', 'available')->with(['project', 'floor'])->get();
+        return view('clients.create', compact('apartments'));
     }
     public function editClientPage(User $user){
            // Load what you need for the form

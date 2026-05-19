@@ -39,7 +39,7 @@
                         </a>
                     </header>
 
-                    <form class="add-client__form" action="{{ route('clients.createClient') }}" method="post">
+                    <form class="add-client__form" action="{{ route('clients.createClient', [], false) }}" method="post">
                         @csrf
                         @if (session('error'))
                         <div class="alert alert--error" data-alert>
@@ -113,9 +113,9 @@
 
                                         @foreach ($apartments as $apartment)
                                         <option value="{{ $apartment->id }}"
-                                            data-project-name="{{ $apartment->project->name ?? '' }}"
+                                            data-project-name="{{ $apartment->project?->name ?? '' }}"
                                             data-unit-number="{{ $apartment->unit_number ?? '' }}"
-                                            data-location="{{ trim(($apartment->project->city ?? '') . ' ' . ($apartment->project->area ?? '')) }}"
+                                            data-location="{{ trim(($apartment->project?->city ?? '') . ' ' . ($apartment->project?->area ?? '')) }}"
                                             data-price="{{ $apartment->price_total ?? '' }}"
                                             data-floor="{{ $apartment->floor?->floor_number }}"
                                             data-area="{{ $apartment->area_sqm ?? '' }}"
@@ -123,7 +123,7 @@
                                             data-bathrooms="{{ $apartment->bathrooms ?? '' }}"
                                             data-notes="{{ $apartment->notes ?? '' }}">
                                             {{ $apartment->unit_number ?? $apartment->unit_code }} — {{
-                                            $apartment->project->name ?? '' }}
+                                            $apartment->project?->name ?? '' }}
                                         </option>
                                         @endforeach
                                     </select>

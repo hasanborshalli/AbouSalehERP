@@ -152,6 +152,9 @@ class ClientsController extends Controller
 
         } else {
             // in_kind
+            $contractFields['down_payment']       = 0;
+            $contractFields['installment_months'] = 0;
+            $contractFields['installment_amount'] = 0;
             $months  = 0;
             $monthly = 0;
         }
